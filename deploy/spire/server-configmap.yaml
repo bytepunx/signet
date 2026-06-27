@@ -1,0 +1,83 @@
+# SPIRE Server ConfigMap — example configuration for a single-cluster deployment.
+# Replace TRUST_DOMAIN with the value matching signet.trustDomain in values.yaml.
+# Review all settings before deploying to production.
+#
+# This configures:
+#   - Kubernetes PSAT node attestation (more secure than legacy k8s_sat)
+#   - SQLite data store (replace with PostgreSQL for HA)
+#   - Disk key manager (replace with AWS KMS/GCP KMS/etc. for production)
+#   - k8sbundle notifier (writes the trust bundle to a ConfigMap for distribution)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spire-server
+  namespace: spire
+data:
+  server.conf: |
+    server {
+      bind_address       = "0.0.0.0"
+      bind_port          = "8081"
+      trust_domain       = "TRUST_DOMAIN"
+      data_dir           = "/run/spire/data"
+      log_level          = "INFO"
+
+      # SVIDs issued to workloads are valid for 1 hour and auto-rotated by the agent.
+      default_x509_svid_ttl = "1h"
+      # The CA certificate is renewed before it expires. Rotate the CA at
+      # least 2x the SVID TTL to avoid gaps.
+      ca_ttl = "24h"
+      ca_key_type = "ec-p256"
+    }
+
+    plugins {
+      DataStore "sql" {
+        plugin_data {
+          database_type    = "sqlite3"
+          connection_string = "/run/spire/data/datastore.sqlite3"
+          # For HA / production, use PostgreSQL:
+          # database_type    = "postgres"
+          # connection_string = "host=<host> port=5432 user=spire dbname=spire sslmode=require"
+        }
+      }
+
+      # Kubernetes Projected Service Account Token attestor.
+      # More secure than k8s_sat: tokens are audience-scoped and short-lived.
+      NodeAttestor "k8s_psat" {
+        plugin_data {
+          clusters = {
+            "CLUSTER_NAME" = {
+              # Restrict attestation to the spire-agent service account.
+              service_account_allow_list = ["spire:spire-agent"]
+              # Optional: require audience claim in the projected token.
+              # audience = ["spire-server"]
+            }
+          }
+        }
+      }
+
+      KeyManager "disk" {
+        plugin_data {
+          keys_path = "/run/spire/data/keys.json"
+          # For production, use an external KMS:
+          # KeyManager "aws_kms" { ... }
+        }
+      }
+
+      # Writes the SPIRE trust bundle to a Kubernetes ConfigMap so workloads
+      # can bootstrap trust without a chicken-and-egg problem.
+      Notifier "k8sbundle" {
+        plugin_data {
+          namespace      = "spire"
+          config_map     = "spire-bundle"
+          config_map_key = "bundle.crt"
+        }
+      }
+    }
+
+    health_checks {
+      listener_enabled = true
+      bind_address     = "0.0.0.0"
+      bind_port        = "8080"
+      live_path        = "/live"
+      ready_path       = "/ready"
+    }

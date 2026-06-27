@@ -1,0 +1,54 @@
+{{- if .Values.networkPolicy.enabled }}
+# NetworkPolicy for signetd pods.
+# Ingress: permit gRPC workload traffic (port 8443) from any cluster source.
+#          Permit GitHub webhook traffic (port 8445) when webhookAddr is set.
+#          The admin port (8444) is localhost-only and unreachable via the network.
+# Egress:  DNS, CockroachDB (when in-cluster), and the Kubernetes API (TokenReview).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "signet.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "signet.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - port: 8443
+          protocol: TCP
+    {{- if .Values.signet.webhookAddr }}
+    - ports:
+        - port: 8445
+          protocol: TCP
+    {{- end }}
+  egress:
+    # DNS resolution
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    {{- if .Values.cockroachdb.enabled }}
+    # CockroachDB SQL wire protocol
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cockroachdb
+              app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
+        - port: 26257
+          protocol: TCP
+    {{- end }}
+    # Kubernetes API server — required for TokenReview (admin auth)
+    - ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
+{{- end }}

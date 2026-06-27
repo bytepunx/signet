@@ -1,0 +1,160 @@
+# Default values for signet.
+
+# global.image.registry overrides image.registry for air-gapped installs.
+# Set this to your private registry mirror, e.g. "myregistry.internal".
+global:
+  image:
+    registry: ""
+
+replicaCount: 1
+
+image:
+  # Registry is separated from repository so global.image.registry can override
+  # it without requiring the user to also change image.repository.
+  registry: ghcr.io
+  repository: bytepunx/signetd
+  pullPolicy: IfNotPresent
+  # Defaults to chart appVersion when empty.
+  tag: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+signet:
+  # REQUIRED: SPIFFE trust domain (e.g. "cluster.local" or "example.org").
+  # Must match the trust domain configured in your SPIRE server.
+  trustDomain: ""
+
+  workloadAddr: ":8443"
+  # Admin listener is localhost-only inside the container. Operators access it
+  # exclusively via kubectl port-forward; it is never exposed in the Service.
+  adminAddr: "127.0.0.1:8444"
+  # GitHub webhook listener. Leave empty to disable.
+  webhookAddr: ":8445"
+  # Public base URL for webhook callbacks, e.g. "https://signet.example.com".
+  # Used to construct the webhook URL returned by 'signet repo add'.
+  webhookBaseURL: ""
+  drainTimeout: "30s"
+  spireSocket: "unix:///run/spire/sockets/agent.sock"
+
+  shamir:
+    # Set shares > 0 and threshold >= 2 to enable Shamir unseal mode.
+    # Both zero means direct-key mode: operator provides the full master key.
+    shares: 0
+    threshold: 0
+    shareTimeout: "30m"
+
+  # Comma-separated Kubernetes SA token audiences accepted by the admin endpoint.
+  kubeAudiences: "signet"
+
+  # -- Secret configuration --
+  # Recommended: create the secret out-of-band (external-secrets, sealed-secrets, etc.)
+  # and set existingSecret to its name. The secret must contain:
+  #   SIGNET_DB_CONN_STRING
+  #   SIGNET_AUDIT_CHAIN_KEY   (64 hex chars = 32 bytes)
+  existingSecret: ""
+
+  # Only used when existingSecret is empty. Do NOT commit real values here.
+  dbConnString: ""
+  auditChainKey: ""
+
+serviceAccount:
+  # Creates the signetd ServiceAccount (used for TokenReview against k8s API).
+  create: true
+  name: ""
+  annotations: {}
+
+adminServiceAccount:
+  # Creates a dedicated SA for operators to generate short-lived unseal tokens:
+  #   kubectl create token signet-admin --duration=1h
+  create: true
+  name: "signet-admin"
+
+service:
+  type: ClusterIP
+  port: 8443
+
+# Ingress for the webhook endpoint (port 8445).
+# Required when GitHub needs to reach signet from the public internet.
+# The gRPC workload port (8443) uses mTLS and is not exposed via Ingress.
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: signet.example.com
+      paths:
+        - path: /webhook
+          pathType: Prefix
+  tls: []
+  #  - secretName: signet-tls
+  #    hosts:
+  #      - signet.example.com
+
+autoscaling:
+  # Autoscaling is disabled by default because signet holds the master key
+  # in-memory. Horizontal scaling requires a shared external key store (future).
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+# Pod-level security context.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Container-level security context.
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# -- Kubernetes auto-unseal --
+# When enabled, signetd reads the master key from a Kubernetes Secret at
+# startup and unseals itself automatically after pod restarts.
+# Trust model: the Kubernetes control plane is the root of trust.
+# For multi-operator (Shamir) deployments, leave this disabled.
+autoUnseal:
+  enabled: false
+  # Name of the Kubernetes Secret containing the master key (field: master.key).
+  # Created by `signet init` or manually with kubectl create secret generic.
+  secretName: "signet-master-key"
+
+networkPolicy:
+  enabled: true
+
+spire:
+  # Path inside the container where the SPIRE agent socket directory is mounted.
+  socketHostPath: "/run/spire/sockets"
+
+# -- CockroachDB (in-cluster, for development/testing) --
+# For production, set enabled: false and supply an external connection string in
+# the signet secret. The CockroachDB operator is recommended for production:
+# https://www.cockroachlabs.com/docs/stable/kubernetes-overview.html
+cockroachdb:
+  enabled: false
+  # Number of CockroachDB replicas. Single-node is sufficient for dev;
+  # use 3 for a minimal fault-tolerant cluster.
+  replicas: 1
+  image: cockroachdb/cockroach:v24.3.0
+  storage: "10Gi"
+  storageClass: ""
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      memory: 1Gi

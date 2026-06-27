@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "signet.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+data:
+  SIGNET_SPIRE_SOCKET:      {{ .Values.signet.spireSocket | quote }}
+  SIGNET_TRUST_DOMAIN:      {{ .Values.signet.trustDomain | required "signet.trustDomain is required" | quote }}
+  SIGNET_WORKLOAD_ADDR:     {{ .Values.signet.workloadAddr | quote }}
+  SIGNET_ADMIN_ADDR:        {{ .Values.signet.adminAddr | quote }}
+  SIGNET_WEBHOOK_ADDR:      {{ .Values.signet.webhookAddr | quote }}
+  SIGNET_WEBHOOK_BASE_URL:  {{ .Values.signet.webhookBaseURL | quote }}
+  SIGNET_DRAIN_TIMEOUT:     {{ .Values.signet.drainTimeout | quote }}
+  SIGNET_SHAMIR_SHARES:     {{ .Values.signet.shamir.shares | quote }}
+  SIGNET_SHAMIR_THRESHOLD:  {{ .Values.signet.shamir.threshold | quote }}
+  SIGNET_SHARE_TIMEOUT:     {{ .Values.signet.shamir.shareTimeout | quote }}
+  SIGNET_KUBE_AUDIENCES:    {{ .Values.signet.kubeAudiences | quote }}
+  {{- if ((.Values.autoUnseal).enabled) }}
+  SIGNET_KUBE_UNSEAL_SECRET: {{ .Values.autoUnseal.secretName | quote }}
+  {{- end }}

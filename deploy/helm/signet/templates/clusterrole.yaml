@@ -1,0 +1,14 @@
+{{- if .Values.serviceAccount.create }}
+# signetd validates admin endpoint callers by submitting their SA tokens to the
+# Kubernetes TokenReview API. This ClusterRole grants that permission.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "signet.fullname" . }}-tokenreview
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+{{- end }}

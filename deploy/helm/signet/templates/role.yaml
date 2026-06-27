@@ -1,0 +1,18 @@
+{{- if and .Values.serviceAccount.create ((.Values.autoUnseal).enabled) }}
+# Namespaced Role granting signetd read access to the master key Secret.
+# Only rendered when autoUnseal.enabled is true.
+# Intentionally a Role (not ClusterRole) — restricts the permission to this
+# namespace only.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "signet.fullname" . }}-unseal-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [{{ .Values.autoUnseal.secretName | quote }}]
+    verbs: ["get"]
+{{- end }}

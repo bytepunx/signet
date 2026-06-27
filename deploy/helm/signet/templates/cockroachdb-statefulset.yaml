@@ -1,0 +1,80 @@
+{{- if .Values.cockroachdb.enabled }}
+# Single-node CockroachDB for development and testing.
+# For production, use the CockroachDB Kubernetes operator:
+#   https://www.cockroachlabs.com/docs/stable/kubernetes-overview.html
+# Production checklist:
+#   - Enable TLS between nodes and for client connections
+#   - Use 3+ replicas for fault tolerance
+#   - Use the operator's backup CRD for automated backups
+#   - Set signet.dbConnString accordingly (with sslmode=verify-full)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "signet.cockroachdbName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+    app.kubernetes.io/name: cockroachdb
+    app.kubernetes.io/component: database
+spec:
+  serviceName: {{ include "signet.cockroachdbName" . }}
+  replicas: {{ .Values.cockroachdb.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cockroachdb
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cockroachdb
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: database
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: cockroachdb
+          image: {{ .Values.cockroachdb.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - start-single-node
+            - --insecure
+            - --listen-addr=:26257
+            - --http-addr=:8080
+            - --store=/cockroach/cockroach-data
+            - --logtostderr
+          ports:
+            - name: sql
+              containerPort: 26257
+              protocol: TCP
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health?ready=1
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.cockroachdb.resources | nindent 12 }}
+          volumeMounts:
+            - name: datadir
+              mountPath: /cockroach/cockroach-data
+  volumeClaimTemplates:
+    - metadata:
+        name: datadir
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.cockroachdb.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.cockroachdb.storage }}
+{{- end }}

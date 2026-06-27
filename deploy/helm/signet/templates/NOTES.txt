@@ -1,0 +1,49 @@
+signet has been deployed.
+
+== Quick-start ==
+
+1. Expose the admin port via port-forward:
+
+   kubectl port-forward -n {{ .Release.Namespace }} \
+     deployment/{{ include "signet.fullname" . }} 8444:8444
+
+2. Get a short-lived admin token:
+
+   kubectl create token {{ include "signet.adminServiceAccountName" . }} \
+     -n {{ .Release.Namespace }} --duration=1h
+
+3. Check seal state:
+
+   signet --server localhost:8444 --token <token-from-step-2> status
+
+4. Unseal the server (direct-key mode):
+
+   signet --server localhost:8444 --token <token> \
+     unseal key --key-file /path/to/master.key
+
+   Or in Shamir mode, collect threshold shares from keyholders:
+
+   signet --server localhost:8444 --token <token> \
+     unseal share --share <hex-share>
+
+== Workload access ==
+
+Workloads with a SPIFFE SVID in trust domain {{ .Values.signet.trustDomain | default "<trustDomain>" }}
+can call the SecretsService gRPC API at:
+
+   {{ include "signet.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+Ensure your SPIRE ClusterSpiffeID (see deploy/spire/cluster-spiffe-id.yaml) is applied
+and that access policies have been created for the relevant SPIFFE IDs.
+
+{{- if .Values.cockroachdb.enabled }}
+
+== CockroachDB ==
+
+A single-node CockroachDB instance is running at:
+
+   {{ include "signet.cockroachdbName" . }}.{{ .Release.Namespace }}.svc.cluster.local:26257
+
+This is suitable for development only. For production, disable cockroachdb.enabled
+and configure a production-grade CockroachDB cluster using the operator.
+{{- end }}

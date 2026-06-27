@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "signet.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "signet.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "signet.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "signet.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.cockroachdb.enabled }}
+      initContainers:
+        - name: db-init
+          image: {{ .Values.cockroachdb.image }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              HOST="{{ include "signet.cockroachdbName" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+              echo "Waiting for CockroachDB at ${HOST}:26257..."
+              until cockroach sql --insecure --host="${HOST}:26257" \
+                    --execute="SELECT 1" >/dev/null 2>&1; do
+                sleep 2
+              done
+              echo "CockroachDB ready. Creating signet database..."
+              cockroach sql --insecure --host="${HOST}:26257" \
+                --execute="CREATE DATABASE IF NOT EXISTS signet;"
+              echo "Done."
+      {{- end }}
+      containers:
+        - name: signetd
+          image: {{ include "signet.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: grpc
+              containerPort: 8443
+              protocol: TCP
+            {{- if .Values.signet.webhookAddr }}
+            - name: webhook
+              containerPort: 8445
+              protocol: TCP
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "signet.fullname" . }}
+          env:
+            # Sensitive values injected from Secret, not ConfigMap.
+            - name: SIGNET_DB_CONN_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "signet.secretName" . }}
+                  key: SIGNET_DB_CONN_STRING
+            - name: SIGNET_AUDIT_CHAIN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "signet.secretName" . }}
+                  key: SIGNET_AUDIT_CHAIN_KEY
+          # TCP probes on the mTLS workload port confirm the gRPC server is listening.
+          # The admin port (8444) is bound to 127.0.0.1 and intentionally unreachable
+          # from outside the container.
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: spire-agent-socket
+              mountPath: /run/spire/sockets
+              readOnly: true
+      volumes:
+        # The SPIRE agent runs as a DaemonSet on each node and exposes the
+        # workload API socket via a hostPath. signetd dials this socket at
+        # startup to obtain its X.509 SVID and trust bundle.
+        # Alternatively, use the SPIFFE CSI driver (driver: csi.spiffe.io).
+        - name: spire-agent-socket
+          hostPath:
+            path: {{ .Values.spire.socketHostPath }}
+            type: DirectoryOrCreate

@@ -1,0 +1,62 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck       # unhandled errors
+    - govet          # go vet analysis passes
+    - staticcheck    # comprehensive static analysis (includes SA, S1, ST1 checks)
+    - gosec          # security-sensitive patterns
+    - misspell       # common spelling mistakes in comments and strings
+    - unused         # unexported identifiers that are never used
+    - unparam        # function parameters that are always the same value
+    - gocritic       # opinionated style and performance checks
+    - gofmt          # gofmt formatting (diff fails the build)
+    - nilerr         # returning nil after checking err != nil
+
+linters-settings:
+  errcheck:
+    # Ignore errors from defer calls and common no-error-path functions.
+    exclude-functions:
+      - (net/http.ResponseWriter).Write
+      - (*os.File).Close
+      - (*bufio.Writer).Flush
+
+  gosec:
+    excludes:
+      # G115: integer overflow conversion — we control the inputs in all cases.
+      - G115
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+    disabled-checks:
+      - hugeParam     # not applicable; our structs are not passed by value in hot paths
+      - rangeValCopy
+
+  staticcheck:
+    checks:
+      - "all"
+      - "-ST1000"  # package comment — not enforced here
+      - "-ST1020"  # exported function comment — not enforced here
+      - "-ST1003"  # name convention — handled by govet
+
+issues:
+  # Don't report the same issue from multiple linters.
+  uniq-by-line: true
+
+  exclude-rules:
+    # Test files may use unexported helpers and skip some checks.
+    - path: "_test\\.go"
+      linters:
+        - gosec
+        - unparam
+        - unused
+
+    # Generated proto files are not ours to fix.
+    - path: "gen/"
+      linters:
+        - all
+
+  max-issues-per-linter: 0
+  max-same-issues: 0

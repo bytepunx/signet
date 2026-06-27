@@ -1,0 +1,55 @@
+{{- if and .Values.networkPolicy.enabled .Values.cockroachdb.enabled }}
+# Deny all ingress to CockroachDB except from signetd pods in the same namespace
+# and inter-node replication traffic.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "signet.cockroachdbName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+    app.kubernetes.io/name: cockroachdb
+    app.kubernetes.io/component: database
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cockroachdb
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # signetd → CockroachDB SQL
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "signet.selectorLabels" . | nindent 14 }}
+      ports:
+        - port: 26257
+          protocol: TCP
+    # CockroachDB inter-node replication (multi-replica deployments)
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cockroachdb
+              app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
+        - port: 26257
+          protocol: TCP
+  egress:
+    # DNS
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Inter-node replication
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cockroachdb
+              app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
+        - port: 26257
+          protocol: TCP
+{{- end }}

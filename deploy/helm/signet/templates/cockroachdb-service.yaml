@@ -1,0 +1,26 @@
+{{- if .Values.cockroachdb.enabled }}
+# Headless service for StatefulSet pod DNS and inter-node communication.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "signet.cockroachdbName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+    app.kubernetes.io/name: cockroachdb
+    app.kubernetes.io/component: database
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: cockroachdb
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: sql
+      port: 26257
+      targetPort: sql
+      protocol: TCP
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+{{- end }}

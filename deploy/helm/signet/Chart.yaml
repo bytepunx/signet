@@ -1,0 +1,12 @@
+apiVersion: v2
+name: signet
+description: Configuration and secrets management service with SPIFFE/SPIRE workload identity
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - secrets
+  - spiffe
+  - spire
+  - kubernetes
+home: https://github.com/bytepunx/signet

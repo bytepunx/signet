@@ -1,0 +1,209 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "signet Helm chart values",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [],
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "registry": { "type": "string" }
+          }
+        }
+      }
+    },
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registry":   { "type": "string" },
+        "repository": { "type": "string" },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        },
+        "tag": { "type": "string" }
+      }
+    },
+    "nameOverride":     { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "signet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trustDomain"],
+      "properties": {
+        "trustDomain": {
+          "type": "string",
+          "minLength": 1,
+          "description": "REQUIRED. SPIFFE trust domain — must match your SPIRE server configuration."
+        },
+        "workloadAddr":   { "type": "string" },
+        "adminAddr":      { "type": "string" },
+        "webhookAddr":    { "type": "string" },
+        "webhookBaseURL": { "type": "string" },
+        "drainTimeout":   { "type": "string" },
+        "spireSocket":    { "type": "string" },
+        "shamir": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "shares":       { "type": "integer", "minimum": 0 },
+            "threshold":    { "type": "integer", "minimum": 0 },
+            "shareTimeout": { "type": "string" }
+          }
+        },
+        "kubeAudiences":  { "type": "string" },
+        "existingSecret": { "type": "string" },
+        "dbConnString":   { "type": "string" },
+        "auditChainKey":  { "type": "string" }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create":      { "type": "boolean" },
+        "name":        { "type": "string" },
+        "annotations": { "type": "object" }
+      }
+    },
+    "adminServiceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": { "type": "boolean" },
+        "name":   { "type": "string" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
+        },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":     { "type": "boolean" },
+        "className":   { "type": "string" },
+        "annotations": { "type": "object" },
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["host", "paths"],
+            "additionalProperties": false,
+            "properties": {
+              "host": { "type": "string" },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "pathType"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "path":     { "type": "string" },
+                    "pathType": {
+                      "type": "string",
+                      "enum": ["Prefix", "Exact", "ImplementationSpecific"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "secretName": { "type": "string" },
+              "hosts": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "autoscaling": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":                        { "type": "boolean" },
+        "minReplicas":                    { "type": "integer", "minimum": 1 },
+        "maxReplicas":                    { "type": "integer", "minimum": 1 },
+        "targetCPUUtilizationPercentage": { "type": "integer", "minimum": 1, "maximum": 100 }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "requests": { "type": "object" },
+        "limits":   { "type": "object" }
+      }
+    },
+    "podSecurityContext":       { "type": "object" },
+    "containerSecurityContext": { "type": "object" },
+    "autoUnseal": {
+      "type": "object",
+      "description": "Kubernetes Secret-backed auto-unseal. Weaker than Shamir — the cluster control plane is the root of trust. Use only when manual unseal is not operationally feasible.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":    { "type": "boolean" },
+        "secretName": { "type": "string", "minLength": 1 }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "spire": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "socketHostPath": { "type": "string" }
+      }
+    },
+    "cockroachdb": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled":      { "type": "boolean" },
+        "replicas":     { "type": "integer", "minimum": 1 },
+        "image":        { "type": "string" },
+        "storage":      { "type": "string" },
+        "storageClass": { "type": "string" },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "requests": { "type": "object" },
+            "limits":   { "type": "object" }
+          }
+        }
+      }
+    }
+  }
+}

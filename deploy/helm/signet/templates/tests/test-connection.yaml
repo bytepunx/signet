@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "signet.fullname" . }}-test-connection
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+  containers:
+    - name: test-grpc-port
+      image: busybox:1.36
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      command: [sh, -c]
+      args:
+        - |
+          TARGET="{{ include "signet.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+          PORT="{{ .Values.service.port }}"
+          echo "Checking signet gRPC port ${TARGET}:${PORT} ..."
+          nc -z -w 5 "${TARGET}" "${PORT}"
+          echo "OK — signet is reachable within the cluster."

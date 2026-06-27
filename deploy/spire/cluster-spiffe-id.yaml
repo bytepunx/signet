@@ -1,0 +1,50 @@
+# ClusterSpiffeID — automatically registers SPIFFE IDs for signetd pods.
+#
+# Requires the SPIRE controller-manager to be installed in the cluster:
+#   https://github.com/spiffe/spire-controller-manager
+#
+# This registration entry assigns signetd the SPIFFE ID:
+#   spiffe://TRUST_DOMAIN/ns/signet/sa/signet
+#
+# The trust domain and service account name must match:
+#   - The trustDomain configured in SPIRE server and signet values.yaml
+#   - The ServiceAccount created by the Helm chart (serviceAccount.name)
+#
+# Replace TRUST_DOMAIN with your actual trust domain before applying.
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSpiffeID
+metadata:
+  name: signetd
+spec:
+  # Template uses SPIRE controller-manager template variables.
+  # .TrustDomain is populated from the ClusterSPIFFEID controller config.
+  spiffeIDTemplate: "spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/sa/{{ .PodSpec.ServiceAccountName }}"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: signet
+      app.kubernetes.io/component: server
+  # SVIDs are valid for 1 hour; the agent renews them automatically at ~50% of TTL.
+  # This must be ≤ the server's default_x509_svid_ttl.
+  ttl: 1h
+---
+# Workload registrations — one ClusterSpiffeID per application namespace that
+# should have access to signet secrets. The SPIFFE ID format here matches what
+# signet access policies are written against.
+#
+# Example: allow pods running as the "payments" service account in the "payments"
+# namespace to retrieve secrets:
+#
+# apiVersion: spire.spiffe.io/v1alpha1
+# kind: ClusterSpiffeID
+# metadata:
+#   name: payments-service
+# spec:
+#   spiffeIDTemplate: "spiffe://TRUST_DOMAIN/ns/{{ .PodMeta.Namespace }}/sa/{{ .PodSpec.ServiceAccountName }}"
+#   podSelector:
+#     matchLabels:
+#       app.kubernetes.io/name: payments
+#   namespaceSelector:
+#     matchLabels:
+#       kubernetes.io/metadata.name: payments
+#   ttl: 1h

@@ -1,0 +1,57 @@
+# SPIRE Agent ConfigMap — example configuration for the DaemonSet agent.
+# Replace TRUST_DOMAIN and CLUSTER_NAME to match your environment.
+#
+# The agent exposes the SPIFFE Workload API socket at
+# /run/spire/sockets/agent.sock on each node. signetd mounts this path via
+# a hostPath volume and dials it at startup to obtain its X.509 SVID.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spire-agent
+  namespace: spire
+data:
+  agent.conf: |
+    agent {
+      data_dir           = "/run/spire"
+      log_level          = "INFO"
+      server_address     = "spire-server.spire.svc.cluster.local"
+      server_port        = "8081"
+      socket_path        = "/run/spire/sockets/agent.sock"
+      trust_domain       = "TRUST_DOMAIN"
+
+      # The trust bundle is bootstrapped from the ConfigMap written by the
+      # k8sbundle server notifier. The agent updates it automatically thereafter.
+      trust_bundle_path  = "/run/spire/bundle/bundle.crt"
+    }
+
+    plugins {
+      # Kubernetes PSAT node attestor — matches the server's k8s_psat plugin.
+      NodeAttestor "k8s_psat" {
+        plugin_data {
+          cluster = "CLUSTER_NAME"
+        }
+      }
+
+      # SVIDs and keys are kept in memory; the agent re-attests after restarts.
+      KeyManager "memory" {
+        plugin_data {}
+      }
+
+      # Kubernetes workload attestor: identifies workloads by pod UID, namespace,
+      # service account, and labels. Required for SPIFFE ID assignment via
+      # ClusterSpiffeID selectors.
+      WorkloadAttestor "k8s" {
+        plugin_data {
+          # Set to false in production if the kubelet has a valid serving cert.
+          skip_kubelet_verification = true
+        }
+      }
+    }
+
+    health_checks {
+      listener_enabled = true
+      bind_address     = "0.0.0.0"
+      bind_port        = "8080"
+      live_path        = "/live"
+      ready_path       = "/ready"
+    }
