@@ -1,5 +1,7 @@
 bin/
 gen/
+signet
+signetd
 *.test
 *.out
 .env
