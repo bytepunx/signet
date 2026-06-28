@@ -22,8 +22,8 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: go test
-        run: go test -race -count=1 ./...
+      - name: Test
+        run: make test
 
   lint:
     name: Lint
@@ -41,6 +41,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+          install-mode: goinstall
           args: --timeout=5m
 
   proto-check:
@@ -99,11 +100,8 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build signetd
-        run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" ./cmd/signetd
-
-      - name: Build signet CLI
-        run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" ./cmd/signet
+      - name: Build
+        run: make build
 
   docker-build:
     name: Docker build (no push)
