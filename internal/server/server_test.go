@@ -18,15 +18,23 @@ import (
 // --- minimal stubs ---
 
 // panicServer exercises the panic recovery interceptor.
-type panicSecretsServer struct{ signetv1.UnimplementedSecretsServiceServer }
+type panicSecretsServer struct {
+	signetv1.UnimplementedSecretsServiceServer
+}
 
 func (panicSecretsServer) GetSecret(context.Context, *signetv1.GetSecretRequest) (*signetv1.GetSecretResponse, error) {
 	panic("deliberate panic in handler")
 }
 
-type stubAdmin struct{ adminv1.UnimplementedAdminServiceServer }
-type stubGitOps struct{ adminv1.UnimplementedGitOpsServiceServer }
-type stubSecrets struct{ signetv1.UnimplementedSecretsServiceServer }
+type stubAdmin struct {
+	adminv1.UnimplementedAdminServiceServer
+}
+type stubGitOps struct {
+	adminv1.UnimplementedGitOpsServiceServer
+}
+type stubSecrets struct {
+	signetv1.UnimplementedSecretsServiceServer
+}
 
 type fakeMgr struct {
 	mu     sync.Mutex

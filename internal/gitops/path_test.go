@@ -15,42 +15,42 @@ func TestParseConfigPath(t *testing.T) {
 		wantErrIs error
 	}{
 		{
-			name:    "happy path",
-			root:    "config/", path: "config/payments/api.yaml",
+			name: "happy path",
+			root: "config/", path: "config/payments/api.yaml",
 			wantNS: "payments", wantSvc: "api",
 		},
 		{
-			name:    "root without trailing slash",
-			root:    "config", path: "config/infra/redis.yaml",
+			name: "root without trailing slash",
+			root: "config", path: "config/infra/redis.yaml",
 			wantNS: "infra", wantSvc: "redis",
 		},
 		{
-			name:    "nested root",
-			root:    "ops/config", path: "ops/config/team/svc.yaml",
+			name: "nested root",
+			root: "ops/config", path: "ops/config/team/svc.yaml",
 			wantNS: "team", wantSvc: "svc",
 		},
 		{
-			name:      "not under root", root: "config/",
+			name: "not under root", root: "config/",
 			path: "other/ns/svc.yaml", wantErrIs: ErrInvalidPath,
 		},
 		{
-			name:      "too many components — three deep is a secret, not config", root: "config/",
+			name: "too many components — three deep is a secret, not config", root: "config/",
 			path: "config/ns/svc/extra.yaml", wantErrIs: ErrInvalidPath,
 		},
 		{
-			name:      "missing service component", root: "config/",
+			name: "missing service component", root: "config/",
 			path: "config/ns.yaml", wantErrIs: ErrInvalidPath,
 		},
 		{
-			name:      "not yaml", root: "config/",
+			name: "not yaml", root: "config/",
 			path: "config/ns/svc.json", wantErrIs: ErrInvalidPath,
 		},
 		{
-			name:      "traversal attempt", root: "config/",
+			name: "traversal attempt", root: "config/",
 			path: "config/../etc/passwd.yaml", wantErrIs: ErrInvalidPath,
 		},
 		{
-			name:      "equal to root", root: "config/",
+			name: "equal to root", root: "config/",
 			path: "config", wantErrIs: ErrInvalidPath,
 		},
 	}
@@ -74,17 +74,15 @@ func TestParseConfigPath(t *testing.T) {
 	}
 }
 
-
-
 func TestParseSecretPath(t *testing.T) {
 	tests := []struct {
-		name        string
-		root        string
-		path        string
-		wantNS      string
-		wantSvc     string
-		wantName    string
-		wantErrIs   error
+		name      string
+		root      string
+		path      string
+		wantNS    string
+		wantSvc   string
+		wantName  string
+		wantErrIs error
 	}{
 		{
 			name: "happy path",

@@ -159,7 +159,7 @@ func TestUpdateConfig_GlobalKey(t *testing.T) {
 	require.NoError(t, err)
 	root := docRoot(doc)
 
-	// Global: env = ""
+	// Global rule: no environment set.
 	setCreationRule(root, "", "^secrets/", "age1global000")
 
 	m := roundtrip(t, doc)

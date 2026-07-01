@@ -22,14 +22,14 @@ func TestEncrypt(t *testing.T) {
 		plaintext := []byte("hello")
 		ct, err := Encrypt(key, plaintext)
 		require.NoError(t, err)
-		// nonce(12) + plaintext(5) + tag(16) = 33
+		// Total length is nonce(12) plus plaintext plus GCM tag(16).
 		assert.Len(t, ct, nonceSize+len(plaintext)+16)
 	})
 
 	t.Run("empty plaintext is valid", func(t *testing.T) {
 		ct, err := Encrypt(key, []byte{})
 		require.NoError(t, err)
-		// nonce(12) + plaintext(0) + tag(16) = 28
+		// Total length is nonce(12) plus zero-length plaintext plus GCM tag(16).
 		assert.Len(t, ct, nonceSize+16)
 	})
 

@@ -36,7 +36,7 @@ If you have the key as a hex string, convert it first:
 		}
 
 		ctx := cmd.Context()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ Provide the share as a hex string via --share or read it from --share-file.`,
 		}
 
 		ctx := cmd.Context()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}

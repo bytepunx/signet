@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytepunx/signet/internal/store"
 	signetv1 "github.com/bytepunx/signet/gen/signet/v1"
+	"github.com/bytepunx/signet/internal/store"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -101,12 +101,12 @@ func (f *fakeLockStream) Recv() (*signetv1.AcquireRestartLockRequest, error) {
 	}
 }
 
-func (f *fakeLockStream) Context() context.Context      { return f.ctx }
-func (f *fakeLockStream) SetHeader(metadata.MD) error   { return nil }
-func (f *fakeLockStream) SendHeader(metadata.MD) error  { return nil }
-func (f *fakeLockStream) SetTrailer(metadata.MD)        {}
-func (f *fakeLockStream) SendMsg(any) error             { return nil }
-func (f *fakeLockStream) RecvMsg(any) error             { return nil }
+func (f *fakeLockStream) Context() context.Context     { return f.ctx }
+func (f *fakeLockStream) SetHeader(metadata.MD) error  { return nil }
+func (f *fakeLockStream) SendHeader(metadata.MD) error { return nil }
+func (f *fakeLockStream) SetTrailer(metadata.MD)       {}
+func (f *fakeLockStream) SendMsg(any) error            { return nil }
+func (f *fakeLockStream) RecvMsg(any) error            { return nil }
 
 // sendInit enqueues an initial lock request on the stream's receive channel.
 func (f *fakeLockStream) sendInit(ns, svc string, ttlSecs int32) {

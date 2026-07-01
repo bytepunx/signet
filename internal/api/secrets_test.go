@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -15,11 +16,11 @@ import (
 	"testing"
 	"time"
 
-	icrypto "github.com/bytepunx/signet/internal/crypto"
+	signetv1 "github.com/bytepunx/signet/gen/signet/v1"
 	"github.com/bytepunx/signet/internal/audit"
 	"github.com/bytepunx/signet/internal/auth"
+	icrypto "github.com/bytepunx/signet/internal/crypto"
 	"github.com/bytepunx/signet/internal/store"
-	signetv1 "github.com/bytepunx/signet/gen/signet/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
@@ -110,12 +111,12 @@ func (f *fakeWatchStream) Send(r *signetv1.WatchSecretResponse) error {
 	f.sends <- r
 	return nil
 }
-func (f *fakeWatchStream) Context() context.Context      { return f.ctx }
-func (f *fakeWatchStream) SetHeader(metadata.MD) error   { return nil }
-func (f *fakeWatchStream) SendHeader(metadata.MD) error  { return nil }
-func (f *fakeWatchStream) SetTrailer(metadata.MD)        {}
-func (f *fakeWatchStream) SendMsg(any) error             { return nil }
-func (f *fakeWatchStream) RecvMsg(any) error             { return nil }
+func (f *fakeWatchStream) Context() context.Context     { return f.ctx }
+func (f *fakeWatchStream) SetHeader(metadata.MD) error  { return nil }
+func (f *fakeWatchStream) SendHeader(metadata.MD) error { return nil }
+func (f *fakeWatchStream) SetTrailer(metadata.MD)       {}
+func (f *fakeWatchStream) SendMsg(any) error            { return nil }
+func (f *fakeWatchStream) RecvMsg(any) error            { return nil }
 
 // fakeLockStore satisfies lockStore with no-op implementations for tests that
 // don't exercise the restart lock path.
@@ -275,7 +276,7 @@ func TestGetSecret_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if string(resp.Value) != string(want) {
+	if !bytes.Equal(resp.Value, want) {
 		t.Errorf("value = %q, want %q", resp.Value, want)
 	}
 	if resp.Version != 1 {
@@ -333,11 +334,13 @@ func TestWatchSecret_InitialSend(t *testing.T) {
 	stream := newFakeStream(ctx)
 
 	done := make(chan error, 1)
-	go func() { done <- srv.WatchSecret(&signetv1.WatchSecretRequest{Namespace: "ns", Service: "svc", Name: "key"}, stream) }()
+	go func() {
+		done <- srv.WatchSecret(&signetv1.WatchSecretRequest{Namespace: "ns", Service: "svc", Name: "key"}, stream)
+	}()
 
 	select {
 	case msg := <-stream.sends:
-		if string(msg.Value) != string(want) {
+		if !bytes.Equal(msg.Value, want) {
 			t.Errorf("value = %q, want %q", msg.Value, want)
 		}
 		if msg.EventType != signetv1.WatchSecretResponse_EVENT_TYPE_UPDATED {
@@ -360,7 +363,9 @@ func TestWatchSecret_ContextCancelTerminates(t *testing.T) {
 	stream := newFakeStream(ctx)
 
 	done := make(chan error, 1)
-	go func() { done <- srv.WatchSecret(&signetv1.WatchSecretRequest{Namespace: "ns", Service: "svc", Name: "key"}, stream) }()
+	go func() {
+		done <- srv.WatchSecret(&signetv1.WatchSecretRequest{Namespace: "ns", Service: "svc", Name: "key"}, stream)
+	}()
 
 	// Drain initial send.
 	select {
@@ -393,7 +398,9 @@ func TestWatchSecret_BusNotificationTriggersSend(t *testing.T) {
 	stream := newFakeStream(ctx)
 
 	done := make(chan error, 1)
-	go func() { done <- srv.WatchSecret(&signetv1.WatchSecretRequest{Namespace: "ns", Service: "svc", Name: "key"}, stream) }()
+	go func() {
+		done <- srv.WatchSecret(&signetv1.WatchSecretRequest{Namespace: "ns", Service: "svc", Name: "key"}, stream)
+	}()
 
 	// Drain initial send.
 	select {
@@ -439,7 +446,9 @@ func TestWatchSecret_SecretDeletedSendsDeleteEvent(t *testing.T) {
 	stream := newFakeStream(ctx)
 
 	done := make(chan error, 1)
-	go func() { done <- srv.WatchSecret(&signetv1.WatchSecretRequest{Namespace: "ns", Service: "svc", Name: "key"}, stream) }()
+	go func() {
+		done <- srv.WatchSecret(&signetv1.WatchSecretRequest{Namespace: "ns", Service: "svc", Name: "key"}, stream)
+	}()
 
 	// Drain initial send.
 	select {
@@ -502,12 +511,12 @@ func (f *fakeBundleStream) Send(r *signetv1.WatchServiceBundleResponse) error {
 	f.sends <- r
 	return nil
 }
-func (f *fakeBundleStream) Context() context.Context      { return f.ctx }
-func (f *fakeBundleStream) SetHeader(metadata.MD) error   { return nil }
-func (f *fakeBundleStream) SendHeader(metadata.MD) error  { return nil }
-func (f *fakeBundleStream) SetTrailer(metadata.MD)        {}
-func (f *fakeBundleStream) SendMsg(any) error             { return nil }
-func (f *fakeBundleStream) RecvMsg(any) error             { return nil }
+func (f *fakeBundleStream) Context() context.Context     { return f.ctx }
+func (f *fakeBundleStream) SetHeader(metadata.MD) error  { return nil }
+func (f *fakeBundleStream) SendHeader(metadata.MD) error { return nil }
+func (f *fakeBundleStream) SetTrailer(metadata.MD)       {}
+func (f *fakeBundleStream) SendMsg(any) error            { return nil }
+func (f *fakeBundleStream) RecvMsg(any) error            { return nil }
 
 // bundleFetcher extends fakeSecretFetcher with controllable config and secret returns.
 type bundleFetcher struct {

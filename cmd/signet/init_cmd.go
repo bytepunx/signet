@@ -43,7 +43,7 @@ production deployments.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		ctx := cmd.Context()
 
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}

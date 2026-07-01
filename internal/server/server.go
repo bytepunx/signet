@@ -13,8 +13,8 @@ import (
 
 	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
 	signetv1 "github.com/bytepunx/signet/gen/signet/v1"
-	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	grpccredentials "github.com/spiffe/go-spiffe/v2/spiffegrpc/grpccredentials"
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 	"google.golang.org/grpc"
@@ -51,10 +51,10 @@ type Server struct {
 	cfg         Config
 	workloadSrv *grpc.Server
 	adminSrv    *grpc.Server
-	webhookSrv  *http.Server  // nil when WebhookAddr is empty
+	webhookSrv  *http.Server // nil when WebhookAddr is empty
 	workloadLis net.Listener
 	adminLis    net.Listener
-	webhookLis  net.Listener  // nil when WebhookAddr is empty
+	webhookLis  net.Listener // nil when WebhookAddr is empty
 	mgr         sealable
 	closer      io.Closer // X509Source; nil in tests using insecure credentials
 }

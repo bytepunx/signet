@@ -15,8 +15,8 @@ import (
 
 	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
 	"github.com/bytepunx/signet/internal/auth"
-	"github.com/bytepunx/signet/internal/gitops"
 	icrypto "github.com/bytepunx/signet/internal/crypto"
+	"github.com/bytepunx/signet/internal/gitops"
 	"github.com/bytepunx/signet/internal/store"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -115,9 +115,9 @@ func (s *GitOpsServer) RotateSOPSKey(ctx context.Context, _ *adminv1.RotateSOPSK
 	}
 
 	resp := &adminv1.RotateSOPSKeyResponse{
-		NewPublicKey:    pubKey,
-		NewFingerprint:  ageFingerprint(pubKey),
-		NewEnvironment:  s.environment,
+		NewPublicKey:   pubKey,
+		NewFingerprint: ageFingerprint(pubKey),
+		NewEnvironment: s.environment,
 	}
 	if oldKey != nil {
 		resp.OldPublicKey = oldKey.PublicKey

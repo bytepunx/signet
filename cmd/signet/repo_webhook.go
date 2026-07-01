@@ -178,7 +178,7 @@ func tryCreateGitHubWebhook(ctx context.Context, w io.Writer, webhookURL, secret
 		fmt.Fprintln(w, "  Webhook already exists for this URL (GitHub returned 422 Unprocessable Entity).")
 	default:
 		var body bytes.Buffer
-		body.ReadFrom(io.LimitReader(resp.Body, 512))
+		_, _ = body.ReadFrom(io.LimitReader(resp.Body, 512))
 		fmt.Fprintf(w, "  GitHub API returned HTTP %d: %s\n", resp.StatusCode, strings.TrimSpace(body.String()))
 		printManualWebhookInstructions(w, webhookURL)
 	}

@@ -47,7 +47,7 @@ does not exist it is created; if a rule for this environment already
 exists it is updated in place and all other content is preserved.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		ctx := context.Background()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ exists it is updated in place and all other content is preserved.`,
 			return err
 		}
 
-		if err := os.WriteFile(sopsKeyUpdateConfigFlags.file, out, 0o644); err != nil {
+		if err := os.WriteFile(sopsKeyUpdateConfigFlags.file, out, 0o600); err != nil {
 			return fmt.Errorf("write %s: %w", sopsKeyUpdateConfigFlags.file, err)
 		}
 

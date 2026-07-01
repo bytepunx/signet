@@ -30,7 +30,7 @@ func makeTarGz(t *testing.T, files map[string]string) *bytes.Buffer {
 func TestExtractTarGz_Basic(t *testing.T) {
 	archive := makeTarGz(t, map[string]string{
 		"secrets/prod/api/token.yaml": "data: hello",
-		"secrets/prod/db/pass.yaml":  "data: world",
+		"secrets/prod/db/pass.yaml":   "data: world",
 	})
 
 	dir := t.TempDir()

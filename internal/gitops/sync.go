@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"filippo.io/age"
+	icrypto "github.com/bytepunx/signet/internal/crypto"
+	"github.com/bytepunx/signet/internal/store"
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	gogittransport "github.com/go-git/go-git/v5/plumbing/transport"
 	gogitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	icrypto "github.com/bytepunx/signet/internal/crypto"
-	"github.com/bytepunx/signet/internal/store"
 	"gopkg.in/yaml.v3"
 )
 
@@ -207,7 +207,7 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA stri
 
 		ns, svc, name, err := ParseSecretPath(secretsPath, rel)
 		if err != nil {
-			return nil // not a secret file; continue walking
+			return nil //nolint:nilerr // not a secret file; continue walking rather than abort
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -317,16 +317,22 @@ func (s *Syncer) cloneRepo(ctx context.Context, dir string, repo *store.Reposito
 		return err
 	}
 	r, err := gogit.PlainCloneContext(ctx, dir, false, &gogit.CloneOptions{
-		URL:          repo.RepoURL,
+		URL:           repo.RepoURL,
 		ReferenceName: plumbing.NewBranchReferenceName(repo.Branch),
-		SingleBranch: true,
-		Depth:        1,
-		Auth:         auth,
+		SingleBranch:  true,
+		Depth:         1,
+		Auth:          auth,
 	})
 	if err != nil {
 		return fmt.Errorf("clone repo %s: %w", repo.RepoURL, err)
 	}
-	_ = r
+	w, err := r.Worktree()
+	if err != nil {
+		return fmt.Errorf("open worktree for %s: %w", repo.RepoURL, err)
+	}
+	if err := w.Checkout(&gogit.CheckoutOptions{Hash: plumbing.NewHash(headSHA)}); err != nil {
+		return fmt.Errorf("checkout %s at %s: %w", repo.RepoURL, headSHA, err)
+	}
 	return nil
 }
 
@@ -337,11 +343,11 @@ func (s *Syncer) cloneRepoAtHead(ctx context.Context, dir string, repo *store.Re
 		return "", err
 	}
 	r, err := gogit.PlainCloneContext(ctx, dir, false, &gogit.CloneOptions{
-		URL:          repo.RepoURL,
+		URL:           repo.RepoURL,
 		ReferenceName: plumbing.NewBranchReferenceName(repo.Branch),
-		SingleBranch: true,
-		Depth:        1,
-		Auth:         auth,
+		SingleBranch:  true,
+		Depth:         1,
+		Auth:          auth,
 	})
 	if err != nil {
 		return "", fmt.Errorf("clone repo %s: %w", repo.RepoURL, err)
@@ -399,7 +405,7 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath string) 
 
 		ns, svc, err := ParseConfigPath(configPath, rel)
 		if err != nil {
-			return nil
+			return nil //nolint:nilerr // not a config file; continue walking rather than abort
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {

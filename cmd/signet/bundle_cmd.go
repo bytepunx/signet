@@ -125,7 +125,7 @@ Example:
 		fmt.Fprintf(cmd.OutOrStdout(), "Bundled %d file(s) from HEAD %s\n", count, headSHA[:12])
 
 		// Stream to signet.
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}

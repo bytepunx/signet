@@ -12,7 +12,7 @@ var statusCmd = &cobra.Command{
 	Short: "Show signet server seal state",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}

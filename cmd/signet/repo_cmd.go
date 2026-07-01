@@ -83,7 +83,7 @@ Automatic webhook creation (--setup-webhook):
 		}
 
 		ctx := context.Background()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}
@@ -129,7 +129,7 @@ var repoListCmd = &cobra.Command{
 	Short: "List registered repositories",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		ctx := context.Background()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}
@@ -175,7 +175,7 @@ var repoRemoveCmd = &cobra.Command{
 			return fmt.Errorf("--id is required")
 		}
 		ctx := context.Background()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}
@@ -204,7 +204,7 @@ var repoSyncCmd = &cobra.Command{
 			return fmt.Errorf("--id is required")
 		}
 		ctx := context.Background()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}

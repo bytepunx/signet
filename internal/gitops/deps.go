@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/bytepunx/signet/internal/audit"
 	"github.com/bytepunx/signet/internal/store"
 )
 
@@ -31,9 +30,4 @@ type notifier interface {
 	Notify(namespace, service, name string)
 	NotifyService(namespace, service string)
 	NotifyBundle(namespace, service string)
-}
-
-// auditRecorder is satisfied by *audit.Writer.
-type auditRecorder interface {
-	Record(ctx context.Context, e audit.Entry) error
 }

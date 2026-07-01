@@ -36,7 +36,7 @@ func init() {
 
 // dialAdmin opens a gRPC connection to the admin server and injects the bearer
 // token into every RPC via PerRPCCredentials.
-func dialAdmin(ctx context.Context) (*grpc.ClientConn, error) {
+func dialAdmin() (*grpc.ClientConn, error) {
 	cfg, _ := readCliConfig() // best-effort; missing config → zero defaults
 
 	addr := flagServer

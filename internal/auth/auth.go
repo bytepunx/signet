@@ -4,7 +4,6 @@ package auth
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/url"
@@ -176,14 +175,4 @@ func evalPolicies(policies []store.Policy, spiffeID, permission, namespace, secr
 
 	return fmt.Errorf("%w: %s does not have %q on %s/%s",
 		ErrUnauthorized, spiffeID, permission, namespace, secretName)
-}
-
-// --- TLS state extraction (for testing) ---
-
-// tlsStateFromContext is a helper used in tests to inject a fake TLS state.
-type tlsStateKey struct{}
-
-// contextWithTLSState embeds a fake TLS state into the context for testing.
-func contextWithTLSState(ctx context.Context, state tls.ConnectionState) context.Context {
-	return context.WithValue(ctx, tlsStateKey{}, state)
 }

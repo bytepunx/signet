@@ -15,7 +15,7 @@ After sealing, all secret decryption requests will fail until the server is
 unsealed again via 'signet unseal key' or 'signet unseal share'.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}

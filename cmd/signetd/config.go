@@ -149,11 +149,12 @@ func validate(raw rawConfig) (config, error) {
 	var auditKey []byte
 	if raw.auditChainKey != "" {
 		key, decErr := hex.DecodeString(raw.auditChainKey)
-		if decErr != nil {
+		switch {
+		case decErr != nil:
 			errs = append(errs, fmt.Sprintf("invalid -audit-chain-key: not valid hex: %v", decErr))
-		} else if len(key) != 32 {
+		case len(key) != 32:
 			errs = append(errs, fmt.Sprintf("invalid -audit-chain-key: must be 32 bytes (64 hex chars), got %d bytes", len(key)))
-		} else {
+		default:
 			auditKey = key
 		}
 	}

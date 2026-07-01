@@ -23,7 +23,7 @@ var sopsKeyGetCmd = &cobra.Command{
 	Short: "Print the currently active age public key",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		ctx := context.Background()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}
@@ -49,7 +49,7 @@ var sopsKeyRotateCmd = &cobra.Command{
 	Short: "Generate a new age keypair and deactivate the current one",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		ctx := context.Background()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}
@@ -79,7 +79,7 @@ var sopsKeyListCmd = &cobra.Command{
 	Short: "List all age keys (active and inactive)",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		ctx := context.Background()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}
@@ -125,7 +125,7 @@ var sopsKeyPruneCmd = &cobra.Command{
 			return fmt.Errorf("--public-key is required")
 		}
 		ctx := context.Background()
-		conn, err := dialAdmin(ctx)
+		conn, err := dialAdmin()
 		if err != nil {
 			return err
 		}

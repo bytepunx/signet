@@ -128,8 +128,8 @@ type writer interface{ Write([]byte) (int, error) }
 func writeField(h writer, s string) {
 	var buf [4]byte
 	binary.BigEndian.PutUint32(buf[:], uint32(len(s)))
-	h.Write(buf[:])
-	h.Write([]byte(s))
+	_, _ = h.Write(buf[:])
+	_, _ = h.Write([]byte(s))
 }
 
 func validateEntry(e Entry) error {

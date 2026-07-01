@@ -16,18 +16,18 @@ import (
 // --- fakes ---
 
 type fakeUnsealMgr struct {
-	unsealKeyErr       error
-	submitShareResult  unseal.Status
-	submitShareErr     error
-	statusResult       unseal.Status
-	sealCalled         bool
+	unsealKeyErr      error
+	submitShareResult unseal.Status
+	submitShareErr    error
+	statusResult      unseal.Status
+	sealCalled        bool
 }
 
 func (f *fakeUnsealMgr) UnsealWithKey(_ []byte) error { return f.unsealKeyErr }
 func (f *fakeUnsealMgr) SubmitShare(_ []byte) (unseal.Status, error) {
 	return f.submitShareResult, f.submitShareErr
 }
-func (f *fakeUnsealMgr) Seal()                { f.sealCalled = true }
+func (f *fakeUnsealMgr) Seal()                 { f.sealCalled = true }
 func (f *fakeUnsealMgr) Status() unseal.Status { return f.statusResult }
 
 type fakeTokenChecker struct {

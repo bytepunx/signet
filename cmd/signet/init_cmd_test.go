@@ -9,10 +9,10 @@ import (
 	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"google.golang.org/grpc"
 )
 
 // mockAdminClient implements adminv1.AdminServiceClient for testing.

@@ -7,9 +7,9 @@ import (
 	"errors"
 	"time"
 
+	signetv1 "github.com/bytepunx/signet/gen/signet/v1"
 	"github.com/bytepunx/signet/internal/auth"
 	"github.com/bytepunx/signet/internal/store"
-	signetv1 "github.com/bytepunx/signet/gen/signet/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

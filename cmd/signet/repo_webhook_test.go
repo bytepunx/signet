@@ -132,9 +132,9 @@ func withTestServer(t *testing.T, handler http.Handler, fn func(baseURL string))
 // reads when set.
 func TestTryCreateGitHubWebhook_RESTCreated(t *testing.T) {
 	var received struct {
-		Name   string `json:"name"`
+		Name   string   `json:"name"`
 		Events []string `json:"events"`
-		Active bool   `json:"active"`
+		Active bool     `json:"active"`
 		Config struct {
 			URL         string `json:"url"`
 			ContentType string `json:"content_type"`
@@ -145,7 +145,7 @@ func TestTryCreateGitHubWebhook_RESTCreated(t *testing.T) {
 		assert.Equal(t, "/repos/myorg/my-secrets/hooks", r.URL.Path)
 		assert.Equal(t, http.MethodPost, r.Method)
 		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
-		json.NewDecoder(r.Body).Decode(&received)
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&received))
 		w.WriteHeader(http.StatusCreated)
 	}), func(baseURL string) {
 		t.Setenv("GITHUB_API_BASE", baseURL)
