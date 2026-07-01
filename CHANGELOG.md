@@ -1,0 +1,15 @@
+# Changelog
+
+## [0.2.0](https://github.com/bytepunx/signet/compare/v0.1.0...v0.2.0) (2026-06-28)
+
+
+### Features
+
+* initial checkin ([f959f24](https://github.com/bytepunx/signet/commit/f959f24eed754fa0c664ca3881859de467c776e9))
+
+
+### Bug Fixes
+
+* commit generated proto stubs and align CI with Makefile ([256dad7](https://github.com/bytepunx/signet/commit/256dad724e6d8233f92c053c472fd9939a9b4b6e))
+* remove version field from golangci-lint config ([a872d21](https://github.com/bytepunx/signet/commit/a872d217daf9f3aef3c5c512d65e6f640b8b9a4d))
+* run golangci-lint through make lint so proto stubs are generated first ([271369f](https://github.com/bytepunx/signet/commit/271369fdfb1d341b4aa9ef2f18f64714d7cba7a8))
