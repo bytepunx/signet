@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/bytepunx/signet/compare/v0.2.1...v0.2.2) (2026-07-01)
+
+
+### Bug Fixes
+
+* resolve all golangci-lint findings ([296d977](https://github.com/bytepunx/signet/commit/296d97761048b9dc12d9f182d1f7c202bab6619b))
+
 ## [0.2.1](https://github.com/bytepunx/signet/compare/v0.2.0...v0.2.1) (2026-07-01)
 
 
