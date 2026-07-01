@@ -6,12 +6,12 @@ SIGNET     := $(BINARY_DIR)/signet
 
 all: build
 
-build: proto
+build:
 	mkdir -p $(BINARY_DIR)
 	go build -o $(SIGNETD) ./cmd/signetd
 	go build -o $(SIGNET) ./cmd/signet
 
-build-tpm: proto
+build-tpm:
 	mkdir -p $(BINARY_DIR)
 	go build -tags tpm -o $(SIGNETD) ./cmd/signetd
 	go build -o $(SIGNET) ./cmd/signet
@@ -19,13 +19,13 @@ build-tpm: proto
 proto:
 	buf generate
 
-test: proto
+test:
 	go test -race -count=1 ./...
 
-test-int: proto
+test-int:
 	go test -race -count=1 -tags integration ./...
 
-lint: proto
+lint:
 	golangci-lint run ./...
 
 clean:
