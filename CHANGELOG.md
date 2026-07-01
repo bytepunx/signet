@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/bytepunx/signet/compare/v0.2.0...v0.2.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* commit generated proto stubs instead of generating them in CI ([940eaca](https://github.com/bytepunx/signet/commit/940eaca9b8eb1be8cacab4453e9e8b883092a5a6))
+
 ## [0.2.0](https://github.com/bytepunx/signet/compare/v0.1.0...v0.2.0) (2026-06-28)
 
 
