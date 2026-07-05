@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/bytepunx/signet/compare/v0.2.2...v0.2.3) (2026-07-05)
+
+
+### Bug Fixes
+
+* prefix docker image semver tags with v to match helm chart appVersion ([0f57554](https://github.com/bytepunx/signet/commit/0f575546113a7e94c43c8fb728252d31b8855d46))
+
 ## [0.2.2](https://github.com/bytepunx/signet/compare/v0.2.1...v0.2.2) (2026-07-01)
 
 
