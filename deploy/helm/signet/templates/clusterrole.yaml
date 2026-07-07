@@ -1,6 +1,21 @@
 {{- if .Values.serviceAccount.create }}
 # signetd validates admin endpoint callers by submitting their SA tokens to the
-# Kubernetes TokenReview API. This ClusterRole grants that permission.
+# Kubernetes TokenReview API, then authorizes them either via the
+# SIGNET_ADMIN_SUBJECTS allowlist or by asking the cluster (SubjectAccessReview)
+# whether the caller has been granted verb "administer" on the synthetic
+# resource "adminoperations" in API group "signet.io" -- this ClusterRole
+# grants signetd permission to ask both questions; it does NOT itself grant
+# anyone admin access. Operators grant admin access with a separate
+# ClusterRole/RoleBinding targeting that (group, resource, verb), e.g.:
+#
+#   apiVersion: rbac.authorization.k8s.io/v1
+#   kind: ClusterRole
+#   metadata:
+#     name: signet-admin-operator
+#   rules:
+#     - apiGroups: ["signet.io"]
+#       resources: ["adminoperations"]
+#       verbs: ["administer"]
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -10,5 +25,8 @@ metadata:
 rules:
   - apiGroups: ["authentication.k8s.io"]
     resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
     verbs: ["create"]
 {{- end }}

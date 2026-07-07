@@ -77,7 +77,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("kubernetes client: %w", err)
 	}
-	tokenValidator := auth.NewTokenValidator(k8sClient, cfg.kubeAudiences)
+	tokenValidator := auth.NewTokenValidator(k8sClient, cfg.kubeAudiences, cfg.adminSubjects)
 
 	// API handlers.
 	bus := api.NewBus()
