@@ -44,15 +44,13 @@ func extractTarGz(r io.Reader, dir string) error {
 			continue
 		}
 
-		// Reject any path with ".." components.
+		// The actual traversal guard: after joining and cleaning, the result
+		// must still live under dir. A substring check for ".." would both
+		// under-protect (doesn't catch e.g. absolute paths that escape via
+		// Clean) and over-reject legitimate names like "foo..bar.yaml", so
+		// the prefix check below is the sole source of truth.
 		clean := filepath.Clean(hdr.Name)
-		if strings.Contains(clean, "..") {
-			return fmt.Errorf("path traversal in archive: %q", hdr.Name)
-		}
-
 		dest := filepath.Join(dir, clean)
-
-		// Ensure the final path stays within dir.
 		if !strings.HasPrefix(dest, filepath.Clean(dir)+string(os.PathSeparator)) {
 			return fmt.Errorf("path escapes extraction dir: %q", hdr.Name)
 		}
