@@ -25,4 +25,9 @@ var (
 
 	// ErrInvalidConfig is returned when New is called with an invalid Config.
 	ErrInvalidConfig = errors.New("invalid unseal configuration")
+
+	// ErrNotUnsealed is returned when RotateMasterKey is called while the
+	// server is sealed or unsealing — rotation requires the current master
+	// key to already be loaded so dependent key material can be re-wrapped.
+	ErrNotUnsealed = errors.New("server must be unsealed to rotate the master key")
 )

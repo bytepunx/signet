@@ -107,6 +107,58 @@ func TestManager_UnsealWithKey(t *testing.T) {
 	})
 }
 
+// --- RotateMasterKey ---
+
+func TestManager_RotateMasterKey(t *testing.T) {
+	t.Run("happy path: store now holds the new key, state stays Unsealed", func(t *testing.T) {
+		m := mustNew(t, Config{})
+		require.NoError(t, m.UnsealWithKey(mustKey(t)))
+
+		newKey := mustKey(t)
+		newKeyCopy := make([]byte, len(newKey))
+		copy(newKeyCopy, newKey)
+
+		require.NoError(t, m.RotateMasterKey(newKey))
+		assert.Equal(t, StateUnsealed, m.Status().State)
+
+		var got []byte
+		require.NoError(t, m.store.Use(func(k []byte) error {
+			got = append(got, k...)
+			return nil
+		}))
+		assert.Equal(t, newKeyCopy, got)
+	})
+
+	t.Run("sealed server returns ErrNotUnsealed", func(t *testing.T) {
+		m := mustNew(t, Config{})
+		err := m.RotateMasterKey(mustKey(t))
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotUnsealed)
+	})
+
+	t.Run("unsealing (partial Shamir) server returns ErrNotUnsealed", func(t *testing.T) {
+		m := mustNew(t, shamirCfg(3, 2))
+		share := validShare(t, m)
+		_, err := m.SubmitShare(share)
+		require.NoError(t, err)
+		require.Equal(t, StateUnsealing, m.Status().State)
+
+		err = m.RotateMasterKey(mustKey(t))
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotUnsealed)
+	})
+
+	t.Run("invalid new key returns error without changing state", func(t *testing.T) {
+		m := mustNew(t, Config{})
+		require.NoError(t, m.UnsealWithKey(mustKey(t)))
+
+		err := m.RotateMasterKey(make([]byte, crypto.KeySize-1))
+		require.Error(t, err)
+		assert.ErrorIs(t, err, crypto.ErrInvalidKeySize)
+		assert.Equal(t, StateUnsealed, m.Status().State)
+	})
+}
+
 // --- Seal ---
 
 func TestManager_Seal(t *testing.T) {

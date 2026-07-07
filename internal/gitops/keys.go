@@ -2,7 +2,7 @@ package gitops
 
 import (
 	"fmt"
-	"strings"
+	"log/slog"
 
 	"filippo.io/age"
 	icrypto "github.com/bytepunx/signet/internal/crypto"
@@ -18,23 +18,21 @@ func GenerateAgeKey(keys keyUnwrapper) (pubKey string, encPrivKey []byte, err er
 		return "", nil, fmt.Errorf("generate age identity: %w", err)
 	}
 
-	privKeyStr := id.String()        // AGE-SECRET-KEY-1...
+	// Handle the private key as bytes end-to-end (not string) so it can
+	// actually be zeroed — Go strings are immutable and cannot be scrubbed.
+	privKeyBytes := []byte(id.String()) // AGE-SECRET-KEY-1...
+	defer ZeroBytes(privKeyBytes)
 	pubKey = id.Recipient().String() // age1...
 
-	// Encrypt the private key string using the master key via our AES-256-GCM envelope.
+	// Encrypt the private key using the master key, bound to its own public
+	// key so it cannot be swapped for a different key's ciphertext.
 	var ciphertext []byte
 	if err := keys.Use(func(masterKey []byte) error {
-		ct, err := icrypto.Encrypt(masterKey, []byte(privKeyStr))
+		ct, err := icrypto.Encrypt(masterKey, privKeyBytes, icrypto.BindAAD(icrypto.AADSOPSAgeKey, pubKey))
 		if err != nil {
 			return err
 		}
 		ciphertext = ct
-		// Zero the private key string from the local stack copy.
-		for i := range []byte(privKeyStr) {
-			privKeyStr = strings.Repeat("\x00", len(privKeyStr))
-			_ = i
-			break
-		}
 		return nil
 	}); err != nil {
 		return "", nil, fmt.Errorf("encrypt age private key: %w", err)
@@ -47,22 +45,23 @@ func GenerateAgeKey(keys keyUnwrapper) (pubKey string, encPrivKey []byte, err er
 // Returns an age.Identity ready for use in DecryptFile.
 // The caller must not retain the Identity after the operation is complete;
 // the underlying key material lives in process memory until GC.
-func DecryptAgeKey(keys keyUnwrapper, encPrivKey []byte) (age.Identity, error) {
+func DecryptAgeKey(keys keyUnwrapper, pubKey string, encPrivKey []byte) (age.Identity, error) {
+	aad := icrypto.BindAAD(icrypto.AADSOPSAgeKey, pubKey)
 	var id age.Identity
 	if err := keys.Use(func(masterKey []byte) error {
-		plaintext, err := icrypto.Decrypt(masterKey, encPrivKey)
+		plaintext, legacy, err := icrypto.DecryptWithFallback(masterKey, encPrivKey, aad)
 		if err != nil {
 			return fmt.Errorf("decrypt age private key: %w", err)
+		}
+		defer ZeroBytes(plaintext)
+		if legacy {
+			slog.Warn("sops age private key decrypted via legacy unbound fallback; will be re-bound on next signet sops-key rotate", "public_key", pubKey)
 		}
 		parsed, err := age.ParseX25519Identity(string(plaintext))
 		if err != nil {
 			return fmt.Errorf("parse age identity: %w", err)
 		}
 		id = parsed
-		// Zero the plaintext private key bytes.
-		for i := range plaintext {
-			plaintext[i] = 0
-		}
 		return nil
 	}); err != nil {
 		return nil, err

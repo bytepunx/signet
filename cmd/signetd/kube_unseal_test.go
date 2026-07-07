@@ -11,13 +11,32 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/bytepunx/signet/internal/api"
 	icrypto "github.com/bytepunx/signet/internal/crypto"
+	"github.com/bytepunx/signet/internal/store"
 	"github.com/bytepunx/signet/internal/unseal"
 )
 
-// attemptKubeUnsealWith is a test-only helper that accepts an injected
-// kubernetes.Interface, bypassing the real in-cluster client build path.
-func attemptKubeUnsealWith(ctx context.Context, mgr *unseal.Manager, secretName, namespace string, client *fake.Clientset) {
+// fakeKCVStore is a minimal in-memory api.KeyCheckStore fake, avoiding a real
+// database dependency for these unit tests.
+type fakeKCVStore struct{ kcv []byte }
+
+func (f *fakeKCVStore) GetKeyCheckValue(_ context.Context) ([]byte, error) {
+	if f.kcv == nil {
+		return nil, store.ErrNotFound
+	}
+	return f.kcv, nil
+}
+
+func (f *fakeKCVStore) PutKeyCheckValue(_ context.Context, ciphertext []byte) error {
+	f.kcv = ciphertext
+	return nil
+}
+
+// attemptKubeUnsealWith is a test-only helper that mirrors attemptKubeUnseal
+// but accepts an injected kubernetes.Interface and a lightweight KCV store
+// fake, bypassing the real in-cluster client build path and a real database.
+func attemptKubeUnsealWith(ctx context.Context, mgr *unseal.Manager, kcvStore api.KeyCheckStore, keyStore *icrypto.KeyStore, secretName, namespace string, client *fake.Clientset) {
 	if mgr.Status().State == unseal.StateUnsealed {
 		return
 	}
@@ -34,7 +53,13 @@ func attemptKubeUnsealWith(ctx context.Context, mgr *unseal.Manager, secretName,
 
 	key := make([]byte, len(keyBytes))
 	copy(key, keyBytes)
-	_ = mgr.UnsealWithKey(key)
+	if err := mgr.UnsealWithKey(key); err != nil {
+		return
+	}
+
+	if err := api.VerifyOrInitKeyCheckValue(ctx, kcvStore, keyStore); err != nil {
+		mgr.Seal()
+	}
 }
 
 // TestAttemptKubeUnseal verifies that a valid Secret causes the manager to
@@ -54,7 +79,7 @@ func TestAttemptKubeUnseal(t *testing.T) {
 
 	assert.Equal(t, unseal.StateSealed, mgr.Status().State)
 
-	attemptKubeUnsealWith(context.Background(), mgr, "signet-master-key", "signet", k8s)
+	attemptKubeUnsealWith(context.Background(), mgr, &fakeKCVStore{}, keyStore, "signet-master-key", "signet", k8s)
 
 	assert.Equal(t, unseal.StateUnsealed, mgr.Status().State, "manager should be unsealed")
 }
@@ -71,7 +96,7 @@ func TestAttemptKubeUnsealMissingField(t *testing.T) {
 	keyStore := icrypto.NewKeyStore()
 	mgr, _ := unseal.New(keyStore, unseal.Config{})
 
-	attemptKubeUnsealWith(context.Background(), mgr, "signet-master-key", "signet", k8s)
+	attemptKubeUnsealWith(context.Background(), mgr, &fakeKCVStore{}, keyStore, "signet-master-key", "signet", k8s)
 
 	assert.Equal(t, unseal.StateSealed, mgr.Status().State, "manager should remain sealed when field is missing")
 }
@@ -84,7 +109,7 @@ func TestAttemptKubeUnsealNotFound(t *testing.T) {
 	keyStore := icrypto.NewKeyStore()
 	mgr, _ := unseal.New(keyStore, unseal.Config{})
 
-	attemptKubeUnsealWith(context.Background(), mgr, "signet-master-key", "signet", k8s)
+	attemptKubeUnsealWith(context.Background(), mgr, &fakeKCVStore{}, keyStore, "signet-master-key", "signet", k8s)
 
 	assert.Equal(t, unseal.StateSealed, mgr.Status().State)
 }
@@ -106,7 +131,37 @@ func TestAttemptKubeUnsealAlreadyUnsealed(t *testing.T) {
 	}
 	k8s := fake.NewClientset(sec)
 
-	attemptKubeUnsealWith(context.Background(), mgr, "signet-master-key", "signet", k8s)
+	attemptKubeUnsealWith(context.Background(), mgr, &fakeKCVStore{}, keyStore, "signet-master-key", "signet", k8s)
 
 	assert.Equal(t, unseal.StateUnsealed, mgr.Status().State)
+}
+
+// TestAttemptKubeUnseal_KeyCheckMismatch_ReSeals verifies that a Secret
+// holding a key which does not match a pre-existing key-check value leaves
+// the manager sealed rather than silently running with the wrong master key.
+func TestAttemptKubeUnseal_KeyCheckMismatch_ReSeals(t *testing.T) {
+	correctKey := bytes.Repeat([]byte{0x01}, 32)
+	wrongKey := bytes.Repeat([]byte{0x02}, 32)
+
+	// Establish a key-check value under the "correct" key first, as if a
+	// prior manual unseal had already happened.
+	kcvKeyStore := icrypto.NewKeyStore()
+	require.NoError(t, kcvKeyStore.Set(append([]byte(nil), correctKey...)))
+	kcvStore := &fakeKCVStore{}
+	require.NoError(t, api.VerifyOrInitKeyCheckValue(context.Background(), kcvStore, kcvKeyStore))
+	require.NotEmpty(t, kcvStore.kcv)
+
+	sec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "signet-master-key", Namespace: "signet"},
+		Data:       map[string][]byte{"master.key": wrongKey},
+	}
+	k8s := fake.NewClientset(sec)
+
+	keyStore := icrypto.NewKeyStore()
+	mgr, err := unseal.New(keyStore, unseal.Config{})
+	require.NoError(t, err)
+
+	attemptKubeUnsealWith(context.Background(), mgr, kcvStore, keyStore, "signet-master-key", "signet", k8s)
+
+	assert.Equal(t, unseal.StateSealed, mgr.Status().State, "manager must re-seal when the Secret's key fails the key check")
 }

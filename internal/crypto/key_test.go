@@ -152,7 +152,7 @@ func TestKeyStore_Use(t *testing.T) {
 
 		err := s.Use(func(k []byte) error {
 			var encErr error
-			ciphertext, encErr = Encrypt(k, plaintext)
+			ciphertext, encErr = Encrypt(k, plaintext, nil)
 			return encErr
 		})
 		require.NoError(t, err)
@@ -160,7 +160,7 @@ func TestKeyStore_Use(t *testing.T) {
 
 		// Decrypt with same key to verify correctness.
 		err = s.Use(func(k []byte) error {
-			got, decErr := Decrypt(k, ciphertext)
+			got, decErr := Decrypt(k, ciphertext, nil)
 			if decErr != nil {
 				return decErr
 			}
@@ -288,10 +288,10 @@ func mustGenerateKey(t *testing.T) []byte {
 	return key
 }
 
-// mustEncrypt is a test helper that encrypts and fails the test on error.
+// mustEncrypt is a test helper that encrypts (with no AAD) and fails the test on error.
 func mustEncrypt(t *testing.T, key, plaintext []byte) []byte {
 	t.Helper()
-	ct, err := Encrypt(key, plaintext)
+	ct, err := Encrypt(key, plaintext, nil)
 	require.NoError(t, err)
 	return ct
 }

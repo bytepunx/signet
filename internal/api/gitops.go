@@ -184,10 +184,12 @@ func (s *GitOpsServer) RegisterRepository(ctx context.Context, req *adminv1.Regi
 	}
 	webhookSecretHex := hex.EncodeToString(raw)
 
-	// Encrypt the webhook secret and deploy key under the master key.
+	// Encrypt the webhook secret and deploy key under the master key, bound
+	// via AAD to this repository's name so the ciphertext cannot be swapped
+	// with another repository's by a party with database write access.
 	var encWebhookSecret []byte
 	if err := s.keys.Use(func(masterKey []byte) error {
-		ct, err := icrypto.Encrypt(masterKey, []byte(webhookSecretHex))
+		ct, err := icrypto.Encrypt(masterKey, []byte(webhookSecretHex), icrypto.BindAAD(icrypto.AADRepoWebhookSecret, req.GetName()))
 		encWebhookSecret = ct
 		return err
 	}); err != nil {
@@ -196,7 +198,7 @@ func (s *GitOpsServer) RegisterRepository(ctx context.Context, req *adminv1.Regi
 
 	var encDeployKey []byte
 	if err := s.keys.Use(func(masterKey []byte) error {
-		ct, err := icrypto.Encrypt(masterKey, req.GetDeployKey())
+		ct, err := icrypto.Encrypt(masterKey, req.GetDeployKey(), icrypto.BindAAD(icrypto.AADRepoDeployKey, req.GetName()))
 		encDeployKey = ct
 		return err
 	}); err != nil {

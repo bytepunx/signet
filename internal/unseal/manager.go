@@ -131,6 +131,26 @@ func (m *Manager) UnsealWithKey(key []byte) error {
 	return nil
 }
 
+// RotateMasterKey replaces the in-memory master key with newKey without
+// changing state — the server remains Unsealed throughout, which is required
+// because RotateMasterKey is only called after the caller has already used
+// the current (about-to-be-replaced) master key to re-wrap every dependent
+// KEK and the key-check value under newKey. The caller's newKey slice is
+// zeroed. Returns ErrNotUnsealed if the server is not currently Unsealed.
+func (m *Manager) RotateMasterKey(newKey []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.state != StateUnsealed {
+		return ErrNotUnsealed
+	}
+
+	if err := m.store.Set(newKey); err != nil {
+		return fmt.Errorf("rotate master key: %w", err)
+	}
+	return nil
+}
+
 // Seal wipes the master key from memory and returns the server to the sealed
 // state. Any accumulated Shamir shares are also discarded. Calling Seal on an
 // already-sealed server is a no-op.

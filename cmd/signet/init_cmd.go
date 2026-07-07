@@ -21,6 +21,7 @@ var (
 	flagInitKubeContext string
 	flagInitForce       bool
 	flagInitDryRun      bool
+	flagInitYes         bool
 )
 
 var initCmd = &cobra.Command{
@@ -54,8 +55,8 @@ production deployments.`,
 			return fmt.Errorf("kubernetes client: %w", err)
 		}
 
-		return runInitWithDeps(ctx, cmd.OutOrStdout(), adminClient(conn), k8sClient,
-			flagInitNamespace, flagInitKeySecret, flagInitForce, flagInitDryRun)
+		return runInitWithDeps(ctx, cmd.InOrStdin(), cmd.OutOrStdout(), adminClient(conn), k8sClient,
+			flagInitNamespace, flagInitKeySecret, flagInitForce, flagInitDryRun, flagInitYes)
 	},
 }
 
@@ -68,20 +69,23 @@ func init() {
 	initCmd.Flags().StringVar(&flagInitKubeContext, "kube-context", "",
 		"kubectl context to use (default: current context)")
 	initCmd.Flags().BoolVar(&flagInitForce, "force", false,
-		"Regenerate the master key and overwrite the existing Secret")
+		"Regenerate the master key and overwrite the existing Secret (DESTRUCTIVE: orphans every secret encrypted under the old key; requires confirmation unless --yes is set)")
 	initCmd.Flags().BoolVar(&flagInitDryRun, "dry-run", false,
 		"Print what would happen without making any changes")
+	initCmd.Flags().BoolVar(&flagInitYes, "yes", false,
+		"skip the interactive confirmation prompt required by --force")
 }
 
 // runInitWithDeps is the testable core of signet init. Real-dependency wiring
 // happens in the cobra RunE above; tests inject fakes here directly.
 func runInitWithDeps(
 	ctx context.Context,
+	in io.Reader,
 	out io.Writer,
 	admin adminv1.AdminServiceClient,
 	k8s kubernetes.Interface,
 	namespace, keySecret string,
-	force, dryRun bool,
+	force, dryRun, skipConfirm bool,
 ) error {
 	// 1. Check current seal state.
 	stateResp, err := admin.Status(ctx, &adminv1.StatusRequest{})
@@ -95,7 +99,7 @@ func runInitWithDeps(
 	fmt.Fprintf(out, "signet state: %s\n", stateName(stateResp.State))
 
 	// 2. Resolve master key (read existing Secret or generate new one).
-	key, action, err := manageKeySecret(ctx, out, k8s, namespace, keySecret, force, dryRun)
+	key, action, err := manageKeySecret(ctx, in, out, k8s, namespace, keySecret, force, dryRun, skipConfirm)
 	if err != nil {
 		return err
 	}
@@ -133,10 +137,11 @@ func runInitWithDeps(
 // returned slice.
 func manageKeySecret(
 	ctx context.Context,
+	in io.Reader,
 	out io.Writer,
 	k8s kubernetes.Interface,
 	namespace, secretName string,
-	force, dryRun bool,
+	force, dryRun, skipConfirm bool,
 ) (key []byte, action string, err error) {
 	existing, getErr := k8s.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 	notFound := k8serrors.IsNotFound(getErr)
@@ -168,6 +173,18 @@ func manageKeySecret(
 		return key, "created", nil
 
 	case force:
+		// Regenerating an EXISTING key orphans every secret currently
+		// wrapped under the old one — this is destructive and, unlike the
+		// notFound branch above, cannot be undone by re-running signet init.
+		if !dryRun {
+			warning := fmt.Sprintf(
+				"WARNING: --force will overwrite Secret %s/%s with a new master key.\n"+
+					"Every secret currently encrypted under the existing key will become\n"+
+					"permanently undecryptable once the new key replaces it.", namespace, secretName)
+			if err := confirmDestructive(in, out, warning, skipConfirm); err != nil {
+				return nil, "", err
+			}
+		}
 		key, err = genKey()
 		if err != nil {
 			return nil, "", err

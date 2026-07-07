@@ -83,8 +83,8 @@ func run() error {
 	bus := api.NewBus()
 	lockMgr := api.NewLockManager(st)
 	go lockMgr.Run(ctx)
-	secretsSrv := api.NewSecretsServer(st, keyStore, checker, auditWriter, bus, lockMgr)
-	adminSrv := api.NewAdminServer(unsealMgr, tokenValidator)
+	secretsSrv := api.NewSecretsServer(st, keyStore, checker, auditWriter, bus, lockMgr, cfg.AuditFailClosed)
+	adminSrv := api.NewAdminServer(unsealMgr, tokenValidator, st, keyStore)
 
 	// GitOps layer.
 	syncer := gitops.NewSyncer(st, keyStore, bus, cfg.Environment)
@@ -97,8 +97,14 @@ func run() error {
 	// so any startup-probe delay occurs before listeners are bound, not after.
 	// Failure is non-fatal — server starts sealed and manual unseal still applies.
 	if cfg.KubeUnsealSecret != "" {
+		slog.Warn("kube-unseal enabled: the master key will be stored in a Kubernetes Secret as "+
+			"plaintext base64. This requires etcd encryption-at-rest to be configured on the "+
+			"cluster (https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/) — signetd "+
+			"cannot verify this itself. Without it, the master key is recoverable from etcd/backups "+
+			"independent of Kubernetes RBAC.",
+			"secret", cfg.KubeUnsealSecret)
 		unsealCtx, unsealCancel := context.WithTimeout(ctx, 30*time.Second)
-		attemptKubeUnseal(unsealCtx, unsealMgr, cfg.KubeUnsealSecret)
+		attemptKubeUnseal(unsealCtx, unsealMgr, st, keyStore, cfg.KubeUnsealSecret)
 		unsealCancel()
 	}
 

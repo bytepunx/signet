@@ -19,10 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AdminService_UnsealKey_FullMethodName   = "/admin.v1.AdminService/UnsealKey"
-	AdminService_UnsealShare_FullMethodName = "/admin.v1.AdminService/UnsealShare"
-	AdminService_Seal_FullMethodName        = "/admin.v1.AdminService/Seal"
-	AdminService_Status_FullMethodName      = "/admin.v1.AdminService/Status"
+	AdminService_UnsealKey_FullMethodName       = "/admin.v1.AdminService/UnsealKey"
+	AdminService_UnsealShare_FullMethodName     = "/admin.v1.AdminService/UnsealShare"
+	AdminService_Seal_FullMethodName            = "/admin.v1.AdminService/Seal"
+	AdminService_Status_FullMethodName          = "/admin.v1.AdminService/Status"
+	AdminService_RotateKEK_FullMethodName       = "/admin.v1.AdminService/RotateKEK"
+	AdminService_ListKEKs_FullMethodName        = "/admin.v1.AdminService/ListKEKs"
+	AdminService_PruneKEK_FullMethodName        = "/admin.v1.AdminService/PruneKEK"
+	AdminService_RotateMasterKey_FullMethodName = "/admin.v1.AdminService/RotateMasterKey"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -35,6 +39,17 @@ type AdminServiceClient interface {
 	UnsealShare(ctx context.Context, in *UnsealShareRequest, opts ...grpc.CallOption) (*UnsealShareResponse, error)
 	Seal(ctx context.Context, in *SealRequest, opts ...grpc.CallOption) (*SealResponse, error)
 	Status(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusResponse, error)
+	// Key-encryption-key (KEK) lifecycle. Rotating the KEK re-wraps every
+	// secret's DEK without re-encrypting any secret's ciphertext blob.
+	RotateKEK(ctx context.Context, in *RotateKEKRequest, opts ...grpc.CallOption) (*RotateKEKResponse, error)
+	ListKEKs(ctx context.Context, in *ListKEKsRequest, opts ...grpc.CallOption) (*ListKEKsResponse, error)
+	PruneKEK(ctx context.Context, in *PruneKEKRequest, opts ...grpc.CallOption) (*PruneKEKResponse, error)
+	// RotateMasterKey re-wraps every KEK (and the key-check value) under a new
+	// master key supplied by the operator, then adopts it as the active master
+	// key. It does not touch secrets or their DEKs. The caller is responsible
+	// for redistributing the new key material to keyholders (Shamir) or
+	// updating the Kubernetes Secret (cluster-native auto-unseal) afterward.
+	RotateMasterKey(ctx context.Context, in *RotateMasterKeyRequest, opts ...grpc.CallOption) (*RotateMasterKeyResponse, error)
 }
 
 type adminServiceClient struct {
@@ -85,6 +100,46 @@ func (c *adminServiceClient) Status(ctx context.Context, in *StatusRequest, opts
 	return out, nil
 }
 
+func (c *adminServiceClient) RotateKEK(ctx context.Context, in *RotateKEKRequest, opts ...grpc.CallOption) (*RotateKEKResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RotateKEKResponse)
+	err := c.cc.Invoke(ctx, AdminService_RotateKEK_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListKEKs(ctx context.Context, in *ListKEKsRequest, opts ...grpc.CallOption) (*ListKEKsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListKEKsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListKEKs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) PruneKEK(ctx context.Context, in *PruneKEKRequest, opts ...grpc.CallOption) (*PruneKEKResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PruneKEKResponse)
+	err := c.cc.Invoke(ctx, AdminService_PruneKEK_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RotateMasterKey(ctx context.Context, in *RotateMasterKeyRequest, opts ...grpc.CallOption) (*RotateMasterKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RotateMasterKeyResponse)
+	err := c.cc.Invoke(ctx, AdminService_RotateMasterKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -95,6 +150,17 @@ type AdminServiceServer interface {
 	UnsealShare(context.Context, *UnsealShareRequest) (*UnsealShareResponse, error)
 	Seal(context.Context, *SealRequest) (*SealResponse, error)
 	Status(context.Context, *StatusRequest) (*StatusResponse, error)
+	// Key-encryption-key (KEK) lifecycle. Rotating the KEK re-wraps every
+	// secret's DEK without re-encrypting any secret's ciphertext blob.
+	RotateKEK(context.Context, *RotateKEKRequest) (*RotateKEKResponse, error)
+	ListKEKs(context.Context, *ListKEKsRequest) (*ListKEKsResponse, error)
+	PruneKEK(context.Context, *PruneKEKRequest) (*PruneKEKResponse, error)
+	// RotateMasterKey re-wraps every KEK (and the key-check value) under a new
+	// master key supplied by the operator, then adopts it as the active master
+	// key. It does not touch secrets or their DEKs. The caller is responsible
+	// for redistributing the new key material to keyholders (Shamir) or
+	// updating the Kubernetes Secret (cluster-native auto-unseal) afterward.
+	RotateMasterKey(context.Context, *RotateMasterKeyRequest) (*RotateMasterKeyResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -116,6 +182,18 @@ func (UnimplementedAdminServiceServer) Seal(context.Context, *SealRequest) (*Sea
 }
 func (UnimplementedAdminServiceServer) Status(context.Context, *StatusRequest) (*StatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Status not implemented")
+}
+func (UnimplementedAdminServiceServer) RotateKEK(context.Context, *RotateKEKRequest) (*RotateKEKResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RotateKEK not implemented")
+}
+func (UnimplementedAdminServiceServer) ListKEKs(context.Context, *ListKEKsRequest) (*ListKEKsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListKEKs not implemented")
+}
+func (UnimplementedAdminServiceServer) PruneKEK(context.Context, *PruneKEKRequest) (*PruneKEKResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PruneKEK not implemented")
+}
+func (UnimplementedAdminServiceServer) RotateMasterKey(context.Context, *RotateMasterKeyRequest) (*RotateMasterKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RotateMasterKey not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -210,6 +288,78 @@ func _AdminService_Status_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_RotateKEK_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RotateKEKRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RotateKEK(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RotateKEK_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RotateKEK(ctx, req.(*RotateKEKRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListKEKs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListKEKsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListKEKs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListKEKs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListKEKs(ctx, req.(*ListKEKsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_PruneKEK_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PruneKEKRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).PruneKEK(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_PruneKEK_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).PruneKEK(ctx, req.(*PruneKEKRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RotateMasterKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RotateMasterKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RotateMasterKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RotateMasterKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RotateMasterKey(ctx, req.(*RotateMasterKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -232,6 +382,22 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Status",
 			Handler:    _AdminService_Status_Handler,
+		},
+		{
+			MethodName: "RotateKEK",
+			Handler:    _AdminService_RotateKEK_Handler,
+		},
+		{
+			MethodName: "ListKEKs",
+			Handler:    _AdminService_ListKEKs_Handler,
+		},
+		{
+			MethodName: "PruneKEK",
+			Handler:    _AdminService_PruneKEK_Handler,
+		},
+		{
+			MethodName: "RotateMasterKey",
+			Handler:    _AdminService_RotateMasterKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

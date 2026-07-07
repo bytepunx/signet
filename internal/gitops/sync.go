@@ -1,6 +1,7 @@
 package gitops
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -246,7 +247,7 @@ func (s *Syncer) loadIdentities(ctx context.Context) ([]age.Identity, error) {
 	}
 	ids := make([]age.Identity, 0, len(keys))
 	for _, k := range keys {
-		id, err := DecryptAgeKey(s.keys, k.EncryptedPrivateKey)
+		id, err := DecryptAgeKey(s.keys, k.PublicKey, k.EncryptedPrivateKey)
 		if err != nil {
 			slog.Warn("skip unusable age key", "pubkey", k.PublicKey, "err", err)
 			continue
@@ -259,32 +260,55 @@ func (s *Syncer) loadIdentities(ctx context.Context) ([]age.Identity, error) {
 	return ids, nil
 }
 
-// storeSecret decrypts a SOPS file and writes the secret to the store.
+// storeSecret decrypts a SOPS file and writes the secret to the store. If the
+// plaintext is unchanged from the currently stored version AND that version
+// is already wrapped under the current active KEK (with AAD, which every KEK-
+// wrapped row has), the write is skipped entirely — this bounds the version
+// growth that would otherwise come from re-syncing unchanged secrets on every
+// reconciliation pass. A row still on a legacy direct-master-wrap or an
+// older/rotated-away KEK is never treated as unchanged, so it is naturally
+// rewritten onto the current epoch the next time it is synced, which is how
+// the AAD/KEK migration (see decryptSecret in internal/api) converges.
 func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name string, data []byte, identities []age.Identity) error {
 	plaintext, err := DecryptFile(data, identities)
 	if err != nil {
 		return fmt.Errorf("sops decrypt: %w", err)
 	}
 
-	// Encrypt the plaintext under a fresh per-secret DEK wrapped by the master key.
+	aad := icrypto.BindAAD(icrypto.AADSecret, namespace, service, name)
+
+	// Wrap the DEK under the active key-encryption-key (not the master key
+	// directly), so KEK rotation can re-wrap every DEK without touching the
+	// ciphertext, and master key rotation only needs to re-wrap the KEK.
+	kekID, kek, err := activeKEK(ctx, s.store, s.keys)
+	if err != nil {
+		ZeroBytes(plaintext)
+		return fmt.Errorf("load active kek: %w", err)
+	}
+	defer ZeroBytes(kek)
+
+	if unchanged := s.isUnchanged(ctx, namespace, service, name, plaintext, aad, kekID, kek); unchanged {
+		ZeroBytes(plaintext)
+		return nil
+	}
+
+	// Encrypt the plaintext under a fresh per-secret DEK, bound to this
+	// secret's identity so the blob cannot be swapped into another row.
 	dek, err := icrypto.GenerateKey()
 	if err != nil {
+		ZeroBytes(plaintext)
 		return fmt.Errorf("generate dek: %w", err)
 	}
 	defer ZeroBytes(dek)
 
-	ciphertext, err := icrypto.Encrypt(dek, plaintext)
+	ciphertext, err := icrypto.Encrypt(dek, plaintext, aad)
 	ZeroBytes(plaintext)
 	if err != nil {
 		return fmt.Errorf("encrypt secret: %w", err)
 	}
 
-	var encDEK []byte
-	if err := s.keys.Use(func(masterKey []byte) error {
-		var werr error
-		encDEK, werr = icrypto.WrapKey(masterKey, dek)
-		return werr
-	}); err != nil {
+	encDEK, err := icrypto.WrapKey(kek, dek, aad)
+	if err != nil {
 		return fmt.Errorf("wrap dek: %w", err)
 	}
 
@@ -293,8 +317,34 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 		Service:      service,
 		Name:         name,
 		EncryptedDEK: encDEK,
+		KEKID:        kekID,
 		Ciphertext:   ciphertext,
 	})
+}
+
+// isUnchanged reports whether the currently stored secret already holds
+// newPlaintext AND is wrapped under activeKEKID. Any error, absence, or
+// mismatch is treated as "changed" so the caller proceeds to write —
+// dedup is a pure optimization and must never suppress a real write.
+func (s *Syncer) isUnchanged(ctx context.Context, namespace, service, name string, newPlaintext, aad []byte, activeKEKID string, activeKEKBytes []byte) bool {
+	current, err := s.store.GetSecret(ctx, namespace, service, name)
+	if err != nil {
+		return false
+	}
+	if current.KEKID == "" || current.KEKID != activeKEKID {
+		return false
+	}
+	dek, err := icrypto.UnwrapKey(activeKEKBytes, current.EncryptedDEK, aad)
+	if err != nil {
+		return false
+	}
+	defer ZeroBytes(dek)
+	currentPlaintext, err := icrypto.Decrypt(dek, current.Ciphertext, aad)
+	if err != nil {
+		return false
+	}
+	defer ZeroBytes(currentPlaintext)
+	return bytes.Equal(newPlaintext, currentPlaintext)
 }
 
 // deleteSecret removes a secret from the store, tolerating not-found.
@@ -361,11 +411,15 @@ func (s *Syncer) cloneRepoAtHead(ctx context.Context, dir string, repo *store.Re
 
 // deployKeyAuth decrypts the repo's SSH deploy key and returns go-git auth.
 func (s *Syncer) deployKeyAuth(repo *store.Repository) (gogittransport.AuthMethod, error) {
+	aad := icrypto.BindAAD(icrypto.AADRepoDeployKey, repo.Name)
 	var pemBytes []byte
 	if err := s.keys.Use(func(masterKey []byte) error {
-		plain, err := icrypto.Decrypt(masterKey, repo.EncryptedDeployKey)
+		plain, legacy, err := icrypto.DecryptWithFallback(masterKey, repo.EncryptedDeployKey, aad)
 		if err != nil {
 			return err
+		}
+		if legacy {
+			slog.Warn("deploy key decrypted via legacy unbound fallback; will be re-bound on next signet repo update", "repo", repo.Name)
 		}
 		pemBytes = plain
 		return nil

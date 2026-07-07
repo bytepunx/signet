@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"strings"
@@ -24,6 +25,14 @@ import (
 
 const unknownIdentity = "unauthenticated"
 
+// Sentinel audit SecretName values for actions that touch an entire document
+// rather than one named secret. audit.Entry requires a non-empty SecretName;
+// these make it clear in the audit log what kind of access occurred.
+const (
+	configAuditName = "<config>"
+	bundleAuditName = "<bundle>"
+)
+
 // SecretsServer implements signetv1.SecretsServiceServer.
 type SecretsServer struct {
 	signetv1.UnimplementedSecretsServiceServer
@@ -33,9 +42,15 @@ type SecretsServer struct {
 	audit   auditRecorder
 	bus     *Bus
 	lockMgr *LockManager
+	// auditFailClosed, when true, denies access (returns codes.Unavailable)
+	// on any permitted operation whose audit log write fails, rather than
+	// serving the secret/config/bundle without a durable audit trail.
+	auditFailClosed bool
 }
 
 // NewSecretsServer constructs a SecretsServer. All parameters are required.
+// auditFailClosed controls whether a failed audit write on an otherwise-
+// permitted access blocks that access (recommended for production).
 func NewSecretsServer(
 	store secretFetcher,
 	keys keyUnwrapper,
@@ -43,8 +58,12 @@ func NewSecretsServer(
 	audit auditRecorder,
 	bus *Bus,
 	lockMgr *LockManager,
+	auditFailClosed bool,
 ) *SecretsServer {
-	return &SecretsServer{store: store, keys: keys, checker: checker, audit: audit, bus: bus, lockMgr: lockMgr}
+	return &SecretsServer{
+		store: store, keys: keys, checker: checker, audit: audit, bus: bus, lockMgr: lockMgr,
+		auditFailClosed: auditFailClosed,
+	}
 }
 
 // GetSecret fetches, decrypts, and returns the latest version of a secret.
@@ -59,7 +78,9 @@ func (s *SecretsServer) GetSecret(ctx context.Context, req *signetv1.GetSecretRe
 	if err != nil {
 		outcome = "denied"
 	}
-	s.record(ctx, spiffeID, "get", req.Namespace, req.Name, outcome)
+	if auditErr := s.auditOrDeny(ctx, spiffeID, "get", req.Namespace, req.Name, outcome); auditErr != nil {
+		return nil, auditErr
+	}
 
 	if err != nil {
 		return nil, err
@@ -83,10 +104,12 @@ func (s *SecretsServer) WatchSecret(req *signetv1.WatchSecretRequest, stream grp
 
 	spiffeID, plaintext, version, err := s.fetchAndDecrypt(ctx, req.Namespace, req.Service, req.Name)
 	if err != nil {
-		s.record(ctx, spiffeID, "watch", req.Namespace, req.Name, "denied")
+		_ = s.record(ctx, spiffeID, "watch", req.Namespace, req.Name, "denied")
 		return err
 	}
-	s.record(ctx, spiffeID, "watch", req.Namespace, req.Name, "permitted")
+	if auditErr := s.auditOrDeny(ctx, spiffeID, "watch", req.Namespace, req.Name, "permitted"); auditErr != nil {
+		return auditErr
+	}
 
 	if err := stream.Send(&signetv1.WatchSecretResponse{
 		EventType: signetv1.WatchSecretResponse_EVENT_TYPE_UPDATED,
@@ -106,7 +129,7 @@ func (s *SecretsServer) WatchSecret(req *signetv1.WatchSecretRequest, stream grp
 		case <-ch:
 			spiffeID, plaintext, version, err = s.fetchAndDecrypt(ctx, req.Namespace, req.Service, req.Name)
 			if err != nil {
-				s.record(ctx, spiffeID, "watch", req.Namespace, req.Name, "denied")
+				_ = s.record(ctx, spiffeID, "watch", req.Namespace, req.Name, "denied")
 				if isNotFound(err) {
 					// Notify client the secret was removed before closing.
 					_ = stream.Send(&signetv1.WatchSecretResponse{
@@ -118,7 +141,9 @@ func (s *SecretsServer) WatchSecret(req *signetv1.WatchSecretRequest, stream grp
 				}
 				return err
 			}
-			s.record(ctx, spiffeID, "watch", req.Namespace, req.Name, "permitted")
+			if auditErr := s.auditOrDeny(ctx, spiffeID, "watch", req.Namespace, req.Name, "permitted"); auditErr != nil {
+				return auditErr
+			}
 			if err := stream.Send(&signetv1.WatchSecretResponse{
 				EventType: signetv1.WatchSecretResponse_EVENT_TYPE_UPDATED,
 				Namespace: req.Namespace,
@@ -145,7 +170,11 @@ func (s *SecretsServer) GetConfig(ctx context.Context, req *signetv1.GetConfigRe
 		return nil, toGRPCError(authErr)
 	}
 	if err := s.checker.Allow(ctx, spiffeID, "get", req.Namespace, req.Service, req.Key); err != nil {
+		_ = s.record(ctx, spiffeID, "get_config", req.Namespace, req.Key, "denied")
 		return nil, toGRPCError(err)
+	}
+	if auditErr := s.auditOrDeny(ctx, spiffeID, "get_config", req.Namespace, req.Key, "permitted"); auditErr != nil {
+		return nil, auditErr
 	}
 
 	raw, version, err := s.store.GetServiceConfig(ctx, req.Namespace, req.Service)
@@ -182,7 +211,11 @@ func (s *SecretsServer) GetServiceConfig(ctx context.Context, req *signetv1.GetS
 		return nil, toGRPCError(authErr)
 	}
 	if err := s.checker.Allow(ctx, spiffeID, "get", req.Namespace, req.Service, ""); err != nil {
+		_ = s.record(ctx, spiffeID, "get_service_config", req.Namespace, configAuditName, "denied")
 		return nil, toGRPCError(err)
+	}
+	if auditErr := s.auditOrDeny(ctx, spiffeID, "get_service_config", req.Namespace, configAuditName, "permitted"); auditErr != nil {
+		return nil, auditErr
 	}
 
 	raw, version, err := s.store.GetServiceConfig(ctx, req.Namespace, req.Service)
@@ -219,6 +252,7 @@ func (s *SecretsServer) WatchServiceConfig(req *signetv1.WatchServiceConfigReque
 		return toGRPCError(authErr)
 	}
 	if err := s.checker.Allow(ctx, spiffeID, "get", req.Namespace, req.Service, ""); err != nil {
+		_ = s.record(ctx, spiffeID, "watch_service_config", req.Namespace, configAuditName, "denied")
 		return toGRPCError(err)
 	}
 
@@ -226,6 +260,7 @@ func (s *SecretsServer) WatchServiceConfig(req *signetv1.WatchServiceConfigReque
 		raw, version, err := s.store.GetServiceConfig(ctx, req.Namespace, req.Service)
 		if err != nil {
 			if isNotFound(err) {
+				_ = s.record(ctx, spiffeID, "watch_service_config", req.Namespace, configAuditName, "denied")
 				return stream.Send(&signetv1.WatchServiceConfigResponse{
 					EventType: signetv1.WatchServiceConfigResponse_EVENT_TYPE_DELETED,
 					Namespace: req.Namespace,
@@ -233,6 +268,9 @@ func (s *SecretsServer) WatchServiceConfig(req *signetv1.WatchServiceConfigReque
 				})
 			}
 			return toGRPCError(err)
+		}
+		if auditErr := s.auditOrDeny(ctx, spiffeID, "watch_service_config", req.Namespace, configAuditName, "permitted"); auditErr != nil {
+			return auditErr
 		}
 		var m map[string]interface{}
 		if err := json.Unmarshal(raw, &m); err != nil {
@@ -281,6 +319,7 @@ func (s *SecretsServer) GetServiceBundle(ctx context.Context, req *signetv1.GetS
 		return nil, toGRPCError(authErr)
 	}
 	if err := s.checker.Allow(ctx, spiffeID, "get", req.Namespace, req.Service, ""); err != nil {
+		_ = s.record(ctx, spiffeID, "get_bundle", req.Namespace, bundleAuditName, "denied")
 		return nil, toGRPCError(err)
 	}
 
@@ -315,7 +354,7 @@ func (s *SecretsServer) GetServiceBundle(ctx context.Context, req *signetv1.GetS
 	}
 
 	for _, sec := range secs {
-		plaintext, decErr := s.decryptSecret(sec.EncryptedDEK, sec.Ciphertext)
+		plaintext, decErr := s.decryptSecret(ctx, sec)
 		if decErr != nil {
 			slog.Error("decrypt secret in bundle", "namespace", req.Namespace, "service", req.Service, "name", sec.Name, "err", decErr)
 			return nil, status.Errorf(codes.Internal, "decrypt secret %q: %v", sec.Name, decErr)
@@ -324,6 +363,13 @@ func (s *SecretsServer) GetServiceBundle(ctx context.Context, req *signetv1.GetS
 		zeroBytes(plaintext)
 	}
 	merged["secrets"] = secretsMap
+
+	// This call decrypts and returns every secret for the service in one
+	// shot — the highest-exposure read path — so its audit entry must be
+	// durable before the bundle is returned.
+	if auditErr := s.auditOrDeny(ctx, spiffeID, "get_bundle", req.Namespace, bundleAuditName, "permitted"); auditErr != nil {
+		return nil, auditErr
+	}
 
 	pbStruct, err := structpb.NewStruct(merged)
 	if err != nil {
@@ -351,7 +397,14 @@ func (s *SecretsServer) WatchServiceBundle(req *signetv1.WatchServiceBundleReque
 		return toGRPCError(authErr)
 	}
 	if err := s.checker.Allow(ctx, spiffeID, "get", req.Namespace, req.Service, ""); err != nil {
+		_ = s.record(ctx, spiffeID, "watch_bundle", req.Namespace, bundleAuditName, "denied")
 		return toGRPCError(err)
+	}
+	// No secret or config values flow through this stream — only a
+	// change-notification flag — so one audit entry at subscription time is
+	// sufficient; there is no per-notification data access to record.
+	if auditErr := s.auditOrDeny(ctx, spiffeID, "watch_bundle", req.Namespace, bundleAuditName, "permitted"); auditErr != nil {
+		return auditErr
 	}
 
 	ch := s.bus.SubscribeBundle(req.Namespace, req.Service)
@@ -373,18 +426,66 @@ func (s *SecretsServer) WatchServiceBundle(req *signetv1.WatchServiceBundleReque
 	}
 }
 
-// decryptSecret unwraps the DEK and decrypts ciphertext, returning plaintext.
+// decryptSecret unwraps sec's DEK and decrypts its ciphertext, returning
+// plaintext. Both the DEK wrap and the ciphertext are bound via AAD to the
+// secret's (namespace, service, name) identity so a blob copied from another
+// row by a party with database write access (but no key material) fails
+// authentication instead of silently decrypting.
+//
+// When sec.KEKID is set, the DEK is wrapped under that key-encryption-key
+// (looked up and unwrapped under the master key); when empty, the secret
+// predates the KEK tier and its DEK is wrapped directly under the master key.
+// Both branches fall back to the legacy nil-AAD form for data written before
+// AAD binding existed, logging a warning so operators can identify secrets
+// that still need a re-sync to gain the new binding.
 // Caller is responsible for zeroing the returned slice when done.
-func (s *SecretsServer) decryptSecret(encDEK, ciphertext []byte) ([]byte, error) {
+func (s *SecretsServer) decryptSecret(ctx context.Context, sec store.Secret) ([]byte, error) {
+	aad := icrypto.BindAAD(icrypto.AADSecret, sec.Namespace, sec.Service, sec.Name)
+
+	if sec.KEKID == "" {
+		var plaintext []byte
+		if err := s.keys.Use(func(masterKey []byte) error {
+			dek, dekLegacy, err := icrypto.UnwrapKeyWithFallback(masterKey, sec.EncryptedDEK, aad)
+			if err != nil {
+				return err
+			}
+			defer zeroBytes(dek)
+			pt, ctLegacy, err := icrypto.DecryptWithFallback(dek, sec.Ciphertext, aad)
+			if err != nil {
+				return err
+			}
+			if dekLegacy || ctLegacy {
+				slog.Warn("secret decrypted via legacy pre-AAD/pre-KEK fallback; re-sync to upgrade encryption",
+					"namespace", sec.Namespace, "service", sec.Service, "name", sec.Name)
+			}
+			plaintext = pt
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+		return plaintext, nil
+	}
+
+	kekRec, err := s.store.GetKEKByID(ctx, sec.KEKID)
+	if err != nil {
+		return nil, fmt.Errorf("load kek %s: %w", sec.KEKID, err)
+	}
+
 	var plaintext []byte
 	if err := s.keys.Use(func(masterKey []byte) error {
-		dek, err := icrypto.UnwrapKey(masterKey, encDEK)
+		kek, err := icrypto.UnwrapKey(masterKey, kekRec.WrappedKEK, icrypto.BindAAD(icrypto.AADKEK))
+		if err != nil {
+			return fmt.Errorf("unwrap kek: %w", err)
+		}
+		defer zeroBytes(kek)
+		dek, err := icrypto.UnwrapKey(kek, sec.EncryptedDEK, aad)
 		if err != nil {
 			return err
 		}
 		defer zeroBytes(dek)
-		plaintext, err = icrypto.Decrypt(dek, ciphertext)
-		return err
+		pt, decErr := icrypto.Decrypt(dek, sec.Ciphertext, aad)
+		plaintext = pt
+		return decErr
 	}); err != nil {
 		return nil, err
 	}
@@ -432,23 +533,17 @@ func (s *SecretsServer) fetchAndDecrypt(ctx context.Context, namespace, service,
 	}
 	version = sec.Version
 
-	decryptErr := s.keys.Use(func(masterKey []byte) error {
-		dek, unwrapErr := icrypto.UnwrapKey(masterKey, sec.EncryptedDEK)
-		if unwrapErr != nil {
-			return unwrapErr
-		}
-		defer zeroBytes(dek)
-		var decErr error
-		plaintext, decErr = icrypto.Decrypt(dek, sec.Ciphertext)
-		return decErr
-	})
-	if decryptErr != nil {
-		err = toGRPCError(decryptErr)
+	plaintext, decErr := s.decryptSecret(ctx, *sec)
+	if decErr != nil {
+		err = toGRPCError(decErr)
 	}
 	return
 }
 
-func (s *SecretsServer) record(ctx context.Context, spiffeID, action, namespace, name, outcome string) {
+// record writes an audit entry and returns the write error, if any (also
+// logged). Callers that need fail-closed behavior should use auditOrDeny
+// instead of calling record directly.
+func (s *SecretsServer) record(ctx context.Context, spiffeID, action, namespace, name, outcome string) error {
 	if spiffeID == "" {
 		spiffeID = unknownIdentity
 	}
@@ -461,7 +556,23 @@ func (s *SecretsServer) record(ctx context.Context, spiffeID, action, namespace,
 		PeerIP:     peerIP(ctx),
 	}); err != nil {
 		slog.Error("audit write failed", "action", action, "namespace", namespace, "name", name, "err", err)
+		return err
 	}
+	return nil
+}
+
+// auditOrDeny records the access and, when the access was otherwise permitted
+// but the audit write itself failed, enforces fail-closed behavior (if
+// enabled): the caller must not serve the secret/config/bundle without a
+// durable audit trail. Returns a non-nil error only in that fail-closed case;
+// callers should return it immediately without also returning the original
+// operation error.
+func (s *SecretsServer) auditOrDeny(ctx context.Context, spiffeID, action, namespace, name, outcome string) error {
+	auditErr := s.record(ctx, spiffeID, action, namespace, name, outcome)
+	if outcome == "permitted" && auditErr != nil && s.auditFailClosed {
+		return status.Error(codes.Unavailable, "audit log write failed; access denied (fail-closed)")
+	}
+	return nil
 }
 
 func peerIP(ctx context.Context) string {

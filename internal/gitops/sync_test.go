@@ -21,7 +21,10 @@ type mockStore struct {
 func (m *mockStore) ListSOPSKeys(_ context.Context, _ string) ([]store.SOPSKey, error) {
 	return m.keys, nil
 }
-func (m *mockStore) PutSecret(_ context.Context, _ *store.Secret) error   { return nil }
+func (m *mockStore) PutSecret(_ context.Context, _ *store.Secret) error { return nil }
+func (m *mockStore) GetSecret(_ context.Context, _, _, _ string) (*store.Secret, error) {
+	return nil, store.ErrNotFound
+}
 func (m *mockStore) DeleteSecret(_ context.Context, _, _, _ string) error { return nil }
 func (m *mockStore) GetRepository(_ context.Context, _ string) (*store.Repository, error) {
 	return nil, nil
@@ -36,6 +39,10 @@ func (m *mockStore) PutServiceConfig(_ context.Context, _, _ string, _ json.RawM
 	return nil
 }
 func (m *mockStore) DeleteServiceConfig(_ context.Context, _, _ string) error { return nil }
+func (m *mockStore) GetActiveKEK(_ context.Context) (*store.KEK, error) {
+	return nil, store.ErrNotFound
+}
+func (m *mockStore) PutKEK(_ context.Context, _ *store.KEK) error { return nil }
 
 // mockKeys implements keyUnwrapper for unit testing.
 type mockKeys struct{}

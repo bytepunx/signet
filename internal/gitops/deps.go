@@ -11,6 +11,7 @@ import (
 // secretStore is satisfied by *store.Store for the sync path.
 type secretStore interface {
 	PutSecret(ctx context.Context, s *store.Secret) error
+	GetSecret(ctx context.Context, namespace, service, name string) (*store.Secret, error)
 	DeleteSecret(ctx context.Context, namespace, service, name string) error
 	ListSOPSKeys(ctx context.Context, env string) ([]store.SOPSKey, error)
 	GetRepository(ctx context.Context, id string) (*store.Repository, error)
@@ -18,6 +19,8 @@ type secretStore interface {
 	UpdateSyncState(ctx context.Context, id, sha string, at time.Time) error
 	PutServiceConfig(ctx context.Context, namespace, service string, content json.RawMessage) error
 	DeleteServiceConfig(ctx context.Context, namespace, service string) error
+	GetActiveKEK(ctx context.Context) (*store.KEK, error)
+	PutKEK(ctx context.Context, k *store.KEK) error
 }
 
 // keyUnwrapper is satisfied by *crypto.KeyStore.

@@ -10,6 +10,19 @@ service AdminService {
   rpc UnsealShare(UnsealShareRequest) returns (UnsealShareResponse);
   rpc Seal(SealRequest)               returns (SealResponse);
   rpc Status(StatusRequest)           returns (StatusResponse);
+
+  // Key-encryption-key (KEK) lifecycle. Rotating the KEK re-wraps every
+  // secret's DEK without re-encrypting any secret's ciphertext blob.
+  rpc RotateKEK(RotateKEKRequest) returns (RotateKEKResponse);
+  rpc ListKEKs(ListKEKsRequest)   returns (ListKEKsResponse);
+  rpc PruneKEK(PruneKEKRequest)   returns (PruneKEKResponse);
+
+  // RotateMasterKey re-wraps every KEK (and the key-check value) under a new
+  // master key supplied by the operator, then adopts it as the active master
+  // key. It does not touch secrets or their DEKs. The caller is responsible
+  // for redistributing the new key material to keyholders (Shamir) or
+  // updating the Kubernetes Secret (cluster-native auto-unseal) afterward.
+  rpc RotateMasterKey(RotateMasterKeyRequest) returns (RotateMasterKeyResponse);
 }
 
 // GitOpsService manages SOPS key lifecycle and GitHub repository sync configuration.
@@ -75,6 +88,49 @@ message StatusResponse {
   int32  shares_received = 2;
   int32  shares_required = 3;
   string version         = 4;
+}
+
+message RotateKEKRequest {}
+
+message RotateKEKResponse {
+  string new_kek_id  = 1;
+  // old_kek_id is retained (deactivated, not deleted) so DEKs wrapped before
+  // rotation completes remain decryptable until PruneKEK is called.
+  string old_kek_id  = 2;
+  // secrets_rewrapped is the number of DEKs successfully re-wrapped under
+  // the new KEK during this call.
+  int32  secrets_rewrapped = 3;
+}
+
+message ListKEKsRequest {}
+
+message KEKInfo {
+  string id             = 1;
+  bool   is_active      = 2;
+  string created_at     = 3;
+  string deactivated_at = 4; // empty if still active
+}
+
+message ListKEKsResponse {
+  repeated KEKInfo keks = 1;
+}
+
+message PruneKEKRequest {
+  string id = 1;
+}
+
+message PruneKEKResponse {
+  string message = 1;
+}
+
+message RotateMasterKeyRequest {
+  // new_key must be exactly 32 bytes.
+  bytes new_key = 1;
+}
+
+message RotateMasterKeyResponse {
+  string message      = 1;
+  int32  keks_rewrapped = 2;
 }
 
 // --- GitOpsService messages ---

@@ -48,16 +48,34 @@ func (m *mockAdminClient) Seal(_ context.Context, _ *adminv1.SealRequest, _ ...g
 	return &adminv1.SealResponse{}, nil
 }
 
+func (m *mockAdminClient) RotateKEK(_ context.Context, _ *adminv1.RotateKEKRequest, _ ...grpc.CallOption) (*adminv1.RotateKEKResponse, error) {
+	return &adminv1.RotateKEKResponse{}, nil
+}
+
+func (m *mockAdminClient) ListKEKs(_ context.Context, _ *adminv1.ListKEKsRequest, _ ...grpc.CallOption) (*adminv1.ListKEKsResponse, error) {
+	return &adminv1.ListKEKsResponse{}, nil
+}
+
+func (m *mockAdminClient) PruneKEK(_ context.Context, _ *adminv1.PruneKEKRequest, _ ...grpc.CallOption) (*adminv1.PruneKEKResponse, error) {
+	return &adminv1.PruneKEKResponse{}, nil
+}
+
+func (m *mockAdminClient) RotateMasterKey(_ context.Context, _ *adminv1.RotateMasterKeyRequest, _ ...grpc.CallOption) (*adminv1.RotateMasterKeyResponse, error) {
+	return &adminv1.RotateMasterKeyResponse{}, nil
+}
+
 const testNS = "signet"
 const testSecret = "signet-master-key"
 
 // callInit runs runInitWithDeps with the given mock admin client and fake k8s
-// client; returns stdout output.
+// client; returns stdout output. skipConfirm is always true here — the
+// --force confirmation prompt itself is covered separately by
+// TestInitForce_RequiresConfirmation and TestInitForce_ConfirmedViaPrompt.
 func callInit(t *testing.T, admin *mockAdminClient, k8s *fake.Clientset, force, dryRun bool) (string, error) {
 	t.Helper()
 	var out bytes.Buffer
-	err := runInitWithDeps(context.Background(), &out, admin, k8s,
-		testNS, testSecret, force, dryRun)
+	err := runInitWithDeps(context.Background(), strings.NewReader(""), &out, admin, k8s,
+		testNS, testSecret, force, dryRun, true)
 	return out.String(), err
 }
 
@@ -140,6 +158,73 @@ func TestInitForce(t *testing.T) {
 	require.Len(t, admin.unsealKeyCalls, 1)
 	assert.NotEqual(t, oldKey, admin.unsealKeyCalls[0])
 	assert.Equal(t, newKey, admin.unsealKeyCalls[0])
+}
+
+// TestInitForce_RequiresConfirmation is the L-7 regression test: --force
+// against an existing Secret must not proceed without confirmation.
+func TestInitForce_RequiresConfirmation(t *testing.T) {
+	oldKey := bytes.Repeat([]byte{0x01}, 32)
+	preExisting := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: testSecret, Namespace: testNS},
+		Data:       map[string][]byte{"master.key": oldKey},
+	}
+	admin := &mockAdminClient{statusStates: []adminv1.StatusResponse_State{
+		adminv1.StatusResponse_STATE_SEALED,
+	}}
+	k8s := fake.NewClientset(preExisting)
+
+	var out bytes.Buffer
+	err := runInitWithDeps(context.Background(), strings.NewReader("no\n"), &out, admin, k8s,
+		testNS, testSecret, true /* force */, false /* dryRun */, false /* skipConfirm */)
+	require.Error(t, err)
+
+	// The Secret must be untouched and UnsealKey must never have been called.
+	sec, getErr := k8s.CoreV1().Secrets(testNS).Get(context.Background(), testSecret, metav1.GetOptions{})
+	require.NoError(t, getErr)
+	assert.Equal(t, oldKey, sec.Data["master.key"])
+	assert.Empty(t, admin.unsealKeyCalls)
+}
+
+// TestInitForce_ConfirmedViaPrompt verifies that typing "yes" at the prompt
+// allows --force to proceed, without needing --yes.
+func TestInitForce_ConfirmedViaPrompt(t *testing.T) {
+	oldKey := bytes.Repeat([]byte{0x01}, 32)
+	preExisting := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: testSecret, Namespace: testNS},
+		Data:       map[string][]byte{"master.key": oldKey},
+	}
+	admin := &mockAdminClient{statusStates: []adminv1.StatusResponse_State{
+		adminv1.StatusResponse_STATE_SEALED,
+		adminv1.StatusResponse_STATE_UNSEALED,
+	}}
+	k8s := fake.NewClientset(preExisting)
+
+	var out bytes.Buffer
+	err := runInitWithDeps(context.Background(), strings.NewReader("yes\n"), &out, admin, k8s,
+		testNS, testSecret, true /* force */, false /* dryRun */, false /* skipConfirm */)
+	require.NoError(t, err)
+
+	sec, _ := k8s.CoreV1().Secrets(testNS).Get(context.Background(), testSecret, metav1.GetOptions{})
+	assert.NotEqual(t, oldKey, sec.Data["master.key"])
+}
+
+// TestInitForce_DryRunSkipsConfirmation verifies that --force --dry-run does
+// not prompt, since it makes no actual changes.
+func TestInitForce_DryRunSkipsConfirmation(t *testing.T) {
+	oldKey := bytes.Repeat([]byte{0x01}, 32)
+	preExisting := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: testSecret, Namespace: testNS},
+		Data:       map[string][]byte{"master.key": oldKey},
+	}
+	admin := &mockAdminClient{statusStates: []adminv1.StatusResponse_State{
+		adminv1.StatusResponse_STATE_SEALED,
+	}}
+	k8s := fake.NewClientset(preExisting)
+
+	var out bytes.Buffer
+	err := runInitWithDeps(context.Background(), strings.NewReader(""), &out, admin, k8s,
+		testNS, testSecret, true /* force */, true /* dryRun */, false /* skipConfirm */)
+	require.NoError(t, err, "dry-run must not require confirmation input")
 }
 
 // TestInitAlreadyUnsealed verifies that the command exits 0 without touching

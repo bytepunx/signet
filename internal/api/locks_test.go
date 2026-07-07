@@ -126,7 +126,7 @@ func (f *fakeLockStream) sendHeartbeat(ttlSecs int32) {
 func newLockServer() (*SecretsServer, *controlLockStore, *LockManager) {
 	ls := newControlLockStore()
 	lm := NewLockManager(ls)
-	srv := NewSecretsServer(&fakeSecretFetcher{}, &fakeKeyUnwrapper{}, &fakeChecker{}, &fakeRecorder{}, NewBus(), lm)
+	srv := NewSecretsServer(&fakeSecretFetcher{}, &fakeKeyUnwrapper{}, &fakeChecker{}, &fakeRecorder{}, NewBus(), lm, false)
 	return srv, ls, lm
 }
 

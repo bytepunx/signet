@@ -66,6 +66,16 @@ func (s *KeyStore) IsSet() bool {
 // Use calls fn with the master key bytes. The byte slice is valid only for the
 // duration of fn — callers must not retain a reference past the return. Returns
 // ErrKeyNotSet if no key has been loaded.
+//
+// HARD INVARIANT: fn must not store the []byte it receives anywhere that
+// outlives the call (a field, a package-level variable, a channel, a goroutine
+// closure that runs after Use returns, etc.), and must not return it to its
+// own caller. The slice aliases mlock'd memory directly, with no defensive
+// copy — retaining it defeats the guard pages, canaries, and zeroing that
+// KeyStore otherwise provides, and leaves master key material reachable on
+// the unlocked heap. Every call site in this codebase copies out only what it
+// needs (e.g. a derived DEK, itself zeroed after use) and lets the received
+// slice go out of scope when fn returns.
 func (s *KeyStore) Use(fn func([]byte) error) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

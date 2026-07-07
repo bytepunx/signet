@@ -11,13 +11,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/bytepunx/signet/internal/api"
+	"github.com/bytepunx/signet/internal/crypto"
+	"github.com/bytepunx/signet/internal/store"
 	"github.com/bytepunx/signet/internal/unseal"
 )
 
 // attemptKubeUnseal fetches the master key from a Kubernetes Secret and calls
 // UnsealWithKey. It never fatals — any error is logged at WARN level and the
-// server remains sealed so manual unseal is still possible.
-func attemptKubeUnseal(ctx context.Context, mgr *unseal.Manager, secretName string) {
+// server remains sealed so manual unseal is still possible. st and keyStore
+// back the same key-check verification the manual/Shamir unseal RPCs use, so
+// an auto-unseal with a stale or mismatched key is rejected and re-sealed
+// rather than silently starting the server with the wrong master key.
+func attemptKubeUnseal(ctx context.Context, mgr *unseal.Manager, st *store.Store, keyStore *crypto.KeyStore, secretName string) {
 	if mgr.Status().State == unseal.StateUnsealed {
 		slog.Info("kube-unseal: server already unsealed, skipping")
 		return
@@ -55,6 +61,12 @@ func attemptKubeUnseal(ctx context.Context, mgr *unseal.Manager, secretName stri
 
 	if err = mgr.UnsealWithKey(key); err != nil {
 		slog.Warn("kube-unseal: UnsealWithKey failed", "err", err)
+		return
+	}
+
+	if err := api.VerifyOrInitKeyCheckValue(ctx, st, keyStore); err != nil {
+		slog.Warn("kube-unseal: key check failed; the Secret's key does not match this deployment, re-sealing", "err", err)
+		mgr.Seal()
 		return
 	}
 
