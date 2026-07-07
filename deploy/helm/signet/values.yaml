@@ -45,7 +45,22 @@ signet:
     shareTimeout: "30m"
 
   # Comma-separated Kubernetes SA token audiences accepted by the admin endpoint.
+  # Must not be empty -- signetd refuses to start otherwise, since an empty
+  # audience list would make TokenReview accept a token bearing ANY audience.
   kubeAudiences: "signet"
+
+  # Comma-separated allowlist of admin identities, each either
+  # "serviceaccount:<namespace>:<name>" or "group:<name>". Identities not
+  # listed here can still be authorized via cluster RBAC granting verb
+  # "administer" on resource "adminoperations" in API group "signet.io" (a
+  # synthetic resource checked via SubjectAccessReview -- no CRD required).
+  # Leave empty to rely solely on RBAC.
+  adminSubjects: ""
+
+  # When true (recommended), deny an otherwise-permitted secret/config/bundle
+  # access if its audit log write fails, rather than serving it without a
+  # durable audit trail.
+  auditFailClosed: true
 
   # -- Secret configuration --
   # Recommended: create the secret out-of-band (external-secrets, sealed-secrets, etc.)

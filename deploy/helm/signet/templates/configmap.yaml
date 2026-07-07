@@ -17,6 +17,8 @@ data:
   SIGNET_SHAMIR_THRESHOLD:  {{ .Values.signet.shamir.threshold | quote }}
   SIGNET_SHARE_TIMEOUT:     {{ .Values.signet.shamir.shareTimeout | quote }}
   SIGNET_KUBE_AUDIENCES:    {{ .Values.signet.kubeAudiences | quote }}
+  SIGNET_ADMIN_SUBJECTS:    {{ .Values.signet.adminSubjects | quote }}
+  SIGNET_AUDIT_FAIL_CLOSED: {{ .Values.signet.auditFailClosed | quote }}
   {{- if ((.Values.autoUnseal).enabled) }}
   SIGNET_KUBE_UNSEAL_SECRET: {{ .Values.autoUnseal.secretName | quote }}
   {{- end }}

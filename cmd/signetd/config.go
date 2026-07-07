@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -15,7 +16,11 @@ import (
 // default applies.
 //
 // Key material (master key, DEKs) never appears in config. The audit chain key
-// is the only secret here; it is read from SIGNET_AUDIT_CHAIN_KEY.
+// is the only secret here; it is read from SIGNET_AUDIT_CHAIN_KEY (inline hex)
+// or SIGNET_AUDIT_CHAIN_KEY_FILE (path to a file containing the hex), exactly
+// one of which must be set. A file (e.g. a projected Kubernetes Secret volume)
+// avoids the key sitting in process environment, which is readable via
+// /proc/<pid>/environ and sometimes captured in crash dumps or telemetry.
 type config struct {
 	// Database
 	DBConnString string // SIGNET_DB_CONN_STRING
@@ -37,7 +42,8 @@ type config struct {
 	ShareTimeout    time.Duration // SIGNET_SHARE_TIMEOUT
 
 	// Kubernetes SA token validation
-	kubeAudiences []string // parsed from SIGNET_KUBE_AUDIENCES (comma-separated)
+	kubeAudiences []string // parsed from SIGNET_KUBE_AUDIENCES (comma-separated); must not end up empty
+	adminSubjects []string // parsed from SIGNET_ADMIN_SUBJECTS (comma-separated); may be empty if relying solely on RBAC
 
 	// Kubernetes auto-unseal (optional — empty means disabled)
 	KubeUnsealSecret string // SIGNET_KUBE_UNSEAL_SECRET
@@ -49,27 +55,35 @@ type config struct {
 
 	// Audit HMAC chain key (hex-encoded, must decode to exactly 32 bytes)
 	auditKeyBytes []byte // decoded from SIGNET_AUDIT_CHAIN_KEY
+
+	// AuditFailClosed, when true (the default), denies an otherwise-permitted
+	// secret/config/bundle access if its audit log write fails, rather than
+	// serving it without a durable audit trail.
+	AuditFailClosed bool // SIGNET_AUDIT_FAIL_CLOSED
 }
 
 // loadConfig registers CLI flags, parses them, then validates the result.
 // Returns a detailed error if any required field is missing or invalid.
 func loadConfig() (config, error) {
 	var raw struct {
-		dbConnString     string
-		spireSocket      string
-		trustDomain      string
-		workloadAddr     string
-		adminAddr        string
-		webhookAddr      string
-		webhookBaseURL   string
-		drainTimeout     string
-		shamirShares     int
-		shamirThreshold  int
-		shareTimeout     string
-		kubeAudiences    string
-		kubeUnsealSecret string
-		environment      string
-		auditChainKey    string
+		dbConnString      string
+		spireSocket       string
+		trustDomain       string
+		workloadAddr      string
+		adminAddr         string
+		webhookAddr       string
+		webhookBaseURL    string
+		drainTimeout      string
+		shamirShares      int
+		shamirThreshold   int
+		shareTimeout      string
+		kubeAudiences     string
+		adminSubjects     string
+		kubeUnsealSecret  string
+		environment       string
+		auditChainKey     string
+		auditChainKeyFile string
+		auditFailClosed   bool
 	}
 
 	flag.StringVar(&raw.dbConnString, "db", envOr("SIGNET_DB_CONN_STRING", ""),
@@ -95,34 +109,47 @@ func loadConfig() (config, error) {
 	flag.StringVar(&raw.shareTimeout, "share-timeout", envOr("SIGNET_SHARE_TIMEOUT", "30m"),
 		"how long to wait for all Shamir shares before expiring (env: SIGNET_SHARE_TIMEOUT)")
 	flag.StringVar(&raw.kubeAudiences, "kube-audiences", envOr("SIGNET_KUBE_AUDIENCES", "signet"),
-		"comma-separated Kubernetes SA token audiences for admin auth (env: SIGNET_KUBE_AUDIENCES)")
+		"comma-separated Kubernetes SA token audiences for admin auth; must not be empty (env: SIGNET_KUBE_AUDIENCES)")
+	flag.StringVar(&raw.adminSubjects, "admin-subjects", envOr("SIGNET_ADMIN_SUBJECTS", ""),
+		"comma-separated allowlist of admin identities, each 'serviceaccount:<namespace>:<name>' or "+
+			"'group:<name>'; identities not listed here can still be authorized via RBAC on "+
+			"signet.io/adminoperations verb administer (env: SIGNET_ADMIN_SUBJECTS)")
 	flag.StringVar(&raw.kubeUnsealSecret, "kube-unseal-secret", envOr("SIGNET_KUBE_UNSEAL_SECRET", ""),
 		"name of the Kubernetes Secret holding the master key for auto-unseal on startup; empty disables (env: SIGNET_KUBE_UNSEAL_SECRET)")
 	flag.StringVar(&raw.environment, "environment", envOr("SIGNET_ENVIRONMENT", ""),
 		"environment label for this instance, e.g. prod, staging, dev; scopes SOPS key generation and decryption (env: SIGNET_ENVIRONMENT)")
 	flag.StringVar(&raw.auditChainKey, "audit-chain-key", envOr("SIGNET_AUDIT_CHAIN_KEY", ""),
-		"64-character hex-encoded 32-byte HMAC chain key for audit log integrity (required; env: SIGNET_AUDIT_CHAIN_KEY)")
+		"64-character hex-encoded 32-byte HMAC chain key for audit log integrity; "+
+			"mutually exclusive with -audit-chain-key-file, exactly one is required (env: SIGNET_AUDIT_CHAIN_KEY)")
+	flag.StringVar(&raw.auditChainKeyFile, "audit-chain-key-file", envOr("SIGNET_AUDIT_CHAIN_KEY_FILE", ""),
+		"path to a file containing the hex-encoded audit chain key, as an alternative to passing it "+
+			"inline via -audit-chain-key (avoids the key sitting in process environment) (env: SIGNET_AUDIT_CHAIN_KEY_FILE)")
+	flag.BoolVar(&raw.auditFailClosed, "audit-fail-closed", envOrBool("SIGNET_AUDIT_FAIL_CLOSED", true),
+		"deny an otherwise-permitted secret/config/bundle access if its audit log write fails (recommended; env: SIGNET_AUDIT_FAIL_CLOSED)")
 
 	flag.Parse()
 	return validate(raw)
 }
 
 type rawConfig = struct {
-	dbConnString     string
-	spireSocket      string
-	trustDomain      string
-	workloadAddr     string
-	adminAddr        string
-	webhookAddr      string
-	webhookBaseURL   string
-	drainTimeout     string
-	shamirShares     int
-	shamirThreshold  int
-	shareTimeout     string
-	kubeAudiences    string
-	kubeUnsealSecret string
-	environment      string
-	auditChainKey    string
+	dbConnString      string
+	spireSocket       string
+	trustDomain       string
+	workloadAddr      string
+	adminAddr         string
+	webhookAddr       string
+	webhookBaseURL    string
+	drainTimeout      string
+	shamirShares      int
+	shamirThreshold   int
+	shareTimeout      string
+	kubeAudiences     string
+	adminSubjects     string
+	kubeUnsealSecret  string
+	environment       string
+	auditChainKey     string
+	auditChainKeyFile string
+	auditFailClosed   bool
 }
 
 func validate(raw rawConfig) (config, error) {
@@ -135,7 +162,23 @@ func validate(raw rawConfig) (config, error) {
 
 	require(raw.dbConnString, "-db / SIGNET_DB_CONN_STRING")
 	require(raw.trustDomain, "-trust-domain / SIGNET_TRUST_DOMAIN")
-	require(raw.auditChainKey, "-audit-chain-key / SIGNET_AUDIT_CHAIN_KEY")
+
+	auditChainKeyHex := raw.auditChainKey
+	switch {
+	case raw.auditChainKey != "" && raw.auditChainKeyFile != "":
+		errs = append(errs, "specify exactly one of -audit-chain-key / SIGNET_AUDIT_CHAIN_KEY or "+
+			"-audit-chain-key-file / SIGNET_AUDIT_CHAIN_KEY_FILE, not both")
+	case raw.auditChainKeyFile != "":
+		data, readErr := os.ReadFile(raw.auditChainKeyFile)
+		if readErr != nil {
+			errs = append(errs, fmt.Sprintf("read -audit-chain-key-file %s: %v", raw.auditChainKeyFile, readErr))
+		} else {
+			auditChainKeyHex = strings.TrimSpace(string(data))
+		}
+	case raw.auditChainKey == "":
+		errs = append(errs, "one of -audit-chain-key / SIGNET_AUDIT_CHAIN_KEY or "+
+			"-audit-chain-key-file / SIGNET_AUDIT_CHAIN_KEY_FILE is required")
+	}
 
 	drainTimeout, err := time.ParseDuration(raw.drainTimeout)
 	if err != nil {
@@ -147,13 +190,13 @@ func validate(raw rawConfig) (config, error) {
 	}
 
 	var auditKey []byte
-	if raw.auditChainKey != "" {
-		key, decErr := hex.DecodeString(raw.auditChainKey)
+	if auditChainKeyHex != "" {
+		key, decErr := hex.DecodeString(auditChainKeyHex)
 		switch {
 		case decErr != nil:
-			errs = append(errs, fmt.Sprintf("invalid -audit-chain-key: not valid hex: %v", decErr))
+			errs = append(errs, fmt.Sprintf("invalid audit chain key: not valid hex: %v", decErr))
 		case len(key) != 32:
-			errs = append(errs, fmt.Sprintf("invalid -audit-chain-key: must be 32 bytes (64 hex chars), got %d bytes", len(key)))
+			errs = append(errs, fmt.Sprintf("invalid audit chain key: must be 32 bytes (64 hex chars), got %d bytes", len(key)))
 		default:
 			auditKey = key
 		}
@@ -168,15 +211,18 @@ func validate(raw rawConfig) (config, error) {
 		}
 	}
 
-	if len(errs) > 0 {
-		return config{}, fmt.Errorf("configuration errors:\n  - %s", strings.Join(errs, "\n  - "))
+	audiences := splitNonEmpty(raw.kubeAudiences)
+	if len(audiences) == 0 {
+		// An empty audience list makes the underlying Kubernetes TokenReview
+		// accept a token bearing ANY audience, including the default
+		// "https://kubernetes.default.svc" audience mounted into virtually
+		// every pod. Refuse to start rather than silently widen who can even
+		// attempt admin authentication.
+		errs = append(errs, "-kube-audiences / SIGNET_KUBE_AUDIENCES must not be empty")
 	}
 
-	var audiences []string
-	for _, a := range strings.Split(raw.kubeAudiences, ",") {
-		if t := strings.TrimSpace(a); t != "" {
-			audiences = append(audiences, t)
-		}
+	if len(errs) > 0 {
+		return config{}, fmt.Errorf("configuration errors:\n  - %s", strings.Join(errs, "\n  - "))
 	}
 
 	return config{
@@ -192,10 +238,24 @@ func validate(raw rawConfig) (config, error) {
 		ShamirThreshold:  raw.shamirThreshold,
 		ShareTimeout:     shareTimeout,
 		kubeAudiences:    audiences,
+		adminSubjects:    splitNonEmpty(raw.adminSubjects),
 		KubeUnsealSecret: raw.kubeUnsealSecret,
 		Environment:      raw.environment,
 		auditKeyBytes:    auditKey,
+		AuditFailClosed:  raw.auditFailClosed,
 	}, nil
+}
+
+// splitNonEmpty splits a comma-separated string, trimming whitespace and
+// dropping empty entries. Returns nil (not an empty slice) if nothing remains.
+func splitNonEmpty(s string) []string {
+	var out []string
+	for _, part := range strings.Split(s, ",") {
+		if t := strings.TrimSpace(part); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 func envOr(key, fallback string) string {
@@ -215,4 +275,16 @@ func envOrInt(key string, fallback int) int {
 		return fallback
 	}
 	return n
+}
+
+func envOrBool(key string, fallback bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return fallback
+	}
+	return b
 }
