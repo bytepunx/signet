@@ -84,27 +84,34 @@ func spiffeURIFromCert(uris []*url.URL) (string, error) {
 
 // Checker evaluates access policies fetched from the store.
 type Checker struct {
-	st *store.Store
+	st          *store.Store
+	trustDomain string
 }
 
-// NewChecker creates a Checker backed by the given store.
-func NewChecker(st *store.Store) *Checker {
-	return &Checker{st: st}
+// NewChecker creates a Checker backed by the given store. trustDomain is the
+// SPIFFE trust domain this signet instance is configured for (matching
+// SpireCredentials' AuthorizeMemberOf); it is used to validate the trust
+// domain segment of the exact-match convention's SPIFFE ID, independent of
+// (and in addition to) the TLS-layer trust domain check already performed by
+// SPIRE credentials.
+func NewChecker(st *store.Store, trustDomain string) *Checker {
+	return &Checker{st: st, trustDomain: trustDomain}
 }
 
 // Allow returns nil if the caller is permitted to perform the operation.
 //
 // Exact-match convention (no policy required): when the SPIFFE ID encodes a
 // Kubernetes workload identity of the form
-// spiffe://<trust-domain>/ns/<namespace>/sa/<service>, and the encoded
-// namespace and service account name exactly match the requested secret's
-// namespace and service, access is granted without consulting the policy store.
-// This covers the primary use-case — a service reading its own secrets — while
+// spiffe://<trust-domain>/ns/<namespace>/sa/<service>, the trust domain
+// matches this checker's configured trust domain, and the encoded namespace
+// and service account name exactly match the requested secret's namespace
+// and service, access is granted without consulting the policy store. This
+// covers the primary use-case — a service reading its own secrets — while
 // keeping explicit policies mandatory for every cross-service or wildcard
 // access pattern.
 //
 // All other cases require an explicit policy. Pattern matching uses path.Match
-// semantics on the "namespace/secretName" target:
+// semantics on the "namespace/service/secretName" target:
 //   - '*' matches any sequence of non-separator characters
 //   - '?' matches any single non-separator character
 //   - '[abc]' matches character classes
@@ -116,7 +123,7 @@ func (c *Checker) Allow(ctx context.Context, spiffeID, permission, namespace, se
 	// Exact-match bypass: no policy needed when the workload's own
 	// Kubernetes namespace and service account name match the secret's
 	// namespace and service exactly.
-	if spiffeNS, spiffeSA := parseKubeSpiffeID(spiffeID); spiffeNS != "" &&
+	if spiffeNS, spiffeSA := parseKubeSpiffeID(spiffeID, c.trustDomain); spiffeNS != "" &&
 		spiffeNS == namespace && spiffeSA == service {
 		return nil
 	}
@@ -126,7 +133,7 @@ func (c *Checker) Allow(ctx context.Context, spiffeID, permission, namespace, se
 		return fmt.Errorf("auth: fetch policies: %w", err)
 	}
 
-	return evalPolicies(policies, spiffeID, permission, namespace, secretName)
+	return evalPolicies(policies, spiffeID, permission, namespace, service, secretName)
 }
 
 // parseKubeSpiffeID extracts the Kubernetes namespace and service account name
@@ -134,10 +141,15 @@ func (c *Checker) Allow(ctx context.Context, spiffeID, permission, namespace, se
 //
 //	spiffe://<trust-domain>/ns/<namespace>/sa/<service-account>
 //
-// Returns ("", "") for any ID that does not follow this exact convention.
-func parseKubeSpiffeID(spiffeID string) (namespace, serviceAccount string) {
+// Returns ("", "") for any ID that does not follow this exact convention or
+// whose trust domain does not equal trustDomain. This is belt-and-suspenders
+// with the TLS-layer trust domain check performed by SPIRE credentials
+// (tlsconfig.AuthorizeMemberOf) — it keeps the authorization decision
+// self-contained so it stays correct even if the transport-layer check is
+// ever relaxed (e.g. to support federated trust domains).
+func parseKubeSpiffeID(spiffeID, trustDomain string) (namespace, serviceAccount string) {
 	u, err := url.Parse(spiffeID)
-	if err != nil || u.Scheme != "spiffe" {
+	if err != nil || u.Scheme != "spiffe" || u.Host != trustDomain {
 		return "", ""
 	}
 	// Expect exactly /ns/<namespace>/sa/<service-account> — four non-empty segments.
@@ -151,8 +163,14 @@ func parseKubeSpiffeID(spiffeID string) (namespace, serviceAccount string) {
 
 // evalPolicies is the pure policy-matching core of Allow, extracted so tests
 // can supply a slice of policies directly without a database.
-func evalPolicies(policies []store.Policy, spiffeID, permission, namespace, secretName string) error {
-	target := namespace + "/" + secretName
+//
+// The match target is "namespace/service/secretName" (three segments). Policy
+// patterns must be written against this same three-segment shape — e.g.
+// "payments/api/stripe-key" or "payments/*/db-read-replica-*" — so that a
+// secret with the same name in two different services within one namespace
+// can be granted independently.
+func evalPolicies(policies []store.Policy, spiffeID, permission, namespace, service, secretName string) error {
+	target := namespace + "/" + service + "/" + secretName
 
 	for _, p := range policies {
 		if p.Namespace != namespace && p.Namespace != "*" {
@@ -173,6 +191,6 @@ func evalPolicies(policies []store.Policy, spiffeID, permission, namespace, secr
 		}
 	}
 
-	return fmt.Errorf("%w: %s does not have %q on %s/%s",
-		ErrUnauthorized, spiffeID, permission, namespace, secretName)
+	return fmt.Errorf("%w: %s does not have %q on %s/%s/%s",
+		ErrUnauthorized, spiffeID, permission, namespace, service, secretName)
 }

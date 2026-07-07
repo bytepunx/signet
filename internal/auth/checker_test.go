@@ -34,6 +34,10 @@ func (f *fakeStore) GetPoliciesForSPIFFE(_ context.Context, spiffeID string) ([]
 	return out, nil
 }
 
+// testTrustDomain is the fixed trust domain used by allowViaFake, matching
+// the "cluster.local" domain used throughout these tests' SPIFFE IDs.
+const testTrustDomain = "cluster.local"
+
 // allowViaFake mirrors the full Checker.Allow logic — including the
 // exact-match bypass — using a fakeStore so tests don't need a real database.
 func allowViaFake(ctx context.Context, fs policyStore, spiffeID, permission, namespace, service, secretName string) error {
@@ -41,7 +45,7 @@ func allowViaFake(ctx context.Context, fs policyStore, spiffeID, permission, nam
 		return ErrUnauthenticated
 	}
 	// Mirror the exact-match bypass from Checker.Allow.
-	if spiffeNS, spiffeSA := parseKubeSpiffeID(spiffeID); spiffeNS != "" &&
+	if spiffeNS, spiffeSA := parseKubeSpiffeID(spiffeID, testTrustDomain); spiffeNS != "" &&
 		spiffeNS == namespace && spiffeSA == service {
 		return nil
 	}
@@ -49,7 +53,7 @@ func allowViaFake(ctx context.Context, fs policyStore, spiffeID, permission, nam
 	if err != nil {
 		return err
 	}
-	return evalPolicies(policies, spiffeID, permission, namespace, secretName)
+	return evalPolicies(policies, spiffeID, permission, namespace, service, secretName)
 }
 
 // --- tests ---
@@ -119,7 +123,7 @@ func TestAllow_PolicyGrant_ViaExplicitPolicy(t *testing.T) {
 	fs := &fakeStore{policies: []store.Policy{{
 		SPIFFEID:    "spiffe://cluster.local/ns/observability/sa/metrics",
 		Namespace:   "payments",
-		Pattern:     "payments/stripe-key",
+		Pattern:     "payments/api/stripe-key",
 		Permissions: []string{"get"},
 	}}}
 	err := allowViaFake(context.Background(), fs,
@@ -127,11 +131,32 @@ func TestAllow_PolicyGrant_ViaExplicitPolicy(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestAllow_PolicyGrant_DistinguishesServiceWithSameSecretName is the H-4
+// regression test: two services in the same namespace with a same-named
+// secret must be granted independently — a policy scoped to one service must
+// not implicitly grant the other.
+func TestAllow_PolicyGrant_DistinguishesServiceWithSameSecretName(t *testing.T) {
+	fs := &fakeStore{policies: []store.Policy{{
+		SPIFFEID:    "spiffe://cluster.local/ns/observability/sa/metrics",
+		Namespace:   "payments",
+		Pattern:     "payments/api/db-password",
+		Permissions: []string{"get"},
+	}}}
+	spiffeID := "spiffe://cluster.local/ns/observability/sa/metrics"
+
+	assert.NoError(t, allowViaFake(context.Background(), fs, spiffeID, "get", "payments", "api", "db-password"),
+		"policy scoped to service=api must grant access to api's db-password")
+
+	err := allowViaFake(context.Background(), fs, spiffeID, "get", "payments", "worker", "db-password")
+	assert.ErrorIs(t, err, ErrUnauthorized,
+		"policy scoped to service=api must NOT grant access to worker's same-named db-password")
+}
+
 func TestAllow_WildcardPattern(t *testing.T) {
 	fs := &fakeStore{policies: []store.Policy{{
 		SPIFFEID:    "spiffe://x/svc",
 		Namespace:   "prod",
-		Pattern:     "prod/db-*",
+		Pattern:     "prod/svc/db-*",
 		Permissions: []string{"get"},
 	}}}
 
@@ -141,11 +166,26 @@ func TestAllow_WildcardPattern(t *testing.T) {
 	assert.ErrorIs(t, err, ErrUnauthorized)
 }
 
+func TestAllow_WildcardServiceSegment(t *testing.T) {
+	// A policy may wildcard the service segment to grant across every
+	// service in a namespace, matching the design's documented pattern shape.
+	fs := &fakeStore{policies: []store.Policy{{
+		SPIFFEID:    "spiffe://x/svc",
+		Namespace:   "payments",
+		Pattern:     "payments/*/db-read-replica-*",
+		Permissions: []string{"get"},
+	}}}
+	assert.NoError(t, allowViaFake(context.Background(), fs, "spiffe://x/svc", "get", "payments", "api", "db-read-replica-1"))
+	assert.NoError(t, allowViaFake(context.Background(), fs, "spiffe://x/svc", "get", "payments", "worker", "db-read-replica-2"))
+	err := allowViaFake(context.Background(), fs, "spiffe://x/svc", "get", "payments", "api", "stripe-api-key")
+	assert.ErrorIs(t, err, ErrUnauthorized)
+}
+
 func TestAllow_StarPermission(t *testing.T) {
 	fs := &fakeStore{policies: []store.Policy{{
 		SPIFFEID:    "spiffe://x/admin",
 		Namespace:   "prod",
-		Pattern:     "prod/*",
+		Pattern:     "prod/*/*",
 		Permissions: []string{"*"},
 	}}}
 	assert.NoError(t, allowViaFake(context.Background(), fs, "spiffe://x/admin", "get", "prod", "svc", "any-secret"))
@@ -157,7 +197,7 @@ func TestAllow_WrongPermission(t *testing.T) {
 	fs := &fakeStore{policies: []store.Policy{{
 		SPIFFEID:    "spiffe://x/svc",
 		Namespace:   "prod",
-		Pattern:     "prod/db-*",
+		Pattern:     "prod/svc/db-*",
 		Permissions: []string{"get"},
 	}}}
 	err := allowViaFake(context.Background(), fs, "spiffe://x/svc", "delete", "prod", "svc", "db-password")
@@ -169,7 +209,7 @@ func TestAllow_WrongNamespace(t *testing.T) {
 	fs := &fakeStore{policies: []store.Policy{{
 		SPIFFEID:    "spiffe://x/svc",
 		Namespace:   "prod",
-		Pattern:     "prod/*",
+		Pattern:     "prod/*/*",
 		Permissions: []string{"get"},
 	}}}
 	err := allowViaFake(context.Background(), fs, "spiffe://x/svc", "get", "staging", "svc", "db-password")
@@ -179,8 +219,8 @@ func TestAllow_WrongNamespace(t *testing.T) {
 
 func TestAllow_MultiplePolicies_FirstMatchWins(t *testing.T) {
 	fs := &fakeStore{policies: []store.Policy{
-		{SPIFFEID: "spiffe://x/svc", Namespace: "prod", Pattern: "prod/db-*", Permissions: []string{"get"}},
-		{SPIFFEID: "spiffe://x/svc", Namespace: "prod", Pattern: "prod/*", Permissions: []string{"delete"}},
+		{SPIFFEID: "spiffe://x/svc", Namespace: "prod", Pattern: "prod/svc/db-*", Permissions: []string{"get"}},
+		{SPIFFEID: "spiffe://x/svc", Namespace: "prod", Pattern: "prod/*/*", Permissions: []string{"delete"}},
 	}}
 	assert.NoError(t, allowViaFake(context.Background(), fs, "spiffe://x/svc", "get", "prod", "svc", "db-password"))
 	assert.NoError(t, allowViaFake(context.Background(), fs, "spiffe://x/svc", "delete", "prod", "svc", "cache-url"))
@@ -190,7 +230,7 @@ func TestAllow_DifferentSPIFFE_NoAccess(t *testing.T) {
 	fs := &fakeStore{policies: []store.Policy{{
 		SPIFFEID:    "spiffe://x/svc-a",
 		Namespace:   "prod",
-		Pattern:     "prod/*",
+		Pattern:     "prod/*/*",
 		Permissions: []string{"get"},
 	}}}
 	err := allowViaFake(context.Background(), fs, "spiffe://x/svc-b", "get", "prod", "svc", "secret")
@@ -207,7 +247,7 @@ func TestAllow_StoreError_Propagates(t *testing.T) {
 // --- evalPolicies ---
 
 func TestEvalPolicies_EmptyPolicies(t *testing.T) {
-	err := evalPolicies(nil, "spiffe://x", "get", "ns", "key")
+	err := evalPolicies(nil, "spiffe://x", "get", "ns", "svc", "key")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnauthorized)
 }
@@ -220,7 +260,7 @@ func TestEvalPolicies_MatchErrorBadPattern(t *testing.T) {
 		Namespace:   "ns",
 		Pattern:     "[z-a]", // invalid range
 		Permissions: []string{"get"},
-	}}, "s", "get", "ns", "key")
+	}}, "s", "get", "ns", "svc", "key")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnauthorized)
 }

@@ -70,7 +70,7 @@ func run() error {
 	defer auditWriter.Zero()
 
 	// Policy checker — evaluates glob-matched namespace/secret policies.
-	checker := auth.NewChecker(st)
+	checker := auth.NewChecker(st, cfg.TrustDomain)
 
 	// Kubernetes client for SA token validation on the admin endpoint.
 	k8sClient, err := buildK8sClient()

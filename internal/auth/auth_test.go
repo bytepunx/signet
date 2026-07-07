@@ -219,6 +219,7 @@ func TestTokenFromMetadata_JWTToken(t *testing.T) {
 // --- parseKubeSpiffeID ---
 
 func TestParseKubeSpiffeID(t *testing.T) {
+	const configuredTrustDomain = "cluster.local"
 	cases := []struct {
 		name          string
 		spiffeID      string
@@ -230,12 +231,6 @@ func TestParseKubeSpiffeID(t *testing.T) {
 			spiffeID:      "spiffe://cluster.local/ns/payments/sa/api",
 			wantNamespace: "payments",
 			wantSA:        "api",
-		},
-		{
-			name:          "different trust domain",
-			spiffeID:      "spiffe://prod.example.com/ns/infra/sa/worker",
-			wantNamespace: "infra",
-			wantSA:        "worker",
 		},
 		{
 			name:     "extra path segments — not kubernetes convention",
@@ -272,11 +267,29 @@ func TestParseKubeSpiffeID(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			gotNS, gotSA := parseKubeSpiffeID(tc.spiffeID)
+			gotNS, gotSA := parseKubeSpiffeID(tc.spiffeID, configuredTrustDomain)
 			assert.Equal(t, tc.wantNamespace, gotNS)
 			assert.Equal(t, tc.wantSA, gotSA)
 		})
 	}
+}
+
+// TestParseKubeSpiffeID_TrustDomainMismatch is the L-9 regression test: an
+// otherwise well-formed Kubernetes-convention SPIFFE ID from a DIFFERENT
+// trust domain than the one this checker is configured for must not be
+// treated as a match, even though the TLS layer (SpireCredentials with
+// AuthorizeMemberOf) is expected to have already rejected such a connection —
+// this keeps the authorization decision correct on its own.
+func TestParseKubeSpiffeID_TrustDomainMismatch(t *testing.T) {
+	gotNS, gotSA := parseKubeSpiffeID("spiffe://prod.example.com/ns/infra/sa/worker", "cluster.local")
+	assert.Empty(t, gotNS)
+	assert.Empty(t, gotSA)
+}
+
+func TestParseKubeSpiffeID_TrustDomainMatch(t *testing.T) {
+	gotNS, gotSA := parseKubeSpiffeID("spiffe://prod.example.com/ns/infra/sa/worker", "prod.example.com")
+	assert.Equal(t, "infra", gotNS)
+	assert.Equal(t, "worker", gotSA)
 }
 
 // --- sentinel error identity ---
