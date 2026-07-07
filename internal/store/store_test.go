@@ -218,7 +218,7 @@ func TestValidateKey_Valid(t *testing.T) {
 
 // --- Version validation ---
 
-func TestGetSecretAtVersion_ZeroVersion(t *testing.T) {
+func TestVersionGuard_RejectsZeroVersion(t *testing.T) {
 	// We can't call GetSecretAtVersion on a nil store, but we can test the version
 	// check directly by constructing a store with a nil pool. The validation
 	// happens before any pool access, so it's safe.

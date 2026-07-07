@@ -396,9 +396,9 @@ func TestListSecrets_NoPayload(t *testing.T) {
 	metas, err := s.ListSecrets(context.Background(), "ns", "svc")
 	require.NoError(t, err)
 	require.Len(t, metas, 1)
-	// SecretMeta must not expose encrypted payload.
-	assert.Empty(t, metas[0].Namespace) // would fail only if struct had payload fields
-	// Actually test what is present.
+	// SecretMeta must not expose encrypted payload; assert its identity fields
+	// are populated and it has no way to carry EncryptedDEK/Ciphertext at all
+	// (SecretMeta has no such fields — enforced at compile time, not runtime).
 	assert.Equal(t, "ns", metas[0].Namespace)
 	assert.Equal(t, "svc", metas[0].Service)
 	assert.Equal(t, "key", metas[0].Name)
