@@ -32,6 +32,17 @@ type stubAdmin struct {
 type stubGitOps struct {
 	adminv1.UnimplementedGitOpsServiceServer
 }
+
+// panicGitOpsServer exercises the admin server's streaming panic recovery
+// interceptor via SyncBundle, the only streaming RPC registered on adminSrv.
+type panicGitOpsServer struct {
+	adminv1.UnimplementedGitOpsServiceServer
+}
+
+func (panicGitOpsServer) SyncBundle(grpc.ClientStreamingServer[adminv1.SyncBundleChunk, adminv1.SyncBundleResponse]) error {
+	panic("deliberate panic in stream handler")
+}
+
 type stubSecrets struct {
 	signetv1.UnimplementedSecretsServiceServer
 }
@@ -252,6 +263,47 @@ func TestRun_PanicInHandlerReturnsInternal(t *testing.T) {
 	if status.Code(err) != codes.Internal {
 		t.Errorf("server should still respond after panic recovery, got %v", err)
 	}
+}
+
+// TestRun_PanicInStreamHandlerReturnsInternal is the M-5 regression test: a
+// panic in a streaming RPC on the admin server (SyncBundle is the only
+// streaming RPC registered there) must be recovered, not crash the process.
+func TestRun_PanicInStreamHandlerReturnsInternal(t *testing.T) {
+	srv := newTestServer(t, nil, nil, panicGitOpsServer{}, &fakeMgr{})
+	cancel, _ := runBackground(srv)
+	defer cancel()
+	waitReady()
+
+	conn, err := grpc.NewClient(srv.AdminAddr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+
+	callAndExpectInternal := func() {
+		t.Helper()
+		stream, err := adminv1.NewGitOpsServiceClient(conn).SyncBundle(context.Background())
+		if err != nil {
+			t.Fatalf("open stream: %v", err)
+		}
+		// The handler panics immediately, before ever reading — the server
+		// may close the stream before Send's payload is transmitted. Per
+		// grpc-go's documented contract, Send then returns io.EOF and the
+		// real status must be retrieved via CloseAndRecv/RecvMsg, not treated
+		// as a test failure.
+		sendErr := stream.Send(&adminv1.SyncBundleChunk{
+			Payload: &adminv1.SyncBundleChunk_Header{Header: &adminv1.SyncBundleHeader{}},
+		})
+		_, err = stream.CloseAndRecv()
+		if status.Code(err) != codes.Internal {
+			t.Errorf("want Internal after stream panic recovery, got send=%v closeAndRecv=%v", sendErr, err)
+		}
+	}
+
+	// First call: panic is caught, returns Internal.
+	callAndExpectInternal()
+	// Second call on a fresh stream confirms the server is still alive.
+	callAndExpectInternal()
 }
 
 // --- Addr helpers ---

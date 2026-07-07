@@ -130,6 +130,7 @@ func newWithCloser(
 
 	adminSrv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(recoveryInterceptor),
+		grpc.ChainStreamInterceptor(recoveryStreamInterceptor),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			Time:    30 * time.Second,
 			Timeout: 10 * time.Second,
