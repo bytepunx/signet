@@ -119,18 +119,21 @@ func lagrangeAt0(xs, ys []byte) byte {
 }
 
 // gfMul multiplies two elements in GF(2^8) using the AES reduction polynomial
-// x^8 + x^4 + x^3 + x + 1 (0x11b). Implemented as Russian peasant multiplication.
+// x^8 + x^4 + x^3 + x + 1 (0x11b). Implemented as Russian peasant multiplication
+// without data-dependent branches: both conditionals are secret-dependent
+// (they test bits of the master-key-derived operands), so each is replaced
+// with a bitmask (0x00 or 0xFF) applied via AND/XOR instead of an `if`. This
+// does not guarantee true constant-time execution on all hardware (cache and
+// pipeline effects are outside Go's control), but it removes the most direct
+// source of secret-dependent branching.
 func gfMul(a, b byte) byte {
 	var p byte
 	for range 8 {
-		if b&1 != 0 {
-			p ^= a
-		}
-		highBit := a & 0x80
+		lowBitMask := -(b & 1) // 0x00 or 0xFF, without branching on b's low bit
+		p ^= a & lowBitMask
+		highBitMask := -((a >> 7) & 1) // 0x00 or 0xFF, without branching on a's high bit
 		a <<= 1
-		if highBit != 0 {
-			a ^= 0x1b
-		}
+		a ^= 0x1b & highBitMask
 		b >>= 1
 	}
 	return p
