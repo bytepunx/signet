@@ -46,10 +46,24 @@ Rationale:
 ### Schema Design
 
 ```sql
-secrets (namespace, service, secret_name, version, encrypted_dek, ciphertext, expires_at, metadata)
+secrets (namespace, service, secret_name, version, encrypted_dek, ciphertext, expires_at, metadata, kek_id)
 access_policies (spiffe_id, namespace, secret_pattern, permissions)
 audit_log (ts, spiffe_id, action, namespace, secret_name, outcome, peer_ip)  -- TTL: 90 days
+key_encryption_keys (id, wrapped_kek, is_active, created_at, deactivated_at)
+key_check_value (id, ciphertext, created_at)  -- singleton row
 ```
+
+`secrets.kek_id` is nullable: rows written before the KEK tier was introduced have their DEK
+wrapped directly under the master key (`kek_id IS NULL`); decryption handles both forms (see
+Section 5).
+
+**Expiry enforcement:** reads (`GetSecret`, `GetServiceBundle`) filter on
+`expires_at IS NULL OR expires_at > now()`. If a secret's newest version has expired but an
+older version has not, the newest non-expired version is served rather than treating the
+secret as absent; if every version has expired the secret is treated as not found. As of this
+writing, no ingestion path (git/SOPS sync, `signet bundle push`) sets `expires_at` — it is
+enforced at read time but not yet populated by any write path; a future admin/CLI surface for
+setting per-secret expiry is expected to build on this enforcement.
 
 ---
 
@@ -98,11 +112,16 @@ Workload presents SVID over mTLS
 ### Policy Model
 
 **Convention-first:** a workload whose Kubernetes identity (`ns/<namespace>/sa/<service-account>`)
-exactly matches the secret's `namespace` and `service` fields is permitted automatically — no row
+exactly matches the secret's `namespace` and `service` fields, AND whose SPIFFE ID's trust domain
+matches this signet instance's configured trust domain, is permitted automatically — no row
 in `access_policies` is required. This covers the primary usage pattern without any operator
 configuration. Explicit policies are only necessary for cross-service or cross-namespace access.
+(The trust domain check here is belt-and-suspenders with the TLS-layer check SPIRE credentials
+already perform — it keeps the authorization decision self-contained.)
 
-Policies support prefix/glob matching on secret paths, enabling coarse or fine-grained control:
+Policies support prefix/glob matching against a three-segment
+`namespace/service/secret_name` target, enabling coarse or fine-grained control. The service
+segment may itself be a glob (`*`) to grant across every service in a namespace:
 
 ```
 # Entire namespace reads a secret class
@@ -147,6 +166,50 @@ Properties:
 The API server enters a **sealed state** on startup — it can query CockroachDB but cannot
 unwrap any DEK and will not serve any secret until the master key is loaded into memory via
 one of the three unseal mechanisms described in Section 6.
+
+### Associated Data Binding (AAD)
+
+Every AES-256-GCM operation in the envelope hierarchy — secret ciphertext, DEK wrap, KEK
+wrap, and the key-check value (Section 6) — is bound via GCM additional authenticated data
+(AAD) to the logical identity of what it protects: `(namespace, service, secret_name)` for
+secret ciphertext and DEK wraps, a fixed context tag for KEK wraps and the key-check value,
+and `(repository name)` / `(SOPS public key)` for the webhook secret, deploy key, and SOPS
+private keys respectively. AAD is not stored — it is recomputed from the row being read and
+supplied to `Decrypt`/`UnwrapKey`, so a blob copied from one row into another (by a party with
+database write access but no key material) fails GCM authentication instead of silently
+decrypting under the destination's identity. This closes a swap/substitution class of attack
+that key material alone does not prevent.
+
+Data encrypted before AAD binding was introduced (empty `kek_id`, or any artifact from an
+older signet version) has no AAD to check against. Decryption of such data falls back to the
+legacy nil-AAD form and logs a warning identifying the artifact so operators can identify what
+still needs to be re-synced (secrets, via a full `signet gitops` sync) or re-registered
+(repository webhook secret / deploy key, SOPS keys) to gain the new binding. New writes always
+use AAD; there is no way to write new data in the legacy unbound form.
+
+### KEK and Master Key Rotation
+
+```bash
+# Re-wrap every secret's DEK under a newly generated KEK. Cheap: touches only
+# DEKs (small), never re-encrypts secret ciphertext blobs.
+signet kek rotate
+signet kek list
+signet kek prune --id <old-kek-id>   # once no secret still references it
+
+# Re-wrap every KEK (and the key-check value) under a new master key, then
+# adopt it. Even cheaper: touches only the (typically small) set of KEKs, never
+# secrets or DEKs directly. The operator supplies the new key (or lets the CLI
+# generate one, shown once) and is responsible for redistributing it to Shamir
+# keyholders or updating the Kubernetes auto-unseal Secret afterward.
+signet master-key rotate --new-key-file ./new-master.key
+```
+
+`RotateKEK` deactivates (does not delete) the previous KEK so any DEK not yet re-wrapped
+remains decryptable; `PruneKEK` refuses to delete the active KEK or one still referenced by
+any secret. `RotateMasterKey` re-wraps the database's KEK and key-check rows inside one
+transaction before adopting the new key in memory; if adopting the new key in memory fails
+after that transaction commits, signetd makes a best-effort attempt to roll the database back
+to the previous wraps so the still-loaded old key remains authoritative.
 
 ---
 
@@ -211,6 +274,15 @@ stronger than leaving the key in an env var or configmap. It is the appropriate 
 
 It is NOT appropriate when cluster compromise must not imply master key disclosure.
 
+**etcd encryption-at-rest is a prerequisite, not optional.** The master key is stored in the
+Secret's `master.key` field as base64 — not encrypted — and Kubernetes Secrets are themselves
+stored in etcd unencrypted unless the cluster explicitly configures an `EncryptionConfiguration`
+(https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/). Without that, the master
+key is recoverable by anyone with etcd access (backups included), independent of Kubernetes
+RBAC entirely. signetd logs a warning at startup when auto-unseal is enabled, since it cannot
+verify etcd's encryption configuration itself. Exclude the `master.key` Secret from any backup
+or GitOps export tooling.
+
 #### Bootstrap: `signet init`
 
 A single CLI command handles the entire cluster preparation and unseal workflow:
@@ -222,7 +294,8 @@ signet init [flags]
   --kube-context   kubectl context to use (default: current context)
   --server         signet admin endpoint (default: from config)
   --token          admin Bearer token
-  --force          Regenerate key and overwrite existing Secret
+  --force          Regenerate key and overwrite existing Secret (DESTRUCTIVE — see below)
+  --yes            Skip the interactive confirmation prompt required by --force
 ```
 
 Execution steps (idempotent):
@@ -256,6 +329,13 @@ data:
 `signet init` uses `client-go` directly (not a `kubectl` subprocess) so it works headlessly
 in CI pipelines and scripts. Kubeconfig is discovered via the standard chain:
 `$KUBECONFIG` → `~/.kube/config` → in-cluster service account (when running inside a pod).
+
+**`--force` is destructive and irreversible:** regenerating the key for an *existing* Secret
+orphans every secret currently encrypted under the old key — there is no way to recover them
+afterward. `signet init --force` therefore requires interactive confirmation (type `yes`)
+unless `--yes` is passed for scripted/CI use. This confirmation is skipped when `--force` is
+combined with `--dry-run`, and does not apply when no Secret exists yet (creating a Secret for
+the first time is not destructive).
 
 #### Auto-unseal on restart
 
@@ -300,7 +380,25 @@ After pod restart (if auto-unseal disabled):
   signet init          → reads existing Secret (no --force), re-unseals
 ```
 
-### Mechanism 4: TPM / vTPM Auto-Unseal (opt-in)
+### Key-Check Value
+
+Every unseal path (direct key, Shamir reconstruction, and Kubernetes auto-unseal) verifies the
+candidate master key against a stored **key-check value** before the server is declared
+operational: a fixed constant encrypted under the master key with AAD binding, persisted on
+first successful unseal. On every later unseal, the candidate key must decrypt this value; on
+mismatch the server immediately re-seals and the unseal call returns an error, rather than
+running with a key that decrypts nothing. This distinguishes "wrong key supplied" (immediate,
+clear failure) from "data corruption" (which would otherwise only surface once a workload
+first tries to read a secret) and prevents a stale Kubernetes Secret or an incorrect Shamir
+share set from silently leaving the server in a half-functional state.
+
+### Mechanism 4: TPM / vTPM Auto-Unseal (opt-in) — NOT YET IMPLEMENTED
+
+**Status: design only.** `UnsealWithTPM` (`internal/unseal/tpm.go`, built with `-tags tpm`)
+currently returns "not yet implemented"; the default (non-`tpm`-tagged) build returns
+`ErrTPMNotSupported` unconditionally. Nothing below this line is available to operators yet —
+it describes the intended design once implemented, not current behavior. Do not plan a
+deployment around TPM auto-unseal until this note is removed.
 
 For environments where TPM 2.0 or a cloud-provider vTPM is available and configured, the
 master key can be sealed to TPM PCR state at initialisation. On subsequent restarts the API
@@ -406,6 +504,38 @@ is running it immediately issues SVIDs to attested workloads including signet it
    - Multi-operator / production: `signet unseal share` per keyholder (Shamir)
 5. Signet becomes operational; all subsequent workload access uses SPIFFE mTLS
 
+### Admin Authorization
+
+A valid, authenticated Kubernetes ServiceAccount token is necessary but not sufficient to call
+any admin RPC (`AdminService` or `GitOpsService`). After `TokenReview` confirms the token is
+authentic, signetd authorizes the resulting identity via either of two complementary
+mechanisms — either is sufficient:
+
+1. **Allowlist** (`SIGNET_ADMIN_SUBJECTS`) — a comma-separated list of
+   `serviceaccount:<namespace>:<name>` or `group:<name>` entries, checked first as a fast
+   path requiring no extra API call.
+2. **SubjectAccessReview** — if not on the allowlist, signetd asks the cluster whether the
+   caller's identity has been granted verb `administer` on the synthetic resource
+   `adminoperations` in API group `signet.io` (no CRD required — RBAC evaluates the tuple
+   regardless of whether a real API resource backs it):
+
+   ```yaml
+   apiVersion: rbac.authorization.k8s.io/v1
+   kind: ClusterRole
+   metadata:
+     name: signet-admin-operator
+   rules:
+     - apiGroups: ["signet.io"]
+       resources: ["adminoperations"]
+       verbs: ["administer"]
+   ```
+
+If neither mechanism grants access, the RPC fails with `PermissionDenied` — the request never
+reaches unseal, seal, KEK/master-key rotation, or GitOps logic. `SIGNET_KUBE_AUDIENCES` must
+be non-empty (default `signet`); an empty audience list would make `TokenReview` accept a
+token bearing any audience, so signetd refuses to start rather than silently widen who can
+even attempt admin authentication.
+
 ### Operator CLI Access During Unseal
 
 The signet admin endpoint is not exposed outside the cluster. Operators reach it via
@@ -424,6 +554,13 @@ signet unseal share --share $MY_SHARE                       # or 'key' for mecha
 The bootstrap SA token is revoked once unsealing is complete. All subsequent admin operations
 require a fresh short-lived token and an active port-forward session.
 
+**Transport security:** the `signet` CLI sends the bearer token in cleartext only to a loopback
+`--server` address (the `kubectl port-forward` case above, where the tunnel itself is already
+protected by kubeconfig credentials). Any other address is automatically upgraded to TLS —
+using the system trust store, or a CA supplied via `--ca` — before the token is ever sent; if
+the server's certificate cannot be verified, the connection fails rather than silently falling
+back to plaintext. `--tls` forces TLS even for a loopback address.
+
 ### Local Development
 
 For local clusters (kind, minikube, k3s), the admin endpoint may be configured to accept
@@ -437,9 +574,19 @@ bind address is not loopback and must never be used in production deployments.
 **Decision: Structured append-only logs forwarded out-of-cluster in near-real-time, with
 HMAC chaining for tamper detection.**
 
-- Every secret access (permitted or denied) written to `audit_log` table and forwarded
+- Every secret access (permitted or denied) written to `audit_log` table and forwarded — this
+  includes `GetSecret`/`WatchSecret` as well as `GetConfig`/`GetServiceConfig`/
+  `WatchServiceConfig`/`GetServiceBundle`/`WatchServiceBundle`; the two bundle actions use the
+  sentinel secret names `<config>`/`<bundle>` since they span an entire document rather than
+  one named secret. `GetServiceBundle` in particular decrypts every secret for a service in one
+  call, so its audit entry is written before the bundle is returned to the caller.
 - HMAC chaining: each log entry includes an HMAC of the previous entry — retroactive tampering
   is detectable
+- **Fail-closed by default** (`SIGNET_AUDIT_FAIL_CLOSED`, default `true`): if the audit write
+  for an otherwise-permitted access fails, the access is denied (`codes.Unavailable`) rather
+  than served without a durable audit trail. A denied access is unaffected — its own audit
+  write failing does not change the fact that it was already being denied. Operators who accept
+  the availability tradeoff may set this to `false` to fail open instead.
 - Log destination: out-of-cluster Loki or syslog-over-TLS to a separate host
 - CockroachDB TTL on `audit_log` table handles retention automatically (default: 90 days)
 
@@ -545,6 +692,18 @@ A prod signetd instance cannot decrypt staging or dev secrets even if it has acc
 
 **Backward compatibility:** `SIGNET_ENVIRONMENT` defaults to empty. Existing deployments continue to work without change — global keys are returned by `GetActiveSOPSKey` and `ListSOPSKeys` when no environment is set.
 
+### Plain Config vs. Secrets
+
+Files under a repository's `secrets_path` are SOPS-encrypted and, once synced, receive the
+full envelope-encryption treatment described in Section 5 (per-secret DEK, KEK wrap, AAD
+binding). Files under the separate, optional `config_path` are plain YAML — **not** SOPS-
+encrypted in the repository and **not** enveloped at rest — they are stored as plaintext JSON,
+protected only by CockroachDB's storage-layer encryption. This is intentional: config exists
+for non-sensitive service configuration (feature flags, timeouts, endpoints) that benefits from
+being human-readable and diffable in git without a decryption step. Operators must not place
+secret material in `config_path` files; `secrets_path` is the only ingestion route with
+per-secret envelope encryption.
+
 ### Repository Registration
 
 ```
@@ -586,10 +745,29 @@ The `Reconciler` performs a `FullSync` of every registered repository at a confi
 
 The reconciler **only runs while the server is unsealed** — it cannot decrypt the stored age keys when sealed. It starts immediately after a successful unseal and is cancelled when the server is sealed.
 
+**No-op dedup:** before re-encrypting and storing a secret, `storeSecret` compares the freshly
+SOPS-decrypted plaintext against the currently stored version. If it is identical *and* the
+stored row is already wrapped under the current active KEK (which implies it already has AAD
+binding — the two ship together), the write is skipped entirely, bounding the otherwise-
+unbounded version growth from re-syncing unchanged secrets every reconciliation pass. A row on
+a rotated-away KEK or predating the KEK tier (`kek_id` empty) is never treated as unchanged, so
+it is naturally rewritten onto the current epoch the next time it is synced — this is how the
+AAD/KEK migration (Section 5) converges without a separate migration job.
+
 ### Sealed-State Behaviour
 
 - Webhook requests while sealed return HTTP 503 with a `Retry-After` header. GitHub will retry delivery automatically.
 - The reconciler goroutine is cancelled on seal and restarted on unseal, so no sync work is attempted against a locked key store.
+
+### Webhook Hardening
+
+The webhook endpoint is necessarily unauthenticated (GitHub does not present a bearer token,
+only an HMAC signature over the body) and reachable by anyone who can route to it, so it is
+rate-limited (20 req/s sustained, burst 40, globally per signetd process) before any other work
+— including the master-key decrypt needed to verify the signature — so a caller cannot force
+unbounded crypto/CPU work per second. An unknown `repo_id` and a known repo with a bad HMAC
+signature return the identical `401` response; the distinguishing detail is only logged
+server-side, so the endpoint cannot be used to enumerate valid repository IDs by response alone.
 
 ### `signet bundle push` — local repository upload
 
@@ -695,9 +873,10 @@ Server side (GitOpsServer.SyncBundle):
 | Network isolation | NetworkPolicy + RBAC | Storage layer invisible outside namespace |
 | Client authentication | mTLS + SPIFFE SVIDs | Platform-rooted identity, no long-lived credentials |
 | Authorization | Exact-match convention + SPIFFE ID → policy table | No-config access for own namespace/service; glob patterns for all other cases |
-| Encryption at rest | Envelope encryption (DEK/KEK/Master) | Per-secret isolation, independent rotation |
+| Encryption at rest | Envelope encryption (DEK/KEK/Master), AAD-bound to logical identity | Per-secret isolation, independent rotation, blocks cross-row ciphertext substitution |
 | Root of trust | Shamir (distributed), Direct key (simple), Kubernetes Secret (cluster-native), TPM (opt-in) | No hardware dependency; operator choice by threat model |
-| Unsealing | Operator CLI via port-forward; independent SA token per keyholder | Auditable, no shared credentials |
+| Unsealing | Operator CLI via port-forward; independent SA token per keyholder; key-check value verified on every unseal | Auditable, no shared credentials; wrong-key unseals fail fast and re-seal |
+| Admin authorization | TokenReview (authenticate) + allowlist or SubjectAccessReview (authorize) | Valid token alone is not sufficient for admin RPCs; delegable to cluster RBAC |
 | Cluster-native bootstrap | `signet init` stores key in Kubernetes Secret; auto-unseal on restart optional | Single-operator convenience; trust boundary = cluster-admin |
 | Persistent storage | Local PVs | No network exposure; application-layer encryption is primary |
 | Node identity | SPIRE k8s attestor (baseline); TPM attestor optional | No hardware dependency |

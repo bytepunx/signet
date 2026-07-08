@@ -11,9 +11,22 @@ All commands communicate with the admin gRPC endpoint (default
 | `--server` | value from `signet config` | Admin endpoint URL |
 | `--token` | `""` | Bearer token for admin auth; alternative to `--token-file` |
 | `--token-file` | `""` | File containing the Bearer token |
+| `--ca` | `""` | Path to a PEM CA certificate to trust for the admin server; implies TLS |
+| `--tls` | `false` | Use TLS even when connecting to a loopback address |
 
 When neither `--token` nor `--token-file` is supplied, signet attempts to use
 a token from the environment variable `SIGNET_TOKEN`.
+
+### Transport security
+
+The bearer token is only sent in cleartext to a **loopback** `--server`
+address (`localhost`, `127.0.0.1`, `::1`) — the documented `kubectl
+port-forward` workflow, where the tunnel itself is already protected by
+kubeconfig credentials. Any other address is automatically upgraded to TLS,
+using the system trust store or the CA supplied via `--ca`. If the server's
+certificate can't be verified, the connection fails outright rather than
+silently falling back to plaintext. Use `--tls` to force TLS for a loopback
+address too (e.g. to test a TLS-terminating proxy locally).
 
 ---
 
@@ -36,43 +49,61 @@ Usage: signet init [flags]
 
 | Flag | Default | Description |
 |---|---|---|
-| `--namespace` | `signet` | Kubernetes namespace where the Secret is created |
+| `--namespace` / `-n` | `signet` | Kubernetes namespace where signet is deployed |
 | `--key-secret` | `signet-master-key` | Name of the Kubernetes Secret to create or reuse |
 | `--kube-context` | `""` | kubeconfig context to use; defaults to current context |
-| `--force` | `false` | Overwrite an existing Secret and re-unseal even if already unsealed |
+| `--force` | `false` | Regenerate the master key and overwrite the existing Secret. **Destructive** — see [`--force` semantics](#--force-semantics) below |
 | `--dry-run` | `false` | Print what would happen without creating any resources or contacting the server |
+| `--yes` | `false` | Skip the interactive confirmation prompt required by `--force` |
 
 ### What it does
 
-1. Checks whether a Secret named `--key-secret` already exists in `--namespace`.
-2. If not found, generates 32 random bytes as the master key and stores them in a new Secret.
-3. Reads the key back from the Secret.
-4. Sends the key to signetd via `signet unseal key`.
-5. Prints a confirmation with the key source and resulting server state.
+1. Checks the server's current seal state; exits immediately with `signet is
+   already unsealed.` if it's already unsealed (even with `--force`).
+2. Looks for an existing master key in `--key-secret` / `--namespace`.
+3. If not found, generates 32 random bytes as the master key and creates the
+   Secret. If found and `--force` is not set, reads the existing key as-is.
+   If found and `--force` **is** set, regenerates the key and overwrites the
+   Secret (see below).
+4. Sends the resulting key to signetd via `UnsealKey`.
+5. Re-checks status and prints the key source (`created` / `regenerated` /
+   `existing`) and resulting server state.
 
 ### Example — fresh cluster (Secret not found)
 
 ```
 $ signet init --server localhost:8444 --token "$TOKEN"
-Secret signet-master-key not found in namespace signet — generating new key.
+signet state: sealed
+Secret "signet-master-key" not found in namespace "signet" — generating new 32-byte master key.
 Created Secret signet/signet-master-key.
-Server unsealed.
+WARNING: Secret signet/signet-master-key contains the plaintext master key.
+         Restrict access with Kubernetes RBAC. For production, consider
+         encrypting this Secret with Sealed Secrets or External Secrets.
+signet unsealed using created key from Secret signet/signet-master-key. State: unsealed
 ```
 
 ### Example — re-running when already unsealed
 
 ```
 $ signet init --server localhost:8444 --token "$TOKEN"
-Secret signet-master-key found in namespace signet.
-Server is already unsealed. Use --force to unseal again.
+signet is already unsealed.
 ```
 
 ### `--force` semantics
 
-When `--force` is supplied alongside an existing Secret, `signet init` reads the
-existing key (it does **not** regenerate it) and re-submits it to the server.
-This is useful after a pod restart when auto-unseal is not enabled. To replace
-the key entirely, delete the Secret manually first.
+`--force` **regenerates** the master key and overwrites the existing Secret —
+it does not reuse the current key. This is destructive: every secret and KEK
+currently wrapped under the old master key becomes permanently undecryptable
+once the new key replaces it in the Secret. Because of that, `--force` always
+prints a warning and requires typing `yes` at an interactive prompt, unless
+`--yes` is passed to skip it (for scripted/CI use, once you're certain).
+
+`--force` is for replacing a *lost or compromised* key, not for routine
+re-unsealing after a pod restart — for that, just run `signet init` again with
+no flags; it reuses the existing Secret unchanged. To actually rotate the
+master key on a running server without losing access to existing data
+(recommended over `--force`), use [`signet master-key rotate`](#signet-master-key-rotate)
+instead, which re-wraps everything in place before the key changes.
 
 ### `--dry-run` for CI validation
 
@@ -82,9 +113,12 @@ Kubernetes resources or calling the unseal RPC. Use this in CI to verify the
 command would succeed without side effects.
 
 ```bash
-signet init --dry-run
-# [dry-run] Would create Secret signet/signet-master-key.
-# [dry-run] Would unseal server at localhost:8444.
+$ signet init --dry-run
+signet state: sealed
+Secret "signet-master-key" not found in namespace "signet" — generating new 32-byte master key.
+[dry-run] would create Secret signet/signet-master-key with new master key.
+[dry-run] would unseal signet with key from Secret signet/signet-master-key.
+[dry-run] no changes made.
 ```
 
 ---
@@ -199,6 +233,149 @@ Usage: signet seal [--token <token>]
 ```bash
 signet seal --token "$TOKEN"
 # Server sealed.
+```
+
+---
+
+## `signet kek`
+
+Manage the key-encryption-key (KEK) that sits between the master key and each
+secret's per-secret data encryption key (DEK): `Master -> KEK -> DEK ->
+secret`. Rotating the KEK re-wraps every secret's DEK without touching any
+secret's ciphertext, so it's cheap regardless of how many secrets exist.
+
+### `signet kek rotate`
+
+Generate a new KEK, deactivate the current one (retained so any DEK not yet
+re-wrapped can still be decrypted), and re-wrap every secret's DEK from the
+old KEK to the new one. On a fresh deployment with no active KEK yet, this
+simply provisions the first one — there's no separate "kek init" step.
+
+```
+Usage: signet kek rotate [--token <token>]
+```
+
+**Example — rotating an existing KEK:**
+```
+$ signet kek rotate --token "$TOKEN"
+New KEK:             7c3f8e21-...
+Old KEK (retained):  1a2b3c4d-...
+Secrets re-wrapped:  482
+Once confirmed, run 'signet kek prune 1a2b3c4d-...' to remove the old KEK.
+```
+
+**Example — first KEK on a fresh deployment:**
+```
+$ signet kek rotate --token "$TOKEN"
+New KEK:             7c3f8e21-...
+```
+
+The old KEK is **not** deleted automatically. Once you've confirmed the
+rotation succeeded, run `signet kek prune <old-kek-id>` to remove it.
+
+### `signet kek list`
+
+List all KEKs — active and retained-for-decryption.
+
+```
+Usage: signet kek list [--token <token>]
+```
+
+**Example output:**
+```
+[active]   7c3f8e21-...  created=2026-06-24T10:00:00Z  deactivated=-
+[inactive] 1a2b3c4d-...  created=2026-01-10T09:00:00Z  deactivated=2026-06-24T10:00:00Z
+```
+
+If no KEK exists yet, prints `No KEKs found. Run 'signet kek rotate' to
+provision one.`
+
+### `signet kek prune`
+
+Permanently delete an inactive, unreferenced KEK.
+
+```
+Usage: signet kek prune --id <id> [--token <token>]
+```
+
+Flags:
+
+| Flag | Required | Description |
+|---|---|---|
+| `--id` | Yes | KEK id to prune (from `signet kek list`) |
+
+Refuses to delete:
+- **the active KEK** — `cannot prune the active kek; rotate first`
+- **a KEK still referenced by any secret's DEK wrap** —
+  `cannot prune kek <id>: still referenced by <n> secret(s)`. Run
+  `signet kek rotate` first and confirm `Secrets re-wrapped` accounts for
+  every secret before pruning.
+
+**Example:**
+```bash
+signet kek prune --id 1a2b3c4d-... --token "$TOKEN"
+# kek 1a2b3c4d-... pruned
+```
+
+---
+
+## `signet master-key`
+
+Manage the top-level master key that wraps every KEK and the key-check value.
+
+### `signet master-key rotate`
+
+Re-wrap every KEK (and the key-check value) under a new master key, then
+adopt it as the server's active master key. Secrets and their DEKs are never
+touched directly — only their KEK layer — which is why this is cheap
+regardless of how many secrets are stored.
+
+```
+Usage: signet master-key rotate [--new-key-file <path>] [--yes] [--token <token>]
+```
+
+Flags:
+
+| Flag | Default | Description |
+|---|---|---|
+| `--new-key-file` | `""` | Path to a binary file containing the new 32-byte master key. If omitted, a random key is generated and printed once |
+| `--yes` | `false` | Skip the interactive confirmation prompt |
+
+This is a **destructive, high-impact operation on the live server** and
+always requires typing `yes` at a prompt unless `--yes` is passed. It does
+**not** redistribute the new key to Shamir keyholders or update a Kubernetes
+auto-unseal Secret — after rotating, you are responsible for:
+
+- **Shamir mode:** regenerate and redistribute new shares from the new key.
+- **Kubernetes auto-unseal:** update the master-key Secret with the new value
+  (e.g. `signet init --force`), or auto-unseal will keep trying the old key
+  and fail the key check on next restart.
+- **Direct-key mode:** securely store the new key in place of the old one.
+
+If adopting the new key in memory fails *after* the database has already been
+updated, signetd rolls the database back to the previous wraps so the
+still-loaded old key remains authoritative — but this is a narrow,
+best-effort safeguard, not a substitute for checking `signet status` after
+rotating.
+
+**Example — generating a new key:**
+```
+$ signet master-key rotate --token "$TOKEN"
+WARNING: this rotates the live master key. Every KEK (and the key-check
+value) will be re-wrapped under the new key. You are responsible for
+redistributing the new key to Shamir keyholders or updating the
+Kubernetes auto-unseal Secret afterward — see 'signet master-key rotate --help'.
+Type 'yes' to continue: yes
+master key rotated; redistribute the new key to keyholders (Shamir) or update the cluster Secret (auto-unseal) as appropriate
+KEKs re-wrapped: 3
+
+New master key (shown once — record it securely now):
+9f8e7d6c5b4a...
+```
+
+**Example — supplying your own key, non-interactively:**
+```bash
+signet master-key rotate --new-key-file ./new-master.key --yes --token "$TOKEN"
 ```
 
 ---
@@ -506,6 +683,63 @@ Sync complete.
 
 ---
 
+## `signet bundle push`
+
+Push a local git repository directly to signet as a SOPS secret bundle,
+without registering it or going through the webhook/reconciler path. Useful
+for local testing, CI validation, or one-off syncs where wiring up a
+repository registration isn't worth it.
+
+```
+Usage: signet bundle push [path] [--secrets-path <path>] [--token <token>]
+```
+
+`path` defaults to the current directory. Flags:
+
+| Flag | Default | Description |
+|---|---|---|
+| `--secrets-path` | `secrets/` | Directory prefix within the repo that holds SOPS-encrypted secrets |
+
+### What it does
+
+1. Opens `path` as a local git repository and resolves `HEAD` — the repo must
+   have at least one commit.
+2. Walks the files tracked in the `HEAD` commit tree, selecting only `.yaml`
+   files under `--secrets-path`.
+3. Packages them into an in-memory `tar.gz` (only git-tracked file contents
+   are read; nothing on disk outside the repo is touched).
+4. Streams the archive to signet's admin API over the same `SyncBundle` RPC
+   the webhook/reconciler path uses. Secrets are decrypted server-side with
+   signet's age key — only SOPS ciphertext ever leaves your machine.
+5. Prints the sync result.
+
+**Example:**
+```bash
+signet bundle push ./infra-secrets \
+  --secrets-path secrets/ \
+  --server localhost:8444 \
+  --token "$TOKEN"
+```
+
+```
+Bundled 12 file(s) from HEAD a1b2c3d4e5f6
+Sync complete (sha: a1b2c3d4e5f6)
+  added:   12
+  updated: 0
+  deleted: 0
+```
+
+If sync errors occur for individual files (e.g. decryption failure for one
+secret), they're listed under an `Errors:` section but don't fail the whole
+push — other files still sync.
+
+> This bypasses repository registration entirely, so there's no webhook
+> secret and no ongoing sync — it's a one-shot push of the current `HEAD`.
+> For continuous sync on every push, use [`signet repo add`](#signet-repo-add)
+> instead.
+
+---
+
 ## Authentication
 
 Every admin command requires a valid Kubernetes ServiceAccount token bound to
@@ -517,3 +751,8 @@ kubectl create token signet-admin -n signet --duration=1h
 
 Tokens are short-lived by design. For scripted automation, request a token
 from the Kubernetes API in the script rather than storing a long-lived token.
+
+If your `--server` address isn't a loopback address (see
+[Transport security](#transport-security) above), the token is only ever sent
+over TLS — supply `--ca` if the admin endpoint's certificate isn't in your
+system trust store.
