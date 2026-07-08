@@ -20,7 +20,7 @@ import (
 type Writer struct {
 	mu       sync.Mutex
 	st       *store.Store
-	chainKey []byte // HMAC key held in memory; should be zeroed when the server seals
+	chainKey []byte // HMAC key held in memory; see Zero doc comment for its lifecycle
 	prevHMAC []byte // HMAC of the last written entry
 }
 
@@ -81,8 +81,12 @@ func (w *Writer) Record(ctx context.Context, e Entry) error {
 	return nil
 }
 
-// Zero wipes the chain key and prevHMAC from memory. Called when the server seals.
-// After Zero, Record will return an error on any attempt.
+// Zero wipes the chain key and prevHMAC from memory. Called once at process
+// shutdown (not on every Seal/unseal cycle): the chain key is deliberately
+// kept loaded for the whole process lifetime, including while the server is
+// sealed, so that denied access attempts made against a sealed server are
+// still audited. After Zero, Record will return an error on any attempt.
+
 func (w *Writer) Zero() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
