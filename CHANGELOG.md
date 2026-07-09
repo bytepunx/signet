@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0](https://github.com/bytepunx/signet/compare/v0.2.3...v0.3.0) (2026-07-09)
+
+
+### Features
+
+* **cli:** add reusable destructive-operation confirmation prompt ([166e49c](https://github.com/bytepunx/signet/commit/166e49ccf4cc0aefa9f6ea1190da0dacb6528612))
+* **crypto,api:** add KEK tier, AAD-bound encryption, and key-check verification ([b4397d1](https://github.com/bytepunx/signet/commit/b4397d1a2b61985294b75e314dab1c9f9dcc5b39))
+
+
+### Bug Fixes
+
+* **api:** tighten bundle path-traversal check (L-6) ([e0d847b](https://github.com/bytepunx/signet/commit/e0d847b8440a0924209494315103e094df0d772d))
+* **auth:** authorize admin API calls, not just authenticate them (C-1) ([ba336de](https://github.com/bytepunx/signet/commit/ba336de8953a82ea1341168d421ba70f75e4f9d6))
+* **auth:** validate SPIFFE trust domain and match three-segment policies ([5c103fa](https://github.com/bytepunx/signet/commit/5c103fa653735b14caaa799c6d36df53fdd3bc6e))
+* **cli:** require TLS for non-loopback admin connections (H-6) ([3b3f51e](https://github.com/bytepunx/signet/commit/3b3f51e3e288bd9a94a5b2066f1ab1bd6edce17f))
+* **helm:** add adminSubjects and auditFailClosed to values.schema.json ([300594b](https://github.com/bytepunx/signet/commit/300594b5b82fd8d685757295fdca5af44cbdc83b))
+* **server:** recover from panics in streaming admin RPCs (M-5) ([4d9652e](https://github.com/bytepunx/signet/commit/4d9652e66519f2aa7cce726c957577a5e24d506e))
+* **signetd:** harden config validation and add admin/audit knobs ([dc34dc5](https://github.com/bytepunx/signet/commit/dc34dc55784a9d5cbed7dc2374faaa0c6845de81))
+* **unseal:** make GF(2^8) multiplication branchless (L-3) ([38335a5](https://github.com/bytepunx/signet/commit/38335a55335bd1c59ff111f0b986ff0354072f72))
+
 ## [0.2.3](https://github.com/bytepunx/signet/compare/v0.2.2...v0.2.3) (2026-07-05)
 
 
