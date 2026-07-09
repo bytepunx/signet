@@ -23,7 +23,7 @@ jobs:
       - name: buf push with version label
         env:
           BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
-        run: buf push --label "${{ github.ref_name }}"
+        run: buf push --create --create-visibility public --label "${{ github.ref_name }}"
 
   github-release:
     name: Create GitHub release

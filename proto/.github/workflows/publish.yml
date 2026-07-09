@@ -27,4 +27,5 @@ jobs:
       - name: buf push
         env:
           BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
-        run: buf push
+        # --create is a no-op once the module exists; keeps first-ever push self-service.
+        run: buf push --create --create-visibility public
