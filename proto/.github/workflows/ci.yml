@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: buf lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up buf
+        uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+
+      - name: buf lint
+        run: buf lint
+
+  breaking:
+    name: buf breaking
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up buf
+        uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+
+      # Compares against the last tagged release rather than the previous commit —
+      # consumers pin to tags/BSR labels, not floating main history.
+      - name: Determine last release tag
+        id: last_tag
+        run: |
+          TAG=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: buf breaking against last release
+        if: steps.last_tag.outputs.tag != ''
+        run: buf breaking --against ".git#tag=${{ steps.last_tag.outputs.tag }}"

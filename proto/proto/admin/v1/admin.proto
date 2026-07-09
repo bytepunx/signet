@@ -1,0 +1,274 @@
+syntax = "proto3";
+
+package admin.v1;
+
+// AdminService handles operator lifecycle operations: unsealing, sealing, and status.
+service AdminService {
+  rpc UnsealKey(UnsealKeyRequest)     returns (UnsealKeyResponse);
+  rpc UnsealShare(UnsealShareRequest) returns (UnsealShareResponse);
+  rpc Seal(SealRequest)               returns (SealResponse);
+  rpc Status(StatusRequest)           returns (StatusResponse);
+
+  // Key-encryption-key (KEK) lifecycle. Rotating the KEK re-wraps every
+  // secret's DEK without re-encrypting any secret's ciphertext blob.
+  rpc RotateKEK(RotateKEKRequest) returns (RotateKEKResponse);
+  rpc ListKEKs(ListKEKsRequest)   returns (ListKEKsResponse);
+  rpc PruneKEK(PruneKEKRequest)   returns (PruneKEKResponse);
+
+  // RotateMasterKey re-wraps every KEK (and the key-check value) under a new
+  // master key supplied by the operator, then adopts it as the active master
+  // key. It does not touch secrets or their DEKs. The caller is responsible
+  // for redistributing the new key material to keyholders (Shamir) or
+  // updating the Kubernetes Secret (cluster-native auto-unseal) afterward.
+  rpc RotateMasterKey(RotateMasterKeyRequest) returns (RotateMasterKeyResponse);
+}
+
+// GitOpsService manages SOPS key lifecycle and GitHub repository sync configuration.
+service GitOpsService {
+  // SOPS age key management.
+  rpc GetSOPSPublicKey(GetSOPSPublicKeyRequest)   returns (GetSOPSPublicKeyResponse);
+  rpc RotateSOPSKey(RotateSOPSKeyRequest)         returns (RotateSOPSKeyResponse);
+  rpc ListSOPSKeys(ListSOPSKeysRequest)           returns (ListSOPSKeysResponse);
+  rpc PruneSOPSKey(PruneSOPSKeyRequest)           returns (PruneSOPSKeyResponse);
+
+  // GitHub repository registration and sync.
+  rpc RegisterRepository(RegisterRepositoryRequest) returns (RegisterRepositoryResponse);
+  rpc ListRepositories(ListRepositoriesRequest)     returns (ListRepositoriesResponse);
+  rpc RemoveRepository(RemoveRepositoryRequest)     returns (RemoveRepositoryResponse);
+  rpc TriggerSync(TriggerSyncRequest)               returns (TriggerSyncResponse);
+
+  // Local bundle sync: push a tar.gz of a local git working tree directly to
+  // signet without requiring a remote repository. The first chunk must be a
+  // SyncBundleHeader; subsequent chunks carry the raw archive bytes.
+  // buf:lint:ignore RPC_REQUEST_STANDARD_NAME
+  rpc SyncBundle(stream SyncBundleChunk) returns (SyncBundleResponse);
+}
+
+// --- AdminService messages ---
+
+message UnsealKeyRequest {
+  bytes key = 1;
+}
+
+message UnsealKeyResponse {
+  bool   unsealed        = 1;
+  int32  shares_received = 2;
+  int32  shares_required = 3;
+  string message         = 4;
+}
+
+message UnsealShareRequest {
+  bytes share = 1;
+}
+
+message UnsealShareResponse {
+  bool   unsealed        = 1;
+  int32  shares_received = 2;
+  int32  shares_required = 3;
+  string message         = 4;
+}
+
+message SealRequest {}
+
+message SealResponse {
+  string message = 1;
+}
+
+message StatusRequest {}
+
+message StatusResponse {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_SEALED      = 1;
+    STATE_UNSEALING   = 2;
+    STATE_UNSEALED    = 3;
+  }
+  State  state           = 1;
+  int32  shares_received = 2;
+  int32  shares_required = 3;
+  string version         = 4;
+}
+
+message RotateKEKRequest {}
+
+message RotateKEKResponse {
+  string new_kek_id  = 1;
+  // old_kek_id is retained (deactivated, not deleted) so DEKs wrapped before
+  // rotation completes remain decryptable until PruneKEK is called.
+  string old_kek_id  = 2;
+  // secrets_rewrapped is the number of DEKs successfully re-wrapped under
+  // the new KEK during this call.
+  int32  secrets_rewrapped = 3;
+}
+
+message ListKEKsRequest {}
+
+message KEKInfo {
+  string id             = 1;
+  bool   is_active      = 2;
+  string created_at     = 3;
+  string deactivated_at = 4; // empty if still active
+}
+
+message ListKEKsResponse {
+  repeated KEKInfo keks = 1;
+}
+
+message PruneKEKRequest {
+  string id = 1;
+}
+
+message PruneKEKResponse {
+  string message = 1;
+}
+
+message RotateMasterKeyRequest {
+  // new_key must be exactly 32 bytes.
+  bytes new_key = 1;
+}
+
+message RotateMasterKeyResponse {
+  string message      = 1;
+  int32  keks_rewrapped = 2;
+}
+
+// --- GitOpsService messages ---
+
+message GetSOPSPublicKeyRequest {}
+
+message GetSOPSPublicKeyResponse {
+  // age public key in bech32 format (age1...). Add to .sops.yaml as an age recipient.
+  string public_key  = 1;
+  string fingerprint = 2;
+  string created_at  = 3;
+  // environment this key is scoped to; empty = global (usable by any environment).
+  string environment = 4;
+}
+
+message RotateSOPSKeyRequest {}
+
+message RotateSOPSKeyResponse {
+  string new_public_key  = 1;
+  string new_fingerprint = 2;
+  // old_public_key is retained for decryption until pruned.
+  string old_public_key  = 3;
+  // environment the new key is scoped to; empty = global.
+  string new_environment = 4;
+}
+
+message ListSOPSKeysRequest {}
+
+message SOPSKeyInfo {
+  string public_key     = 1;
+  string fingerprint    = 2;
+  bool   is_active      = 3;
+  string created_at     = 4;
+  string deactivated_at = 5; // empty if still active
+  // environment this key is scoped to; empty = global.
+  string environment    = 6;
+}
+
+message ListSOPSKeysResponse {
+  repeated SOPSKeyInfo keys = 1;
+}
+
+message PruneSOPSKeyRequest {
+  string public_key = 1;
+}
+
+message PruneSOPSKeyResponse {
+  string message = 1;
+}
+
+message RegisterRepositoryRequest {
+  string name         = 1; // human alias, e.g. "infra-secrets"
+  string repo_url     = 2; // https://github.com/org/repo
+  string branch       = 3; // e.g. "main"
+  string secrets_path = 4; // path within repo, e.g. "secrets/"
+  // PEM-encoded SSH private key for read-only deploy access.
+  bytes  deploy_key   = 5;
+  // config_path is the directory prefix within the repo that holds plain YAML
+  // config files, e.g. "config/". Leave empty to disable config sync.
+  string config_path  = 6;
+}
+
+message RegisterRepositoryResponse {
+  string id              = 1;
+  // webhook_url is the endpoint to configure in GitHub (Settings → Webhooks).
+  string webhook_url     = 2;
+  // webhook_secret is the shared HMAC secret to configure in GitHub.
+  // Shown only on registration; not retrievable afterwards.
+  string webhook_secret  = 3;
+}
+
+message ListRepositoriesRequest {}
+
+message RepositoryInfo {
+  string id             = 1;
+  string name           = 2;
+  string repo_url       = 3;
+  string branch         = 4;
+  string secrets_path   = 5;
+  string last_sync_sha  = 6;
+  string last_sync_at   = 7;
+  string config_path    = 8;
+}
+
+message ListRepositoriesResponse {
+  repeated RepositoryInfo repositories = 1;
+}
+
+message RemoveRepositoryRequest {
+  string id = 1;
+}
+
+message RemoveRepositoryResponse {
+  string message = 1;
+}
+
+message TriggerSyncRequest {
+  string id = 1; // repository id
+}
+
+message TriggerSyncResponse {
+  int32  secrets_added   = 1;
+  int32  secrets_updated = 2;
+  int32  secrets_deleted = 3;
+  string sync_sha        = 4;
+  repeated string errors = 5;
+  int32  configs_synced  = 6;
+}
+
+// --- SyncBundle messages ---
+
+// SyncBundleChunk is a single streaming message for the SyncBundle RPC.
+// The first message must contain a SyncBundleHeader; all subsequent messages
+// must contain raw tar.gz archive bytes.
+message SyncBundleChunk {
+  oneof payload {
+    SyncBundleHeader header = 1;
+    bytes            data   = 2;
+  }
+}
+
+// SyncBundleHeader carries metadata sent as the first SyncBundleChunk.
+message SyncBundleHeader {
+  // secrets_path is the directory prefix within the repo that holds secrets,
+  // e.g. "secrets/". Defaults to "secrets/" if empty.
+  string secrets_path = 1;
+  // head_sha is the HEAD commit SHA of the local repo, used for audit logging.
+  // May be empty for non-git sources.
+  string head_sha = 2;
+  // config_path is the directory prefix for plain YAML config files, e.g. "config/".
+  // Leave empty to skip config sync.
+  string config_path = 3;
+}
+
+message SyncBundleResponse {
+  int32  secrets_added   = 1;
+  int32  secrets_updated = 2;
+  int32  secrets_deleted = 3;
+  string sync_sha        = 4;
+  repeated string errors = 5;
+  int32  configs_synced  = 6;
+}
