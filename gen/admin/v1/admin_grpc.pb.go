@@ -435,6 +435,7 @@ type GitOpsServiceClient interface {
 	// Local bundle sync: push a tar.gz of a local git working tree directly to
 	// signet without requiring a remote repository. The first chunk must be a
 	// SyncBundleHeader; subsequent chunks carry the raw archive bytes.
+	// buf:lint:ignore RPC_REQUEST_STANDARD_NAME
 	SyncBundle(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SyncBundleChunk, SyncBundleResponse], error)
 }
 
@@ -558,6 +559,7 @@ type GitOpsServiceServer interface {
 	// Local bundle sync: push a tar.gz of a local git working tree directly to
 	// signet without requiring a remote repository. The first chunk must be a
 	// SyncBundleHeader; subsequent chunks carry the raw archive bytes.
+	// buf:lint:ignore RPC_REQUEST_STANDARD_NAME
 	SyncBundle(grpc.ClientStreamingServer[SyncBundleChunk, SyncBundleResponse]) error
 	mustEmbedUnimplementedGitOpsServiceServer()
 }

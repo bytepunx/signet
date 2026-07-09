@@ -1,4 +1,24 @@
 version: v2
+managed:
+  enabled: true
+  # Only go_package is managed here — the proto schema (bytepunx/signet-proto)
+  # doesn't hard-code any per-language options, so leave every other language's
+  # defaults untouched; each consumer of that schema manages its own.
+  disable:
+    - file_option: java_package
+    - file_option: java_outer_classname
+    - file_option: java_multiple_files
+    - file_option: java_string_check_utf8
+    - file_option: csharp_namespace
+    - file_option: ruby_package
+    - file_option: objc_class_prefix
+    - file_option: php_namespace
+    - file_option: php_metadata_namespace
+    - file_option: optimize_for
+    - file_option: cc_enable_arenas
+  override:
+    - file_option: go_package_prefix
+      value: github.com/bytepunx/signet/gen
 plugins:
   - remote: buf.build/protocolbuffers/go
     out: gen
@@ -8,3 +28,9 @@ plugins:
     out: gen
     opt:
       - paths=source_relative
+# Pinned to the BSR module's main track for now. Once signet-proto cuts its
+# first tagged release, pin this to that label instead
+# (buf.build/bytepunx/signet-proto:v0.1.0) so schema upgrades become an
+# explicit, reviewable one-line bump rather than always tracking HEAD.
+inputs:
+  - module: buf.build/bytepunx/signet-proto
