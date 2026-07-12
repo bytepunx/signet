@@ -523,6 +523,88 @@ signet sops-key prune --public-key age1abc123def456... --token "$TOKEN"
 
 ---
 
+## `signet secret`
+
+Author SOPS-encrypted secret files in a local repository checkout, without
+hand-writing SOPS metadata or learning the `sops` CLI directly. Unlike every
+other `signet` command, `secret set`/`secret rm` operate entirely on local
+files — they never connect to a signetd instance. Run them from anywhere
+inside a checkout that already has a `.sops.yaml` (created by
+`signet sops-key update-config`); the repository root and, for
+multi-environment repos, the environment are both detected automatically.
+
+Encryption is performed by shelling out to the `sops` binary, which must be
+installed and on `PATH` — install it from
+[github.com/getsops/sops](https://github.com/getsops/sops#download). This is
+deliberate: upstream only guarantees API stability for the `sops` CLI (and its
+`decrypt` Go package, used server-side); there is no stable Go package for
+encryption to call in-process instead.
+
+### `signet secret set`
+
+Create or update a SOPS-encrypted secret file at the
+`<secrets-root>/[<env>/]<namespace>/<service>/<name>.yaml` path convention.
+
+```
+Usage: signet secret set <namespace>/<service>/<name> [flags]
+```
+
+Flags:
+
+| Flag | Default | Description |
+|---|---|---|
+| `--value` | `""` | Secret value inline (avoid on shared/logged shells) |
+| `--value-file` | `""` | Read the value from a file |
+| `--env` | auto-detected | Environment to write under; overrides auto-detection |
+| `--secrets-root` | `secrets/` | Secrets directory prefix within the repository |
+| `--sops-config` | auto-discovered | Path to `.sops.yaml`; overrides walking up from the current directory |
+
+If neither `--value` nor `--value-file` is given, the value is read from
+piped stdin, or from a masked interactive prompt if run in a terminal.
+
+**Environment auto-detection**: the `environments` map in `.sops.yaml`
+(written by `signet sops-key update-config`) is consulted when `--env` is not
+given — zero entries means a single-environment repo (no environment path
+segment), exactly one entry is auto-selected, and more than one requires
+`--env` to disambiguate.
+
+**Example — single-environment repo:**
+```bash
+cd infra-secrets/            # already has a .sops.yaml from update-config
+signet secret set payments/api/stripe-key --value sk_live_...
+# Wrote encrypted secret: secrets/payments/api/stripe-key.yaml
+#   environment: (global)
+#
+# Next: git add secrets/payments/api/stripe-key.yaml && git commit && git push
+# (or 'signet bundle push' if this repository has no remote yet)
+```
+
+**Example — multi-environment repo, piped value:**
+```bash
+printf '%s' "$STRIPE_KEY" | signet secret set payments/api/stripe-key --env prod
+# Wrote encrypted secret: secrets/prod/payments/api/stripe-key.yaml
+#   environment: prod
+```
+
+### `signet secret rm`
+
+Delete a secret file at the same path convention. No decryption is
+performed — this is a plain file removal.
+
+```
+Usage: signet secret rm <namespace>/<service>/<name> [--env <env>] [--secrets-root <path>] [--sops-config <path>]
+```
+
+**Example:**
+```bash
+signet secret rm payments/api/stripe-key --env prod
+# Removed secrets/prod/payments/api/stripe-key.yaml
+#
+# Next: git add secrets/prod/payments/api/stripe-key.yaml && git commit && git push
+```
+
+---
+
 ## `signet repo`
 
 Manage git repository registrations for SOPS-encrypted secret syncing.

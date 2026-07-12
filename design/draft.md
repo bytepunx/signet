@@ -716,6 +716,74 @@ signet repo add --name infra-secrets \
 
 signet encrypts the SSH deploy key under the master key and stores it. It generates a random webhook secret and returns the GitHub webhook URL and secret once — not retrievable again.
 
+### `signet secret set` / `signet secret rm` — goal-oriented secret authoring
+
+**Decision: automate secret creation with local, convention-over-configuration
+commands, but shell out to the `sops` CLI for the actual encryption rather
+than calling the SOPS Go library in-process.**
+
+Key management (`sops-key rotate`) and `.sops.yaml` configuration
+(`sops-key update-config`) were already automated; the one manual step left
+was secret creation — hand-writing the `value: <secret>` YAML at the exact
+path convention above, then running `sops -e -i` directly. `signet secret
+set`/`signet secret rm` remove that step:
+
+```
+signet secret set <namespace>/<service>/<name> [--value ... | --value-file ... | stdin/prompt]
+                                                [--env <env>] [--secrets-root secrets/] [--sops-config <path>]
+signet secret rm  <namespace>/<service>/<name> [--env <env>] [--secrets-root secrets/] [--sops-config <path>]
+```
+
+These commands operate on local files only and never contact a signetd
+instance — no admin token is needed to author a secret, only git repository
+access. This mirrors the existing security intent of the repo-as-source-of-
+truth model: whoever manages age keys needs admin access, but whoever writes
+secret values does not.
+
+**Path/environment resolution is convention over configuration**: the
+`.sops.yaml` already produced by `update-config` is walked up to from the
+current directory (no separate signet-specific project config file), and its
+`environments` map disambiguates which environment subdirectory to write
+under — zero entries means a single-environment repo, exactly one entry is
+auto-selected, more than one requires an explicit `--env`. Flags
+(`--env`, `--secrets-root`, `--sops-config`) exist purely as overrides for
+non-standard layouts, not as the primary interface.
+
+**Why shell out to `sops` instead of using the Go library to encrypt**:
+`github.com/getsops/sops/v3` — already a dependency, used server-side for
+decryption (`internal/gitops/sops.go`) — only guarantees API stability for
+its `decrypt` subpackage. There is no equivalently stable package for
+encryption. Server-side decryption has no alternative (it must inject
+synthetic in-memory age identities, which no CLI invocation or stable package
+supports), so it accepts that risk out of necessity. New client-side code has
+an alternative — the `sops` CLI itself — and takes it: `signet secret set`
+writes the plaintext file, then runs `sops --config <resolved .sops.yaml>
+--encrypt --in-place <path>` with the working directory set to the
+`.sops.yaml`'s directory so path_regex matching lines up with the resolved
+path. If the plaintext file is written but encryption fails or the `sops`
+binary is missing, it is deleted rather than left on disk. Requiring `sops`
+on `PATH` is a one-time install step — far smaller than the SOPS
+config/key-management knowledge this feature removes.
+
+**Bug found and fixed while building this**: verifying the round trip against
+files produced by the real `sops` CLI surfaced a latent, pre-existing defect
+in `internal/gitops/sops.go`'s `DecryptFile` — the production decrypt path
+used by the webhook/reconciler sync flow, not just this new CLI feature.
+`tree.Metadata.GetDataKey()` routes decryption through sops's local
+keyservice (`keyservice.NewLocalClient()`), which reconstructs a fresh
+`age.MasterKey` from just the wire-serialized recipient string
+(`keyservice.Server.decryptWithAge`) rather than using the `*MasterKey`
+objects that had identities injected via `ParsedIdentities.ApplyToMasterKey`.
+The injected identities were silently discarded, and decryption fell through
+to sops's normal identity discovery (`SOPS_AGE_KEY`, `~/.ssh/id_rsa`, etc.) —
+none of which signet ever populates, by design. No prior test exercised
+`DecryptFile` against a real SOPS-encrypted file, so this went uncaught.
+The fix decrypts directly against the `*MasterKey` objects in
+`tree.Metadata.KeyGroups` (`decryptDataKeyDirect` in `sops.go`), bypassing
+`GetDataKey()`/the keyservice layer entirely — safe here because signet secret
+files are always a single flat group of age recipients, never PGP/KMS or
+Shamir-sharded across groups.
+
 ### Sync Flow
 
 **On push (webhook-driven):**
