@@ -217,7 +217,7 @@ func TestRunSecretSet_SopsFailureRemovesPlaintext(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no matching creation rule")
 
-	_, statErr := os.Stat(filepath.Join(repoRoot, "secrets/payments/api/stripe-key.yaml"))
+	_, statErr := os.Stat(filepath.Join(repoRoot, "secrets", "payments", "api", "stripe-key.yaml"))
 	assert.True(t, os.IsNotExist(statErr), "plaintext file must be removed after a failed encrypt")
 }
 
