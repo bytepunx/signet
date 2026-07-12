@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/bytepunx/signet/compare/v0.3.0...v0.4.0) (2026-07-12)
+
+
+### Features
+
+* **cli:** add signet secret set/rm for goal-oriented secret authoring ([012df1f](https://github.com/bytepunx/signet/commit/012df1f8e2a87a0449f09331d870bdd018fba380))
+* **proto:** externalize schema to bytepunx/signet-proto for independent client versioning ([280efa4](https://github.com/bytepunx/signet/commit/280efa42c064392ba500b128f92fcc85bb063613))
+
+
+### Bug Fixes
+
+* **gitops:** decrypt SOPS data key directly instead of via local keyservice ([daf864e](https://github.com/bytepunx/signet/commit/daf864e1b7a8a29442734f7af251f5c4b6fd264e))
+
 ## [0.3.0](https://github.com/bytepunx/signet/compare/v0.2.3...v0.3.0) (2026-07-09)
 
 
