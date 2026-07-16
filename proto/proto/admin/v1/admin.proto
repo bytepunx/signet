@@ -21,6 +21,15 @@ service AdminService {
   // for redistributing the new key material to keyholders (Shamir) or
   // updating the Kubernetes Secret (cluster-native auto-unseal) afterward.
   rpc RotateMasterKey(RotateMasterKeyRequest) returns (RotateMasterKeyResponse);
+
+  // Access policy management. Most workloads never need an explicit policy —
+  // see the convention-first model in docs/policies.md: a caller whose SPIFFE
+  // ID encodes ns/<namespace>/sa/<service> matching a secret's own
+  // namespace/service is granted access automatically. These RPCs are only
+  // for cross-namespace/cross-service or wildcard grants.
+  rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse);
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+  rpc DeletePolicy(DeletePolicyRequest) returns (DeletePolicyResponse);
 }
 
 // GitOpsService manages SOPS key lifecycle and GitHub repository sync configuration.
@@ -130,6 +139,58 @@ message RotateMasterKeyRequest {
 message RotateMasterKeyResponse {
   string message      = 1;
   int32  keks_rewrapped = 2;
+}
+
+// --- Policy messages ---
+
+message CreatePolicyRequest {
+  // spiffe_id is a glob matched against the caller's SPIFFE ID. '*' matches
+  // any single path segment (does not cross '/'); e.g.
+  // "spiffe://cluster.local/ns/*/sa/echo" matches the "echo" service account
+  // in any namespace. To grant access to every workload in the trust domain,
+  // use "spiffe://cluster.local/ns/*/sa/*" — a bare "**" is NOT supported
+  // (this is Go's path.Match, not a shell/gitignore-style glob engine).
+  string spiffe_id = 1;
+  // namespace is the target secret's namespace, or "*" for any namespace.
+  string namespace = 2;
+  // service is the target secret's service. Combined with secret_name into
+  // a "namespace/service/secret_name" pattern evaluated the same way.
+  string service = 3;
+  // secret_name is a glob for the secret name within namespace/service.
+  // Defaults to "*" (every secret in that namespace/service) if empty.
+  string secret_name = 4;
+  // permissions granted, e.g. ["read"]. "*" grants every permission.
+  // Defaults to ["read"] if empty.
+  repeated string permissions = 5;
+}
+
+message CreatePolicyResponse {
+  string id = 1;
+}
+
+message ListPoliciesRequest {}
+
+message PolicyInfo {
+  string id                  = 1;
+  string spiffe_id           = 2;
+  string namespace           = 3;
+  // pattern is the full "namespace/service/secret_name"-shaped glob as
+  // stored — service and secret_name are not tracked as separate fields.
+  string pattern              = 4;
+  repeated string permissions = 5;
+  string created_at           = 6;
+}
+
+message ListPoliciesResponse {
+  repeated PolicyInfo policies = 1;
+}
+
+message DeletePolicyRequest {
+  string id = 1;
+}
+
+message DeletePolicyResponse {
+  string message = 1;
 }
 
 // --- GitOpsService messages ---
