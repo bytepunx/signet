@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/bytepunx/signet/compare/v0.4.0...v0.5.0) (2026-07-18)
+
+
+### Features
+
+* add policy management: CreatePolicy/ListPolicies/DeletePolicy ([#9](https://github.com/bytepunx/signet/issues/9)) ([28195b8](https://github.com/bytepunx/signet/commit/28195b859545fea1943c84761bb7baaf58d3aff8))
+
 ## [0.4.0](https://github.com/bytepunx/signet/compare/v0.3.0...v0.4.0) (2026-07-12)
 
 
