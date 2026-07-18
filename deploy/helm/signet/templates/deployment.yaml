@@ -88,6 +88,8 @@ spec:
             - name: spire-agent-socket
               mountPath: /run/spire/sockets
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         # The SPIRE agent runs as a DaemonSet on each node and exposes the
         # workload API socket via a hostPath. signetd dials this socket at
@@ -97,3 +99,14 @@ spec:
           hostPath:
             path: {{ .Values.spire.socketHostPath }}
             type: DirectoryOrCreate
+        # containerSecurityContext sets readOnlyRootFilesystem: true, but the
+        # GitOps syncer (internal/gitops/sync.go) clones repositories into
+        # os.MkdirTemp("", ...) — the OS default temp dir, i.e. /tmp — to
+        # stage files before encrypting/storing them. Without a writable /tmp,
+        # every sync fails with "read-only file system" and GitOps-registered
+        # repositories (signet repo add) never actually sync, silently, since
+        # the reconciler only logs the failure rather than surfacing it
+        # anywhere an operator would see without checking pod logs directly.
+        - name: tmp
+          emptyDir:
+            sizeLimit: {{ .Values.tmpVolumeSizeLimit }}

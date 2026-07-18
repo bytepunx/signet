@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"filippo.io/age"
@@ -18,6 +19,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	gogittransport "github.com/go-git/go-git/v5/plumbing/transport"
 	gogitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v3"
 )
 
@@ -37,6 +39,18 @@ type Syncer struct {
 	keys        keyUnwrapper
 	bus         notifier
 	environment string // SIGNET_ENVIRONMENT; empty = no filtering
+
+	// extraKnownHostsFile/hostKeyCallback* back SetExtraKnownHostsFile and
+	// hostKeyCallback (known_hosts.go) — SSH host-key verification for
+	// deploy-key clones. Deliberately not constructor parameters: adding one
+	// would force every existing call site (production and test) to change
+	// for a rarely-set, purely additive option; the zero value ("no extra
+	// file, built-in providers only") is what almost every deployment and
+	// every existing test already wants.
+	extraKnownHostsFile string
+	hostKeyCallbackOnce sync.Once
+	hostKeyCallbackVal  ssh.HostKeyCallback
+	hostKeyCallbackErr  error
 }
 
 // NewSyncer constructs a Syncer. bus may be nil if change notifications are
@@ -432,6 +446,16 @@ func (s *Syncer) deployKeyAuth(repo *store.Repository) (gogittransport.AuthMetho
 	if err != nil {
 		return nil, fmt.Errorf("parse deploy key: %w", err)
 	}
+
+	// go-git's default (nil HostKeyCallback) tries to load ~/.ssh/known_hosts,
+	// which does not exist in this container (no home directory, no shell) —
+	// without setting this explicitly, every clone fails before it starts.
+	cb, err := s.hostKeyCallback()
+	if err != nil {
+		return nil, fmt.Errorf("host key verification: %w", err)
+	}
+	auth.HostKeyCallback = cb
+
 	return auth, nil
 }
 

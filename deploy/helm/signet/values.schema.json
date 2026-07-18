@@ -166,6 +166,7 @@
     },
     "podSecurityContext":       { "type": "object" },
     "containerSecurityContext": { "type": "object" },
+    "tmpVolumeSizeLimit":       { "type": "string" },
     "autoUnseal": {
       "type": "object",
       "description": "Kubernetes Secret-backed auto-unseal. Weaker than Shamir — the cluster control plane is the root of trust. Use only when manual unseal is not operationally feasible.",
