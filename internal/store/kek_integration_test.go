@@ -5,6 +5,7 @@ package store
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -378,4 +379,57 @@ func TestPutRepository_DuplicateNameRejected(t *testing.T) {
 	err = s.PutRepository(context.Background(), r2)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrAlreadyExists)
+}
+
+// TestListRepositories_NeverSynced_NoScanError is a regression test: a
+// freshly-registered repository has NULL last_sync_sha/last_sync_at (the
+// columns have no default; UpdateSyncState is the only writer, and only runs
+// after a real sync). LastSyncSHA used to be a plain (non-pointer) string,
+// which pgx cannot scan a SQL NULL into — ListRepositories/GetRepository
+// failed with a generic scan error for ANY repository that had never synced,
+// discovered live against bytepunx/signet-smoke-test's very first `signet
+// repo add` (nothing before this exercised list/get pre-sync against a real
+// database — unit tests with fakes can't catch a real driver Scan failure).
+func TestListRepositories_NeverSynced_NoScanError(t *testing.T) {
+	s := newTestStore(t)
+	_, err := s.pool.Exec(context.Background(), "DELETE FROM git_repositories")
+	require.NoError(t, err)
+
+	r := &Repository{
+		Name: "never-synced", RepoURL: "git@example.com:org/repo",
+		EncryptedWebhookSecret: []byte("wh"), EncryptedDeployKey: []byte("dk"),
+	}
+	require.NoError(t, s.PutRepository(context.Background(), r))
+
+	repos, err := s.ListRepositories(context.Background())
+	require.NoError(t, err)
+	require.Len(t, repos, 1)
+	assert.Nil(t, repos[0].LastSyncSHA)
+	assert.Nil(t, repos[0].LastSyncAt)
+
+	got, err := s.GetRepository(context.Background(), r.ID)
+	require.NoError(t, err)
+	assert.Nil(t, got.LastSyncSHA)
+}
+
+// TestListRepositories_AfterSync_ReturnsSHA covers the other half: once
+// UpdateSyncState has run, LastSyncSHA must actually come back populated,
+// not just "doesn't crash."
+func TestListRepositories_AfterSync_ReturnsSHA(t *testing.T) {
+	s := newTestStore(t)
+	_, err := s.pool.Exec(context.Background(), "DELETE FROM git_repositories")
+	require.NoError(t, err)
+
+	r := &Repository{
+		Name: "synced", RepoURL: "git@example.com:org/repo",
+		EncryptedWebhookSecret: []byte("wh"), EncryptedDeployKey: []byte("dk"),
+	}
+	require.NoError(t, s.PutRepository(context.Background(), r))
+	require.NoError(t, s.UpdateSyncState(context.Background(), r.ID, "abc123", time.Now()))
+
+	got, err := s.GetRepository(context.Background(), r.ID)
+	require.NoError(t, err)
+	require.NotNil(t, got.LastSyncSHA)
+	assert.Equal(t, "abc123", *got.LastSyncSHA)
+	assert.NotNil(t, got.LastSyncAt)
 }
