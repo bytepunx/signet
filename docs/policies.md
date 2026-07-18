@@ -53,14 +53,20 @@ grants, and so on.
 
 ## SPIFFE ID matching in policies
 
-Policy SPIFFE ID fields support glob wildcards:
+Policy SPIFFE ID fields support glob wildcards, evaluated with Go's
+[`path.Match`](https://pkg.go.dev/path#Match): `*` matches any sequence of
+characters **within a single `/`-delimited segment** — it does not cross
+`/`. There is no `**` (cross-segment) wildcard. Because every SPIFFE ID here
+follows the fixed `ns/<namespace>/sa/<service-account>` shape, a single `*`
+per segment already covers every case that matters — "any workload in the
+trust domain" is `ns/*/sa/*`, not a bare `**`.
 
 | Pattern | Matches | Does not match |
 |---|---|---|
 | `spiffe://cluster.local/ns/payments/sa/api` | Exact: `payments/api` SA only | Any other SA |
 | `spiffe://cluster.local/ns/payments/sa/*` | Any SA in `payments` namespace | SAs in other namespaces |
 | `spiffe://cluster.local/ns/*/sa/prometheus` | `prometheus` SA in any namespace | Other SA names |
-| `spiffe://cluster.local/**` | Any SPIFFE ID in the trust domain | IDs from other trust domains |
+| `spiffe://cluster.local/ns/*/sa/*` | Any SPIFFE ID in the trust domain | IDs from other trust domains |
 
 Wildcards are useful for monitoring SAs and shared secrets but should be
 used conservatively for sensitive secrets.
@@ -121,7 +127,7 @@ only in non-production environments:
 
 ```bash
 signet policy create \
-  --spiffe-id "spiffe://cluster.local/**" \
+  --spiffe-id "spiffe://cluster.local/ns/*/sa/*" \
   --namespace  dev \
   --service    shared \
   --token      "$TOKEN"
@@ -137,11 +143,15 @@ signet policy list --token "$TOKEN"
 
 **Example output:**
 ```
-ID                                    SPIFFE ID PATTERN                                        NAMESPACE  SERVICE
-a1b2c3d4-...                          spiffe://cluster.local/ns/payments/sa/api                infra      db
-b2c3d4e5-...                          spiffe://cluster.local/ns/infra/sa/*                     infra      shared
-c3d4e5f6-...                          spiffe://cluster.local/ns/observability/sa/metrics-*     payments   api
+ID           SPIFFE ID                                     NAMESPACE    PATTERN                   PERMISSIONS
+policy-1     spiffe://cluster.local/ns/payments/sa/api      infra        infra/db/*                get
+policy-2     spiffe://cluster.local/ns/infra/sa/*           infra        infra/shared/*            get
+policy-3     spiffe://cluster.local/ns/observability/sa/... payments     payments/api/*            get
 ```
+
+`PATTERN` is the full `namespace/service/secret_name` glob as stored — `--service` and an
+optional `--secret-name` (default `*`, meaning every secret in that namespace/service) are
+combined into it at creation time; they aren't tracked as separate columns.
 
 ---
 

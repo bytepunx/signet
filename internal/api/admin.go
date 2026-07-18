@@ -380,6 +380,87 @@ func (s *AdminServer) RotateMasterKey(ctx context.Context, req *adminv1.RotateMa
 	}, nil
 }
 
+// CreatePolicy grants spiffe_id (which may be a glob, e.g.
+// "spiffe://cluster.local/ns/*/sa/echo") access to secrets/config matching
+// namespace/service/secret_name. Most workloads never need this — see the
+// convention-first exact-match bypass in internal/auth.Checker.Allow; this
+// exists for cross-namespace/cross-service and wildcard grants only.
+func (s *AdminServer) CreatePolicy(ctx context.Context, req *adminv1.CreatePolicyRequest) (*adminv1.CreatePolicyResponse, error) {
+	if err := s.requireToken(ctx); err != nil {
+		return nil, err
+	}
+	spiffeID := req.GetSpiffeId()
+	namespace := req.GetNamespace()
+	service := req.GetService()
+	if spiffeID == "" {
+		return nil, status.Error(codes.InvalidArgument, "spiffe_id must not be empty")
+	}
+	if namespace == "" {
+		return nil, status.Error(codes.InvalidArgument, "namespace must not be empty")
+	}
+	if service == "" {
+		return nil, status.Error(codes.InvalidArgument, "service must not be empty")
+	}
+
+	secretName := req.GetSecretName()
+	if secretName == "" {
+		secretName = "*"
+	}
+	permissions := req.GetPermissions()
+	if len(permissions) == 0 {
+		permissions = []string{"get"}
+	}
+
+	p := &store.Policy{
+		SPIFFEID:    spiffeID,
+		Namespace:   namespace,
+		Pattern:     namespace + "/" + service + "/" + secretName,
+		Permissions: permissions,
+	}
+	if err := s.store.PutPolicy(ctx, p); err != nil {
+		return nil, toGRPCError(err)
+	}
+	return &adminv1.CreatePolicyResponse{Id: p.ID}, nil
+}
+
+// ListPolicies returns every configured access policy.
+func (s *AdminServer) ListPolicies(ctx context.Context, _ *adminv1.ListPoliciesRequest) (*adminv1.ListPoliciesResponse, error) {
+	if err := s.requireToken(ctx); err != nil {
+		return nil, err
+	}
+	policies, err := s.store.ListPolicies(ctx)
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	infos := make([]*adminv1.PolicyInfo, len(policies))
+	for i, p := range policies {
+		infos[i] = &adminv1.PolicyInfo{
+			Id:          p.ID,
+			SpiffeId:    p.SPIFFEID,
+			Namespace:   p.Namespace,
+			Pattern:     p.Pattern,
+			Permissions: p.Permissions,
+			CreatedAt:   p.CreatedAt.UTC().Format(time.RFC3339),
+		}
+	}
+	return &adminv1.ListPoliciesResponse{Policies: infos}, nil
+}
+
+// DeletePolicy permanently removes a policy by ID.
+func (s *AdminServer) DeletePolicy(ctx context.Context, req *adminv1.DeletePolicyRequest) (*adminv1.DeletePolicyResponse, error) {
+	if err := s.requireToken(ctx); err != nil {
+		return nil, err
+	}
+	id := req.GetId()
+	if id == "" {
+		return nil, status.Error(codes.InvalidArgument, "id must not be empty")
+	}
+	if err := s.store.DeletePolicy(ctx, id); err != nil {
+		return nil, toGRPCError(err)
+	}
+	return &adminv1.DeletePolicyResponse{Message: fmt.Sprintf("policy %s deleted", id)}, nil
+}
+
 func toProtoState(s unseal.State) adminv1.StatusResponse_State {
 	switch s {
 	case unseal.StateSealed:

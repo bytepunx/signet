@@ -51,12 +51,14 @@ func (f *fakeTokenChecker) Validate(_ context.Context, _ string) error { return 
 // fakeAdminStore implements adminStore for testing, actually persisting KEKs
 // and the key-check value in memory so rotation flows can be exercised.
 type fakeAdminStore struct {
-	kcv        []byte
-	kcvErr     error
-	keks       []store.KEK
-	putKEKErr  error
-	secretRefs []store.SecretKeyRef
-	rewrapErr  error
+	kcv          []byte
+	kcvErr       error
+	keks         []store.KEK
+	putKEKErr    error
+	secretRefs   []store.SecretKeyRef
+	rewrapErr    error
+	policies     []store.Policy
+	putPolicyErr error
 }
 
 func (f *fakeAdminStore) GetKeyCheckValue(_ context.Context) ([]byte, error) {
@@ -121,6 +123,29 @@ func (f *fakeAdminStore) DeleteKEK(_ context.Context, id string) error {
 	for i, k := range f.keks {
 		if k.ID == id {
 			f.keks = append(f.keks[:i], f.keks[i+1:]...)
+			return nil
+		}
+	}
+	return store.ErrNotFound
+}
+
+func (f *fakeAdminStore) PutPolicy(_ context.Context, p *store.Policy) error {
+	if f.putPolicyErr != nil {
+		return f.putPolicyErr
+	}
+	p.ID = fmt.Sprintf("policy-%d", len(f.policies)+1)
+	f.policies = append(f.policies, *p)
+	return nil
+}
+
+func (f *fakeAdminStore) ListPolicies(_ context.Context) ([]store.Policy, error) {
+	return f.policies, nil
+}
+
+func (f *fakeAdminStore) DeletePolicy(_ context.Context, id string) error {
+	for i, p := range f.policies {
+		if p.ID == id {
+			f.policies = append(f.policies[:i], f.policies[i+1:]...)
 			return nil
 		}
 	}
@@ -652,4 +677,91 @@ func TestRotateMasterKey_ManagerFailureRollsBackDB(t *testing.T) {
 	kcvPlain, err := icrypto.Decrypt(adminTestKey, st.kcv, icrypto.BindAAD(icrypto.AADKeyCheckValue))
 	require.NoError(t, err)
 	assert.Equal(t, kcvPlaintext, string(kcvPlain))
+}
+
+// --- CreatePolicy tests ---
+
+func TestCreatePolicy_RequiresSpiffeID(t *testing.T) {
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, &fakeAdminStore{}, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.CreatePolicy(bearerCtx("tok"), &adminv1.CreatePolicyRequest{Namespace: "ns", Service: "svc"})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestCreatePolicy_RequiresNamespace(t *testing.T) {
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, &fakeAdminStore{}, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.CreatePolicy(bearerCtx("tok"), &adminv1.CreatePolicyRequest{SpiffeId: "spiffe://x/y", Service: "svc"})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestCreatePolicy_RequiresService(t *testing.T) {
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, &fakeAdminStore{}, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.CreatePolicy(bearerCtx("tok"), &adminv1.CreatePolicyRequest{SpiffeId: "spiffe://x/y", Namespace: "ns"})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestCreatePolicy_DefaultsSecretNameAndPermissions(t *testing.T) {
+	st := &fakeAdminStore{}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	resp, err := srv.CreatePolicy(bearerCtx("tok"), &adminv1.CreatePolicyRequest{
+		SpiffeId: "spiffe://cluster.local/ns/*/sa/echo", Namespace: "shared", Service: "common",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, resp.Id)
+	require.Len(t, st.policies, 1)
+	assert.Equal(t, "shared/common/*", st.policies[0].Pattern)
+	assert.Equal(t, []string{"get"}, st.policies[0].Permissions)
+}
+
+func TestCreatePolicy_ExplicitSecretNameAndPermissions(t *testing.T) {
+	st := &fakeAdminStore{}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.CreatePolicy(bearerCtx("tok"), &adminv1.CreatePolicyRequest{
+		SpiffeId: "spiffe://x/y", Namespace: "ns", Service: "svc",
+		SecretName: "db-*", Permissions: []string{"get", "list"},
+	})
+	require.NoError(t, err)
+	require.Len(t, st.policies, 1)
+	assert.Equal(t, "ns/svc/db-*", st.policies[0].Pattern)
+	assert.Equal(t, []string{"get", "list"}, st.policies[0].Permissions)
+}
+
+// --- ListPolicies tests ---
+
+func TestListPolicies_ReturnsAll(t *testing.T) {
+	st := &fakeAdminStore{policies: []store.Policy{
+		{ID: "p1", SPIFFEID: "spiffe://x/y", Namespace: "ns", Pattern: "ns/svc/*", Permissions: []string{"get"}, CreatedAt: time.Now()},
+	}}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	resp, err := srv.ListPolicies(bearerCtx("tok"), &adminv1.ListPoliciesRequest{})
+	require.NoError(t, err)
+	require.Len(t, resp.Policies, 1)
+	assert.Equal(t, "p1", resp.Policies[0].Id)
+	assert.Equal(t, "ns/svc/*", resp.Policies[0].Pattern)
+}
+
+// --- DeletePolicy tests ---
+
+func TestDeletePolicy_EmptyID(t *testing.T) {
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, &fakeAdminStore{}, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.DeletePolicy(bearerCtx("tok"), &adminv1.DeletePolicyRequest{Id: ""})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestDeletePolicy_NotFound(t *testing.T) {
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, &fakeAdminStore{}, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.DeletePolicy(bearerCtx("tok"), &adminv1.DeletePolicyRequest{Id: "missing"})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestDeletePolicy_Success(t *testing.T) {
+	st := &fakeAdminStore{policies: []store.Policy{{ID: "p1", SPIFFEID: "s", Namespace: "ns", Pattern: "ns/svc/*", Permissions: []string{"get"}}}}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.DeletePolicy(bearerCtx("tok"), &adminv1.DeletePolicyRequest{Id: "p1"})
+	require.NoError(t, err)
+	assert.Empty(t, st.policies)
 }
