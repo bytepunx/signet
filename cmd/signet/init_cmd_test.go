@@ -64,6 +64,18 @@ func (m *mockAdminClient) RotateMasterKey(_ context.Context, _ *adminv1.RotateMa
 	return &adminv1.RotateMasterKeyResponse{}, nil
 }
 
+func (m *mockAdminClient) CreatePolicy(_ context.Context, _ *adminv1.CreatePolicyRequest, _ ...grpc.CallOption) (*adminv1.CreatePolicyResponse, error) {
+	return &adminv1.CreatePolicyResponse{}, nil
+}
+
+func (m *mockAdminClient) ListPolicies(_ context.Context, _ *adminv1.ListPoliciesRequest, _ ...grpc.CallOption) (*adminv1.ListPoliciesResponse, error) {
+	return &adminv1.ListPoliciesResponse{}, nil
+}
+
+func (m *mockAdminClient) DeletePolicy(_ context.Context, _ *adminv1.DeletePolicyRequest, _ ...grpc.CallOption) (*adminv1.DeletePolicyResponse, error) {
+	return &adminv1.DeletePolicyResponse{}, nil
+}
+
 const testNS = "signet"
 const testSecret = "signet-master-key"
 

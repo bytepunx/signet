@@ -12,26 +12,24 @@ import (
 // policyStore is satisfied by *store.Store but also lets us build a minimal
 // fake. We define the interface locally so tests don't need a real database.
 type policyStore interface {
-	GetPoliciesForSPIFFE(ctx context.Context, spiffeID string) ([]store.Policy, error)
+	ListPolicies(ctx context.Context) ([]store.Policy, error)
 }
 
-// fakeStore implements policyStore for testing.
+// fakeStore implements policyStore for testing. Unlike the old
+// GetPoliciesForSPIFFE, ListPolicies does no filtering at all — matching a
+// policy's (possibly glob) spiffe_id against the caller is evalPolicies'
+// job, not the store's, so the fake must return everything unfiltered to
+// exercise that.
 type fakeStore struct {
 	policies []store.Policy
 	err      error
 }
 
-func (f *fakeStore) GetPoliciesForSPIFFE(_ context.Context, spiffeID string) ([]store.Policy, error) {
+func (f *fakeStore) ListPolicies(_ context.Context) ([]store.Policy, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
-	var out []store.Policy
-	for _, p := range f.policies {
-		if p.SPIFFEID == spiffeID {
-			out = append(out, p)
-		}
-	}
-	return out, nil
+	return f.policies, nil
 }
 
 // testTrustDomain is the fixed trust domain used by allowViaFake, matching
@@ -49,7 +47,7 @@ func allowViaFake(ctx context.Context, fs policyStore, spiffeID, permission, nam
 		spiffeNS == namespace && spiffeSA == service {
 		return nil
 	}
-	policies, err := fs.GetPoliciesForSPIFFE(ctx, spiffeID)
+	policies, err := fs.ListPolicies(ctx)
 	if err != nil {
 		return err
 	}
@@ -236,6 +234,62 @@ func TestAllow_DifferentSPIFFE_NoAccess(t *testing.T) {
 	err := allowViaFake(context.Background(), fs, "spiffe://x/svc-b", "get", "prod", "svc", "secret")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnauthorized)
+}
+
+// TestAllow_WildcardSPIFFEIDSegment covers the case this whole matching path
+// was built for: granting every workload with a given service account name,
+// across every namespace, access to one shared namespace/service — e.g. a
+// "smoke-shared/common" secret every "echo" service account should read
+// regardless of which namespace it runs in. '*' matches exactly one path
+// segment (it does not cross '/'), matching Go's path.Match semantics.
+func TestAllow_WildcardSPIFFEIDSegment(t *testing.T) {
+	fs := &fakeStore{policies: []store.Policy{{
+		SPIFFEID:    "spiffe://cluster.local/ns/*/sa/echo",
+		Namespace:   "smoke-shared",
+		Pattern:     "smoke-shared/common/*",
+		Permissions: []string{"get"},
+	}}}
+	assert.NoError(t, allowViaFake(context.Background(), fs,
+		"spiffe://cluster.local/ns/smoke-go/sa/echo", "get", "smoke-shared", "common", "greeting"))
+	assert.NoError(t, allowViaFake(context.Background(), fs,
+		"spiffe://cluster.local/ns/smoke-python/sa/echo", "get", "smoke-shared", "common", "greeting"))
+
+	// A different service account name in the same namespace shape must not match.
+	err := allowViaFake(context.Background(), fs,
+		"spiffe://cluster.local/ns/smoke-go/sa/other", "get", "smoke-shared", "common", "greeting")
+	assert.ErrorIs(t, err, ErrUnauthorized)
+}
+
+// TestAllow_WildcardSPIFFEIDDoesNotCrossSegments documents that '*' in a
+// policy's spiffe_id is a single-path-segment wildcard (Go's path.Match), not
+// a "**"-style match-everything-after-this-point glob — a pattern ending in
+// "/ns/*" should not also match "/ns/a/b".
+func TestAllow_WildcardSPIFFEIDDoesNotCrossSegments(t *testing.T) {
+	fs := &fakeStore{policies: []store.Policy{{
+		SPIFFEID:    "spiffe://cluster.local/ns/*",
+		Namespace:   "prod",
+		Pattern:     "prod/*/*",
+		Permissions: []string{"get"},
+	}}}
+	err := allowViaFake(context.Background(), fs,
+		"spiffe://cluster.local/ns/a/sa/b", "get", "prod", "svc", "secret")
+	assert.ErrorIs(t, err, ErrUnauthorized)
+}
+
+// TestAllow_WildcardSPIFFEIDEveryWorkload covers the trust-domain-wide grant
+// documented in docs/policies.md — since SPIFFE IDs here are always the
+// fixed ns/<namespace>/sa/<service> shape, "any workload" is expressed as two
+// single-segment wildcards, not a bare "**" (which path.Match doesn't
+// support as a cross-segment wildcard at all).
+func TestAllow_WildcardSPIFFEIDEveryWorkload(t *testing.T) {
+	fs := &fakeStore{policies: []store.Policy{{
+		SPIFFEID:    "spiffe://cluster.local/ns/*/sa/*",
+		Namespace:   "shared",
+		Pattern:     "shared/*/*",
+		Permissions: []string{"get"},
+	}}}
+	assert.NoError(t, allowViaFake(context.Background(), fs,
+		"spiffe://cluster.local/ns/anything/sa/anything-else", "get", "shared", "svc", "secret"))
 }
 
 func TestAllow_StoreError_Propagates(t *testing.T) {

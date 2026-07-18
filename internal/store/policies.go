@@ -41,22 +41,26 @@ func (s *Store) PutPolicy(ctx context.Context, p *Policy) error {
 	return nil
 }
 
-// GetPoliciesForSPIFFE returns all policies that apply to the given SPIFFE ID.
-// Returns an empty slice (not ErrNotFound) when no policies are configured.
-func (s *Store) GetPoliciesForSPIFFE(ctx context.Context, spiffeID string) ([]Policy, error) {
-	if spiffeID == "" {
-		return nil, fmt.Errorf("%w: spiffeID must not be empty", ErrInvalidInput)
-	}
-
+// ListPolicies returns every configured access policy. Returns an empty
+// slice (not ErrNotFound) when no policies exist.
+//
+// This intentionally does not filter by caller SPIFFE ID at the database
+// level: a policy's spiffe_id column may itself be a glob (e.g.
+// "spiffe://cluster.local/ns/*/sa/echo"), so matching it against a specific
+// caller requires path.Match, which only evalPolicies (internal/auth) can
+// evaluate. Policies are expected to number in the tens-to-hundreds for any
+// real deployment, so fetching all of them per access check and filtering in
+// Go is the simpler and correct choice over trying to push glob matching
+// into SQL.
+func (s *Store) ListPolicies(ctx context.Context) ([]Policy, error) {
 	const q = `
 		SELECT id, spiffe_id, namespace, secret_pattern, permissions, created_at
 		FROM access_policies
-		WHERE spiffe_id = $1
 		ORDER BY created_at`
 
-	rows, err := s.pool.Query(ctx, q, spiffeID)
+	rows, err := s.pool.Query(ctx, q)
 	if err != nil {
-		return nil, wrapDBError("get policies", err)
+		return nil, wrapDBError("list policies", err)
 	}
 	defer rows.Close()
 
@@ -66,12 +70,12 @@ func (s *Store) GetPoliciesForSPIFFE(ctx context.Context, spiffeID string) ([]Po
 		if err := rows.Scan(
 			&p.ID, &p.SPIFFEID, &p.Namespace, &p.Pattern, &p.Permissions, &p.CreatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("get policies: scan row: %w", err)
+			return nil, fmt.Errorf("list policies: scan row: %w", err)
 		}
 		policies = append(policies, p)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, wrapDBError("get policies", err)
+		return nil, wrapDBError("list policies", err)
 	}
 	return policies, nil
 }

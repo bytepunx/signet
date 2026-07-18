@@ -48,10 +48,19 @@ func TestPolicyServiceDimMigration_RewritesTwoSegmentPatterns(t *testing.T) {
 	_, err := s.pool.Exec(context.Background(), rewriteSQL)
 	require.NoError(t, err)
 
+	all, err := s.ListPolicies(context.Background())
+	require.NoError(t, err)
+
 	for _, tc := range cases {
-		policies, err := s.GetPoliciesForSPIFFE(context.Background(), "spiffe://x/"+tc.name)
-		require.NoError(t, err)
-		require.Len(t, policies, 1)
-		assert.Equal(t, tc.want, policies[0].Pattern, "pattern %q", tc.pattern)
+		wantSPIFFEID := "spiffe://x/" + tc.name
+		var found *Policy
+		for i := range all {
+			if all[i].SPIFFEID == wantSPIFFEID {
+				found = &all[i]
+				break
+			}
+		}
+		require.NotNil(t, found, "no policy found for %q", wantSPIFFEID)
+		assert.Equal(t, tc.want, found.Pattern, "pattern %q", tc.pattern)
 	}
 }

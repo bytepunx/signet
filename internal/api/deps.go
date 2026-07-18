@@ -84,4 +84,7 @@ type adminStore interface {
 	ListSecretKeyRefs(ctx context.Context) ([]store.SecretKeyRef, error)
 	UpdateSecretDEK(ctx context.Context, namespace, service, name string, version int, newEncDEK []byte, newKEKID string) error
 	RewrapKEKsAndKCV(ctx context.Context, kekUpdates []store.KEKRewrap, newKCV []byte) error
+	PutPolicy(ctx context.Context, p *store.Policy) error
+	ListPolicies(ctx context.Context) ([]store.Policy, error)
+	DeletePolicy(ctx context.Context, id string) error
 }

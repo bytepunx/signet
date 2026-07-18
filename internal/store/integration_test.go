@@ -500,18 +500,18 @@ func TestPutPolicy_NilInput(t *testing.T) {
 	assert.ErrorIs(t, err, ErrInvalidInput)
 }
 
-// --- GetPoliciesForSPIFFE ---
+// --- ListPolicies ---
 
-func TestGetPoliciesForSPIFFE_Empty(t *testing.T) {
+func TestListPolicies_Empty(t *testing.T) {
 	s := newTestStore(t)
 	cleanPolicies(t, s)
 
-	policies, err := s.GetPoliciesForSPIFFE(context.Background(), "spiffe://cluster.local/ns/prod/sa/unknown")
+	policies, err := s.ListPolicies(context.Background())
 	require.NoError(t, err)
 	assert.Empty(t, policies) // not ErrNotFound — no policies is a valid state
 }
 
-func TestGetPoliciesForSPIFFE_ReturnsOnlyMatching(t *testing.T) {
+func TestListPolicies_ReturnsAll(t *testing.T) {
 	s := newTestStore(t)
 	cleanPolicies(t, s)
 
@@ -528,19 +528,12 @@ func TestGetPoliciesForSPIFFE_ReturnsOnlyMatching(t *testing.T) {
 		SPIFFEID: other, Namespace: "prod", Pattern: "*", Permissions: []string{"get"},
 	}))
 
-	policies, err := s.GetPoliciesForSPIFFE(context.Background(), target)
+	// ListPolicies does not filter by caller SPIFFE ID — that matching (which
+	// must support globs on the stored spiffe_id column, e.g. "ns/*/sa/echo")
+	// happens in internal/auth.evalPolicies, not at the store layer.
+	policies, err := s.ListPolicies(context.Background())
 	require.NoError(t, err)
-	assert.Len(t, policies, 2)
-	for _, p := range policies {
-		assert.Equal(t, target, p.SPIFFEID)
-	}
-}
-
-func TestGetPoliciesForSPIFFE_EmptySPIFFEID(t *testing.T) {
-	s := newTestStore(t)
-	_, err := s.GetPoliciesForSPIFFE(context.Background(), "")
-	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrInvalidInput)
+	assert.Len(t, policies, 3)
 }
 
 // --- DeletePolicy ---

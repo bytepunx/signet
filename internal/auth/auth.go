@@ -128,7 +128,7 @@ func (c *Checker) Allow(ctx context.Context, spiffeID, permission, namespace, se
 		return nil
 	}
 
-	policies, err := c.st.GetPoliciesForSPIFFE(ctx, spiffeID)
+	policies, err := c.st.ListPolicies(ctx)
 	if err != nil {
 		return fmt.Errorf("auth: fetch policies: %w", err)
 	}
@@ -164,6 +164,15 @@ func parseKubeSpiffeID(spiffeID, trustDomain string) (namespace, serviceAccount 
 // evalPolicies is the pure policy-matching core of Allow, extracted so tests
 // can supply a slice of policies directly without a database.
 //
+// A policy's spiffe_id is matched against the caller using path.Match — '*'
+// matches any single path segment (it does not cross '/'), so
+// "spiffe://cluster.local/ns/*/sa/echo" matches the "echo" service account in
+// any namespace, and "spiffe://cluster.local/ns/*/sa/*" matches every
+// workload in the trust domain. There is no "**" (cross-segment) wildcard —
+// this is Go's path.Match, not a shell/gitignore-style glob engine; because
+// SPIFFE IDs here always have the fixed ns/<namespace>/sa/<service> shape,
+// a single "*" per segment already covers every case that matters.
+//
 // The match target is "namespace/service/secretName" (three segments). Policy
 // patterns must be written against this same three-segment shape — e.g.
 // "payments/api/stripe-key" or "payments/*/db-read-replica-*" — so that a
@@ -173,12 +182,15 @@ func evalPolicies(policies []store.Policy, spiffeID, permission, namespace, serv
 	target := namespace + "/" + service + "/" + secretName
 
 	for _, p := range policies {
+		if spiffeMatched, err := path.Match(p.SPIFFEID, spiffeID); err != nil || !spiffeMatched {
+			// path.Match only errors on malformed patterns; skip broken policies.
+			continue
+		}
 		if p.Namespace != namespace && p.Namespace != "*" {
 			continue
 		}
 		matched, err := path.Match(p.Pattern, target)
 		if err != nil {
-			// path.Match only errors on malformed patterns; skip broken policies.
 			continue
 		}
 		if !matched {
