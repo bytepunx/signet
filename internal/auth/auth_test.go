@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -10,10 +11,16 @@ import (
 	"crypto/x509/pkix"
 	"errors"
 	"math/big"
+	"net"
 	"net/url"
 	"testing"
 	"time"
 
+	"github.com/spiffe/go-spiffe/v2/bundle/x509bundle"
+	"github.com/spiffe/go-spiffe/v2/spiffegrpc/grpccredentials"
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
+	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
+	"github.com/spiffe/go-spiffe/v2/svid/x509svid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/credentials"
@@ -138,6 +145,101 @@ func TestSPIFFEIDFromContext_MixedURIs(t *testing.T) {
 	got, err := SPIFFEIDFromContext(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, spiffeID, got)
+}
+
+// TestSPIFFEIDFromContext_RealMTLSHandshake exercises the actual transport
+// credentials internal/server uses in production
+// (grpccredentials.MTLSServerCredentials/MTLSClientCredentials) instead of
+// hand-constructing a peer.Peer{AuthInfo: credentials.TLSInfo{...}} like the
+// tests above. Those hand-built contexts don't match what a real go-spiffe
+// mTLS handshake produces (AuthInfo comes back wrapped in an unexported
+// type), which is exactly how the "connection is not mTLS" regression
+// shipped undetected — every unit test authenticated fine while every real
+// workload connection failed. This test would have caught it.
+func TestSPIFFEIDFromContext_RealMTLSHandshake(t *testing.T) {
+	td := spiffeid.RequireTrustDomainFromString("test.example.org")
+
+	caKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	caTmpl := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "test-ca"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+		BasicConstraintsValid: true,
+	}
+	caDER, err := x509.CreateCertificate(rand.Reader, caTmpl, caTmpl, &caKey.PublicKey, caKey)
+	require.NoError(t, err)
+	caCert, err := x509.ParseCertificate(caDER)
+	require.NoError(t, err)
+
+	issue := func(id spiffeid.ID) (*x509.Certificate, crypto.Signer) {
+		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		require.NoError(t, err)
+		tmpl := &x509.Certificate{
+			SerialNumber: big.NewInt(2),
+			Subject:      pkix.Name{CommonName: id.String()},
+			URIs:         []*url.URL{id.URL()},
+			NotBefore:    time.Now().Add(-time.Minute),
+			NotAfter:     time.Now().Add(time.Hour),
+			KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+			ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		}
+		der, err := x509.CreateCertificate(rand.Reader, tmpl, caCert, &key.PublicKey, caKey)
+		require.NoError(t, err)
+		cert, err := x509.ParseCertificate(der)
+		require.NoError(t, err)
+		return cert, key
+	}
+
+	serverID := spiffeid.RequireFromString("spiffe://test.example.org/ns/signet/sa/signetd")
+	clientID := spiffeid.RequireFromString("spiffe://test.example.org/ns/prod/sa/api")
+	serverCert, serverKey := issue(serverID)
+	clientCert, clientKey := issue(clientID)
+
+	bundle := x509bundle.FromX509Authorities(td, []*x509.Certificate{caCert})
+	serverSVID := &x509svid.SVID{ID: serverID, Certificates: []*x509.Certificate{serverCert}, PrivateKey: serverKey}
+	clientSVID := &x509svid.SVID{ID: clientID, Certificates: []*x509.Certificate{clientCert}, PrivateKey: clientKey}
+
+	serverCreds := grpccredentials.MTLSServerCredentials(serverSVID, bundle, tlsconfig.AuthorizeMemberOf(td))
+	clientCreds := grpccredentials.MTLSClientCredentials(clientSVID, bundle, tlsconfig.AuthorizeMemberOf(td))
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer ln.Close()
+
+	authInfoCh := make(chan credentials.AuthInfo, 1)
+	serverErrCh := make(chan error, 1)
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			serverErrCh <- err
+			return
+		}
+		_, authInfo, err := serverCreds.ServerHandshake(conn)
+		if err != nil {
+			serverErrCh <- err
+			return
+		}
+		authInfoCh <- authInfo
+		serverErrCh <- nil
+	}()
+
+	clientConn, err := net.Dial("tcp", ln.Addr().String())
+	require.NoError(t, err)
+	defer clientConn.Close()
+	_, _, err = clientCreds.ClientHandshake(context.Background(), "", clientConn)
+	require.NoError(t, err)
+	require.NoError(t, <-serverErrCh)
+
+	p := &peer.Peer{AuthInfo: <-authInfoCh}
+	ctx := peer.NewContext(context.Background(), p)
+
+	got, err := SPIFFEIDFromContext(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, clientID.String(), got)
 }
 
 // --- spiffeURIFromCert ---
