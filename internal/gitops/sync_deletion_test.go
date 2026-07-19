@@ -80,7 +80,7 @@ func TestSyncFromDir_DeletesSecretRemovedFromRepo(t *testing.T) {
 
 	// Simulate the file being deleted from the repo (e.g. removed and
 	// pushed) before the next sync.
-	require.NoError(t, os.Remove(filepath.Join(dir, "secrets/ns/svc/remove.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "secrets", "ns", "svc", "remove.yaml")))
 
 	// Second sync: same repoID. The removed file must be detected and its
 	// secret deleted from the store; the untouched one must survive.
@@ -111,7 +111,7 @@ func TestSyncFromDir_EmptyRepoIDSkipsDeletionDetection(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.Added)
 
-	require.NoError(t, os.Remove(filepath.Join(dir, "secrets/ns/svc/only.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "secrets", "ns", "svc", "only.yaml")))
 
 	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha2", "")
 	require.NoError(t, err)
@@ -222,7 +222,7 @@ func TestSyncFromDir_BackfillsRepoIDOnUnchangedResync(t *testing.T) {
 	// The payoff: repo-new's next sync, with the file now removed, must
 	// actually detect and delete it — which requires the backfilled repo_id
 	// from the previous step to have taken effect.
-	require.NoError(t, os.Remove(filepath.Join(dir, "secrets/ns/svc/stable.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "secrets", "ns", "svc", "stable.yaml")))
 	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha3", "repo-new")
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.Deleted)
