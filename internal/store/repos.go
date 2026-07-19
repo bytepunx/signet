@@ -17,9 +17,14 @@ type Repository struct {
 	ConfigPath             string
 	EncryptedWebhookSecret []byte
 	EncryptedDeployKey     []byte
-	LastSyncSHA            string
-	LastSyncAt             *time.Time
-	CreatedAt              time.Time
+	// LastSyncSHA is nil until the repository's first sync completes — the
+	// last_sync_sha column has no default and is NULL for a freshly
+	// registered repository, so this must be a pointer (a plain string
+	// caused every list/get to fail with a scan error for any repo that had
+	// never synced yet).
+	LastSyncSHA *string
+	LastSyncAt  *time.Time
+	CreatedAt   time.Time
 }
 
 // PutRepository inserts a new repository record and populates r.ID and r.CreatedAt.

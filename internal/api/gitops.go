@@ -252,7 +252,9 @@ func (s *GitOpsServer) ListRepositories(ctx context.Context, _ *adminv1.ListRepo
 			Branch:      r.Branch,
 			SecretsPath: r.SecretsPath,
 			ConfigPath:  r.ConfigPath,
-			LastSyncSha: r.LastSyncSHA,
+		}
+		if r.LastSyncSHA != nil {
+			info.LastSyncSha = *r.LastSyncSHA
 		}
 		if r.LastSyncAt != nil {
 			info.LastSyncAt = r.LastSyncAt.UTC().Format(time.RFC3339)
