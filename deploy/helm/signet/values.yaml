@@ -137,6 +137,13 @@ containerSecurityContext:
   capabilities:
     drop: ["ALL"]
 
+# Size limit for the /tmp emptyDir volume. readOnlyRootFilesystem above means
+# signetd has no writable filesystem of its own; the GitOps syncer needs
+# scratch space to clone repositories into before encrypting/storing their
+# contents. Increase if you register unusually large secrets/config
+# repositories (a git clone temporarily needs roughly the size of the repo).
+tmpVolumeSizeLimit: "1Gi"
+
 # -- Kubernetes auto-unseal --
 # When enabled, signetd reads the master key from a Kubernetes Secret at
 # startup and unseals itself automatically after pod restarts.

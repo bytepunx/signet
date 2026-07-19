@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/bytepunx/signet/internal/store"
+	grpccredentials "github.com/spiffe/go-spiffe/v2/spiffegrpc/grpccredentials"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
 )
@@ -35,7 +36,21 @@ var ErrInvalidToken = errors.New("invalid token")
 // The returned SPIFFE ID is already validated by the SPIRE CA certificate chain
 // (verification happens in the TLS handshake); this function only parses the
 // URI out of the verified cert.
+//
+// The workload listener's transport credentials are built with go-spiffe's
+// grpccredentials.MTLSServerCredentials (see internal/server), which wraps
+// the standard credentials.TLSInfo in its own unexported AuthInfo type
+// rather than exposing it directly — a bare `p.AuthInfo.(credentials.TLSInfo)`
+// type assertion never matches a real connection and always fails closed
+// with "connection is not mTLS", so PeerIDFromContext (go-spiffe's own
+// accessor for that wrapped type) must be tried first. The direct TLSInfo
+// assertion below remains as a fallback for any other transport credentials
+// that populate AuthInfo the standard way.
 func SPIFFEIDFromContext(ctx context.Context) (string, error) {
+	if id, ok := grpccredentials.PeerIDFromContext(ctx); ok {
+		return id.String(), nil
+	}
+
 	p, ok := peer.FromContext(ctx)
 	if !ok {
 		return "", fmt.Errorf("%w: no peer in context", ErrUnauthenticated)

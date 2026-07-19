@@ -3,7 +3,8 @@
 # Ingress: permit gRPC workload traffic (port 8443) from any cluster source.
 #          Permit GitHub webhook traffic (port 8445) when webhookAddr is set.
 #          The admin port (8444) is localhost-only and unreachable via the network.
-# Egress:  DNS, CockroachDB (when in-cluster), and the Kubernetes API (TokenReview).
+# Egress:  DNS, CockroachDB (when in-cluster), the Kubernetes API (TokenReview),
+#          and git remotes (443 for HTTPS, 22 for SSH deploy-key GitOps sync).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -50,5 +51,9 @@ spec:
         - port: 443
           protocol: TCP
         - port: 6443
+          protocol: TCP
+    # SSH-based GitOps repo sync (deploy keys use git@host, not https://)
+    - ports:
+        - port: 22
           protocol: TCP
 {{- end }}
