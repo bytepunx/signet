@@ -2,7 +2,7 @@ BINARY_DIR := bin
 SIGNETD    := $(BINARY_DIR)/signetd
 SIGNET     := $(BINARY_DIR)/signet
 
-.PHONY: all build build-tpm proto test test-int lint clean
+.PHONY: all build build-tpm proto test test-int lint fmt install-hooks clean
 
 all: build
 
@@ -27,6 +27,13 @@ test-int:
 
 lint:
 	golangci-lint run ./...
+
+fmt:
+	gofmt -w .
+
+install-hooks:
+	git config core.hooksPath githooks
+	@echo "pre-commit hook installed (runs gofmt + golangci-lint, same as CI's Lint job)."
 
 clean:
 	rm -rf $(BINARY_DIR)
