@@ -171,3 +171,52 @@ func TestDeleteSecret_RemovingRepoDoesNotCascade(t *testing.T) {
 	require.NoError(t, err, "the secret itself must survive its repository being deregistered")
 	assert.Equal(t, "ct", string(got.Ciphertext))
 }
+
+// TestUpdateSecretRepoID_UpdatesLatestVersionOnly verifies that
+// UpdateSecretRepoID (used by storeSecret's dedup path to keep repo_id
+// current even when the write itself is skipped as unchanged) updates only
+// the latest version's repo_id, without creating a new version or touching
+// any other field.
+func TestUpdateSecretRepoID_UpdatesLatestVersionOnly(t *testing.T) {
+	s := newTestStore(t)
+	cleanRepoSecretTracking(t, s)
+	ctx := context.Background()
+
+	repoOld := newTestRepository(t, s, "repo-old-update")
+	repoNew := newTestRepository(t, s, "repo-new-update")
+
+	sec := &Secret{
+		Namespace: "ns", Service: "svc", Name: "stable",
+		EncryptedDEK: []byte("dek"), Ciphertext: []byte("ct"), RepoID: repoOld.ID,
+	}
+	require.NoError(t, s.PutSecret(ctx, sec))
+	require.Equal(t, 1, sec.Version)
+
+	require.NoError(t, s.UpdateSecretRepoID(ctx, "ns", "svc", "stable", repoNew.ID))
+
+	got, err := s.GetSecret(ctx, "ns", "svc", "stable")
+	require.NoError(t, err)
+	assert.Equal(t, 1, got.Version, "must not create a new version")
+	assert.Equal(t, "ct", string(got.Ciphertext), "must not touch the ciphertext")
+
+	keysOld, err := s.ListSecretKeysForRepo(ctx, repoOld.ID)
+	require.NoError(t, err)
+	assert.Empty(t, keysOld)
+
+	keysNew, err := s.ListSecretKeysForRepo(ctx, repoNew.ID)
+	require.NoError(t, err)
+	assert.Equal(t, []SecretKey{{Namespace: "ns", Service: "svc", Name: "stable"}}, keysNew)
+}
+
+// TestUpdateSecretRepoID_NotFound verifies the not-found contract for a
+// secret that doesn't exist at all.
+func TestUpdateSecretRepoID_NotFound(t *testing.T) {
+	s := newTestStore(t)
+	cleanRepoSecretTracking(t, s)
+	ctx := context.Background()
+
+	repo := newTestRepository(t, s, "repo-notfound-update")
+	err := s.UpdateSecretRepoID(ctx, "ns", "svc", "nonexistent", repo.ID)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrNotFound)
+}

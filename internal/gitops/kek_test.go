@@ -119,6 +119,14 @@ func (s *statefulKEKStore) ListConfigKeysForRepo(_ context.Context, repoID strin
 	}
 	return keys, nil
 }
+func (s *statefulKEKStore) UpdateSecretRepoID(_ context.Context, namespace, service, name, repoID string) error {
+	sec, ok := s.secrets[secretKey(namespace, service, name)]
+	if !ok {
+		return store.ErrNotFound
+	}
+	sec.RepoID = repoID
+	return nil
+}
 
 func TestActiveKEK_BootstrapsWhenNoneExists(t *testing.T) {
 	st := &statefulKEKStore{}

@@ -182,3 +182,50 @@ func TestSyncConfigFromDir_DeletesConfigRemovedFromRepo(t *testing.T) {
 	_, removed := st.configs[configKey("ns-remove", "svc")]
 	assert.False(t, removed)
 }
+
+// TestSyncFromDir_BackfillsRepoIDOnUnchangedResync is the regression test
+// for a gap in the deletion-tracking fix itself: storeSecret's isUnchanged
+// dedup optimization skips PutSecret (and therefore repo_id attribution)
+// entirely when a resync's plaintext matches what's already stored. Found
+// live: a secret whose content never changed since before repo_id existed
+// kept repo_id NULL forever, so it could never become a deletion candidate
+// even after a real sync ran. UpdateSecretRepoID (called from storeSecret's
+// unchanged branch) is the fix; this proves the backfill actually happens
+// and that it's what makes the secret deletable afterward.
+func TestSyncFromDir_BackfillsRepoIDOnUnchangedResync(t *testing.T) {
+	dir := t.TempDir()
+	keys := &mockKeys{}
+	st, pubKey := newSyncableStore(t, keys)
+	sopsEncrypt(t, dir, "secrets/ns/svc/stable.yaml", "value: stable\n", pubKey)
+
+	syncer := NewSyncer(st, keys, nil, "")
+	ctx := context.Background()
+
+	result, err := syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "repo-old")
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.Added)
+	sec := st.secrets[secretKey("ns", "svc", "stable")]
+	require.NotNil(t, sec)
+	assert.Equal(t, "repo-old", sec.RepoID)
+
+	// Re-encrypt the SAME plaintext (sops nonce differs, but the plaintext
+	// isUnchanged compares is identical) and sync again under a DIFFERENT
+	// repo — this hits storeSecret's isUnchanged dedup path (no new version
+	// written), which must still update repo_id.
+	sopsEncrypt(t, dir, "secrets/ns/svc/stable.yaml", "value: stable\n", pubKey)
+	_, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha2", "repo-new")
+	require.NoError(t, err)
+	sec = st.secrets[secretKey("ns", "svc", "stable")]
+	require.NotNil(t, sec)
+	assert.Equal(t, "repo-new", sec.RepoID, "repo_id must be updated even when the write itself was skipped as unchanged")
+
+	// The payoff: repo-new's next sync, with the file now removed, must
+	// actually detect and delete it — which requires the backfilled repo_id
+	// from the previous step to have taken effect.
+	require.NoError(t, os.Remove(filepath.Join(dir, "secrets/ns/svc/stable.yaml")))
+	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha3", "repo-new")
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.Deleted)
+	_, stillPresent := st.secrets[secretKey("ns", "svc", "stable")]
+	assert.False(t, stillPresent)
+}

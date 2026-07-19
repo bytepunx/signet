@@ -49,6 +49,7 @@ func (m *mockStore) ListSecretKeysForRepo(_ context.Context, _ string) ([]store.
 func (m *mockStore) ListConfigKeysForRepo(_ context.Context, _ string) ([]store.ConfigKey, error) {
 	return nil, nil
 }
+func (m *mockStore) UpdateSecretRepoID(_ context.Context, _, _, _, _ string) error { return nil }
 
 // mockKeys implements keyUnwrapper for unit testing.
 type mockKeys struct{}

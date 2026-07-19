@@ -23,6 +23,7 @@ type secretStore interface {
 	PutKEK(ctx context.Context, k *store.KEK) error
 	ListSecretKeysForRepo(ctx context.Context, repoID string) ([]store.SecretKey, error)
 	ListConfigKeysForRepo(ctx context.Context, repoID string) ([]store.ConfigKey, error)
+	UpdateSecretRepoID(ctx context.Context, namespace, service, name, repoID string) error
 }
 
 // keyUnwrapper is satisfied by *crypto.KeyStore.

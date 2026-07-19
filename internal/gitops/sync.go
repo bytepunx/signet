@@ -335,6 +335,16 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 
 	if unchanged := s.isUnchanged(ctx, namespace, service, name, plaintext, aad, kekID, kek); unchanged {
 		ZeroBytes(plaintext)
+		// The write is skipped, but repo_id attribution must still track
+		// the current sync — otherwise a secret whose content simply never
+		// changes could never pick up repoID (or a repoID change from being
+		// re-synced under a different repo) and so could never become a
+		// deletion-detection candidate. See UpdateSecretRepoID's doc comment.
+		if repoID != "" {
+			if err := s.store.UpdateSecretRepoID(ctx, namespace, service, name, repoID); err != nil {
+				slog.Warn("update secret repo_id on unchanged resync", "namespace", namespace, "service", service, "name", name, "err", err)
+			}
+		}
 		return nil
 	}
 

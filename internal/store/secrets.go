@@ -107,6 +107,41 @@ func (s *Store) PutSecret(ctx context.Context, sec *Secret) error {
 	return nil
 }
 
+// UpdateSecretRepoID sets repo_id on the latest version of the named secret
+// in place, without creating a new version or touching the ciphertext.
+//
+// storeSecret's dedup optimization (see isUnchanged in internal/gitops)
+// skips PutSecret entirely when a resync's plaintext matches what's already
+// stored, to bound version growth across repeated reconciliation passes —
+// but that means a secret whose content simply hasn't changed since before
+// repo_id existed, or since it was last synced by a different repo, would
+// otherwise never pick up the current repoID and so could never become a
+// deletion-detection candidate (see ListSecretKeysForRepo). This call is
+// how the dedup path still keeps attribution current.
+func (s *Store) UpdateSecretRepoID(ctx context.Context, namespace, service, name, repoID string) error {
+	if err := validateKey(namespace, service, name); err != nil {
+		return err
+	}
+	if repoID == "" {
+		return fmt.Errorf("%w: repoID must not be empty", ErrInvalidInput)
+	}
+	const q = `
+		UPDATE secrets SET repo_id = $4
+		WHERE namespace = $1 AND service = $2 AND secret_name = $3
+		  AND version = (
+		      SELECT MAX(version) FROM secrets
+		      WHERE namespace = $1 AND service = $2 AND secret_name = $3
+		  )`
+	tag, err := s.pool.Exec(ctx, q, namespace, service, name, repoID)
+	if err != nil {
+		return wrapDBError("update secret repo id", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // GetSecret returns the latest non-expired version of the named secret. A
 // version whose expires_at is in the past is skipped in favor of the next
 // most recent non-expired version, if any. Returns ErrNotFound if no such

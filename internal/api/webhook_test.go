@@ -69,6 +69,7 @@ func (stubGitopsStore) ListSecretKeysForRepo(_ context.Context, _ string) ([]sto
 func (stubGitopsStore) ListConfigKeysForRepo(_ context.Context, _ string) ([]store.ConfigKey, error) {
 	return nil, nil
 }
+func (stubGitopsStore) UpdateSecretRepoID(_ context.Context, _, _, _, _ string) error { return nil }
 
 func newTestWebhookHandler(t *testing.T, repo *store.Repository, sealed bool) *WebhookHandler {
 	t.Helper()
