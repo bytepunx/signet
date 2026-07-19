@@ -106,6 +106,15 @@ signet's design documentation is kept in sync with the implementation as a proje
 if you're evaluating signet for a security-sensitive deployment, the findings document above is
 a good look at how seriously that's taken in practice, not just what's claimed.
 
+## Development
+
+```bash
+make install-hooks   # one-time: runs gofmt + golangci-lint before each commit, same checks as CI's Lint job
+make build            # bin/signetd, bin/signet
+make test             # go test -race ./...
+make lint             # golangci-lint run ./... (needs golangci-lint v1; `go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8`)
+```
+
 ## Project status
 
 signet is early-stage (`v0.2.x`) and under active development. The core secret-serving,

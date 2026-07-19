@@ -91,7 +91,7 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 				slog.Error("read secret file", "path", f, "err", readErr)
 				continue
 			}
-			if storeErr := s.storeSecret(ctx, ns, svc, name, data, identities); storeErr != nil {
+			if storeErr := s.storeSecret(ctx, ns, svc, name, data, identities, repo.ID); storeErr != nil {
 				slog.Error("store secret", "path", f, "err", storeErr)
 				continue
 			}
@@ -113,7 +113,7 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 					slog.Error("read config file", "path", f, "err", readErr)
 					continue
 				}
-				if storeErr := s.storeConfig(ctx, ns, svc, data); storeErr != nil {
+				if storeErr := s.storeConfig(ctx, ns, svc, data, repo.ID); storeErr != nil {
 					slog.Error("store config", "path", f, "err", storeErr)
 					continue
 				}
@@ -181,16 +181,17 @@ func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository) (*SyncRes
 		return nil, err
 	}
 
-	result, err := s.SyncFromDir(ctx, tmpDir, repo.SecretsPath, headSHA)
+	result, err := s.SyncFromDir(ctx, tmpDir, repo.SecretsPath, headSHA, repo.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	configCount, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath)
+	configCount, configDeleted, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath, repo.ID)
 	if configErr != nil {
 		slog.Warn("config sync error", "repo", repo.Name, "err", configErr)
 	}
 	result.ConfigsSynced = configCount
+	result.Deleted += configDeleted
 
 	if err := s.store.UpdateSyncState(ctx, repo.ID, headSHA, time.Now().UTC()); err != nil {
 		slog.Error("update sync state", "repo", repo.Name, "err", err)
@@ -200,11 +201,18 @@ func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository) (*SyncRes
 
 // SyncFromDir processes every SOPS-encrypted YAML file under secretsPath
 // within an already-populated directory. headSHA is recorded on the result
-// for audit purposes; it may be empty for non-git sources.
+// for audit purposes; it may be empty for non-git sources. repoID
+// attributes every written secret to that repository (see store.Secret.RepoID)
+// and, when non-empty, enables deletion detection: any secret previously
+// attributed to repoID that this walk did not encounter is removed and
+// counted in the result — this is what makes "signet repo sync" (a full
+// re-walk, not an incremental diff) actually reflect files deleted from the
+// repo since the last sync. Pass "" (as SyncBundle does, which has no
+// registered repository at all) to skip both attribution and deletion.
 //
 // This is the core of both FullSync (which clones first) and SyncBundle
 // (which extracts a tar archive first).
-func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA string) (*SyncResult, error) {
+func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, repoID string) (*SyncResult, error) {
 	identities, err := s.loadIdentities(ctx)
 	if err != nil {
 		return nil, err
@@ -212,6 +220,7 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA stri
 
 	result := &SyncResult{SHA: headSHA}
 	secretsDir := filepath.Join(dir, filepath.FromSlash(secretsPath))
+	seen := make(map[store.SecretKey]bool)
 
 	err = filepath.WalkDir(secretsDir, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil || d.IsDir() || !strings.HasSuffix(path, ".yaml") {
@@ -229,10 +238,11 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA stri
 			slog.Error("read secret file", "path", rel, "err", err)
 			return nil
 		}
-		if err := s.storeSecret(ctx, ns, svc, name, data, identities); err != nil {
+		if err := s.storeSecret(ctx, ns, svc, name, data, identities, repoID); err != nil {
 			slog.Error("store secret", "path", rel, "err", err)
 			return nil
 		}
+		seen[store.SecretKey{Namespace: ns, Service: svc, Name: name}] = true
 		result.Added++
 		if s.bus != nil {
 			s.bus.Notify(ns, svc, name)
@@ -242,6 +252,28 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA stri
 	})
 	if err != nil {
 		return nil, fmt.Errorf("walk secrets dir: %w", err)
+	}
+
+	if repoID != "" {
+		previouslySynced, err := s.store.ListSecretKeysForRepo(ctx, repoID)
+		if err != nil {
+			slog.Error("list secret keys for repo; skipping deletion detection this sync", "repo_id", repoID, "err", err)
+			return result, nil
+		}
+		for _, k := range previouslySynced {
+			if seen[k] {
+				continue
+			}
+			if err := s.deleteSecret(ctx, k.Namespace, k.Service, k.Name); err != nil {
+				slog.Error("delete secret removed from repo", "namespace", k.Namespace, "service", k.Service, "name", k.Name, "err", err)
+				continue
+			}
+			result.Deleted++
+			if s.bus != nil {
+				s.bus.Notify(k.Namespace, k.Service, k.Name)
+				s.bus.NotifyBundle(k.Namespace, k.Service)
+			}
+		}
 	}
 	return result, nil
 }
@@ -283,7 +315,7 @@ func (s *Syncer) loadIdentities(ctx context.Context) ([]age.Identity, error) {
 // older/rotated-away KEK is never treated as unchanged, so it is naturally
 // rewritten onto the current epoch the next time it is synced, which is how
 // the AAD/KEK migration (see decryptSecret in internal/api) converges.
-func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name string, data []byte, identities []age.Identity) error {
+func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name string, data []byte, identities []age.Identity, repoID string) error {
 	plaintext, err := DecryptFile(data, identities)
 	if err != nil {
 		return fmt.Errorf("sops decrypt: %w", err)
@@ -303,6 +335,16 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 
 	if unchanged := s.isUnchanged(ctx, namespace, service, name, plaintext, aad, kekID, kek); unchanged {
 		ZeroBytes(plaintext)
+		// The write is skipped, but repo_id attribution must still track
+		// the current sync — otherwise a secret whose content simply never
+		// changes could never pick up repoID (or a repoID change from being
+		// re-synced under a different repo) and so could never become a
+		// deletion-detection candidate. See UpdateSecretRepoID's doc comment.
+		if repoID != "" {
+			if err := s.store.UpdateSecretRepoID(ctx, namespace, service, name, repoID); err != nil {
+				slog.Warn("update secret repo_id on unchanged resync", "namespace", namespace, "service", service, "name", name, "err", err)
+			}
+		}
 		return nil
 	}
 
@@ -333,6 +375,7 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 		EncryptedDEK: encDEK,
 		KEKID:        kekID,
 		Ciphertext:   ciphertext,
+		RepoID:       repoID,
 	})
 }
 
@@ -462,18 +505,22 @@ func (s *Syncer) deployKeyAuth(repo *store.Repository) (gogittransport.AuthMetho
 // SyncConfigFromDir processes every plain YAML file under configPath within an
 // already-populated directory. Files at <configPath>/<namespace>/<service>.yaml
 // are parsed as nested YAML maps, converted to JSON, and stored as service configs.
-// Returns the number of configs synced and any walk error.
-func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath string) (int, error) {
+// repoID attributes every written config to that repository and, when non-
+// empty, enables deletion detection the same way SyncFromDir's repoID does —
+// see its doc comment. Returns the number of configs synced, the number
+// deleted, and any walk error.
+func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID string) (int, int, error) {
 	if configPath == "" {
-		return 0, nil
+		return 0, 0, nil
 	}
 	configDir := filepath.Join(dir, filepath.FromSlash(configPath))
 	if _, statErr := os.Stat(configDir); os.IsNotExist(statErr) {
 		slog.Debug("config directory not present, skipping config sync", "path", configPath)
-		return 0, nil
+		return 0, 0, nil
 	}
 
 	var count int
+	seen := make(map[store.ConfigKey]bool)
 	err := filepath.WalkDir(configDir, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil || d.IsDir() || !strings.HasSuffix(path, ".yaml") {
 			return walkErr
@@ -490,10 +537,11 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath string) 
 			slog.Error("read config file", "path", rel, "err", err)
 			return nil
 		}
-		if err := s.storeConfig(ctx, ns, svc, data); err != nil {
+		if err := s.storeConfig(ctx, ns, svc, data, repoID); err != nil {
 			slog.Error("store config", "path", rel, "err", err)
 			return nil
 		}
+		seen[store.ConfigKey{Namespace: ns, Service: svc}] = true
 		count++
 		if s.bus != nil {
 			s.bus.NotifyService(ns, svc)
@@ -502,13 +550,36 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath string) 
 		return nil
 	})
 	if err != nil {
-		return 0, fmt.Errorf("walk config dir: %w", err)
+		return 0, 0, fmt.Errorf("walk config dir: %w", err)
 	}
-	return count, nil
+
+	var deleted int
+	if repoID != "" {
+		previouslySynced, err := s.store.ListConfigKeysForRepo(ctx, repoID)
+		if err != nil {
+			slog.Error("list config keys for repo; skipping deletion detection this sync", "repo_id", repoID, "err", err)
+			return count, 0, nil
+		}
+		for _, k := range previouslySynced {
+			if seen[k] {
+				continue
+			}
+			if err := s.store.DeleteServiceConfig(ctx, k.Namespace, k.Service); err != nil {
+				slog.Error("delete config removed from repo", "namespace", k.Namespace, "service", k.Service, "err", err)
+				continue
+			}
+			deleted++
+			if s.bus != nil {
+				s.bus.NotifyService(k.Namespace, k.Service)
+				s.bus.NotifyBundle(k.Namespace, k.Service)
+			}
+		}
+	}
+	return count, deleted, nil
 }
 
 // storeConfig parses a plain YAML config file and stores it as a JSON document.
-func (s *Syncer) storeConfig(ctx context.Context, namespace, service string, data []byte) error {
+func (s *Syncer) storeConfig(ctx context.Context, namespace, service string, data []byte, repoID string) error {
 	var raw interface{}
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return fmt.Errorf("parse yaml: %w", err)
@@ -522,7 +593,7 @@ func (s *Syncer) storeConfig(ctx context.Context, namespace, service string, dat
 	if err != nil {
 		return fmt.Errorf("marshal json: %w", err)
 	}
-	return s.store.PutServiceConfig(ctx, namespace, service, content)
+	return s.store.PutServiceConfig(ctx, namespace, service, content, repoID)
 }
 
 // normalizeForJSON converts yaml.v3-produced values to JSON-safe equivalents.

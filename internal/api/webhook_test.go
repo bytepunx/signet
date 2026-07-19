@@ -55,7 +55,7 @@ func (stubGitopsStore) ListRepositories(_ context.Context) ([]store.Repository, 
 func (stubGitopsStore) UpdateSyncState(_ context.Context, _, _ string, _ time.Time) error {
 	return nil
 }
-func (stubGitopsStore) PutServiceConfig(_ context.Context, _, _ string, _ json.RawMessage) error {
+func (stubGitopsStore) PutServiceConfig(_ context.Context, _, _ string, _ json.RawMessage, _ string) error {
 	return nil
 }
 func (stubGitopsStore) DeleteServiceConfig(_ context.Context, _, _ string) error { return nil }
@@ -63,6 +63,13 @@ func (stubGitopsStore) GetActiveKEK(_ context.Context) (*store.KEK, error) {
 	return nil, store.ErrNotFound
 }
 func (stubGitopsStore) PutKEK(_ context.Context, _ *store.KEK) error { return nil }
+func (stubGitopsStore) ListSecretKeysForRepo(_ context.Context, _ string) ([]store.SecretKey, error) {
+	return nil, nil
+}
+func (stubGitopsStore) ListConfigKeysForRepo(_ context.Context, _ string) ([]store.ConfigKey, error) {
+	return nil, nil
+}
+func (stubGitopsStore) UpdateSecretRepoID(_ context.Context, _, _, _, _ string) error { return nil }
 
 func newTestWebhookHandler(t *testing.T, repo *store.Repository, sealed bool) *WebhookHandler {
 	t.Helper()
