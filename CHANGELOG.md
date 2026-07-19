@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/bytepunx/signet/compare/v0.5.0...v0.5.1) (2026-07-19)
+
+
+### Bug Fixes
+
+* **auth:** fix SPIFFE ID extraction from real go-spiffe mTLS connections ([#13](https://github.com/bytepunx/signet/issues/13)) ([d2e8431](https://github.com/bytepunx/signet/commit/d2e843149d8743bb319dd3c3fb0e7f28591afa1c))
+* **gitops:** make repo sync over SSH actually work ([#12](https://github.com/bytepunx/signet/issues/12)) ([ac5ff60](https://github.com/bytepunx/signet/commit/ac5ff60a668adce8b49c4742a272b71d96ce4945))
+
 ## [0.5.0](https://github.com/bytepunx/signet/compare/v0.4.0...v0.5.0) (2026-07-18)
 
 
