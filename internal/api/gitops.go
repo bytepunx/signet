@@ -353,14 +353,16 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 		return status.Errorf(codes.InvalidArgument, "extract bundle: %v", err)
 	}
 
-	// Run the SOPS decrypt + store pass.
-	result, err := s.syncer.SyncFromDir(stream.Context(), tmpDir, secretsPath, headSHA)
+	// Run the SOPS decrypt + store pass. repoID is "" — a pushed bundle has
+	// no registered git repository to attribute secrets to or diff deletions
+	// against (see SyncFromDir's doc comment).
+	result, err := s.syncer.SyncFromDir(stream.Context(), tmpDir, secretsPath, headSHA, "")
 	if err != nil {
 		return status.Errorf(codes.Internal, "sync: %v", err)
 	}
 
 	// Run the plain YAML config pass if a config_path was provided.
-	configCount, configErr := s.syncer.SyncConfigFromDir(stream.Context(), tmpDir, configPath)
+	configCount, _, configErr := s.syncer.SyncConfigFromDir(stream.Context(), tmpDir, configPath, "")
 	if configErr != nil {
 		slog.Warn("bundle config sync error", "err", configErr)
 	}

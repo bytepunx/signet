@@ -3,6 +3,7 @@ package gitops
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,18 +13,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// statefulKEKStore is a secretStore fake that actually persists KEKs and
-// secrets in memory, so activeKEK's bootstrap-then-reuse behavior and the
-// M-4 dedup logic in storeSecret/isUnchanged can be exercised.
+// statefulKEKStore is a secretStore fake that actually persists KEKs,
+// secrets, and configs in memory (including RepoID attribution and real
+// deletion), so activeKEK's bootstrap-then-reuse behavior, the M-4 dedup
+// logic in storeSecret/isUnchanged, and FullSync's repo-scoped deletion
+// detection can all be exercised without a real database.
 type statefulKEKStore struct {
-	active     *store.KEK
-	puts       int
-	secrets    map[string]*store.Secret
-	putSecrets int
+	active       *store.KEK
+	puts         int
+	secrets      map[string]*store.Secret
+	putSecrets   int
+	configs      map[string]json.RawMessage
+	configRepoID map[string]string
+	sopsKeys     []store.SOPSKey
 }
 
 func secretKey(namespace, service, name string) string {
 	return namespace + "/" + service + "/" + name
+}
+
+func configKey(namespace, service string) string {
+	return namespace + "/" + service
 }
 
 func (s *statefulKEKStore) GetActiveKEK(_ context.Context) (*store.KEK, error) {
@@ -47,7 +57,7 @@ func (s *statefulKEKStore) GetSecret(_ context.Context, namespace, service, name
 	return sec, nil
 }
 func (s *statefulKEKStore) ListSOPSKeys(_ context.Context, _ string) ([]store.SOPSKey, error) {
-	return nil, nil
+	return s.sopsKeys, nil
 }
 func (s *statefulKEKStore) PutSecret(_ context.Context, sec *store.Secret) error {
 	s.putSecrets++
@@ -58,7 +68,10 @@ func (s *statefulKEKStore) PutSecret(_ context.Context, sec *store.Secret) error
 	s.secrets[secretKey(sec.Namespace, sec.Service, sec.Name)] = &cp
 	return nil
 }
-func (s *statefulKEKStore) DeleteSecret(_ context.Context, _, _, _ string) error { return nil }
+func (s *statefulKEKStore) DeleteSecret(_ context.Context, namespace, service, name string) error {
+	delete(s.secrets, secretKey(namespace, service, name))
+	return nil
+}
 func (s *statefulKEKStore) GetRepository(_ context.Context, _ string) (*store.Repository, error) {
 	return nil, nil
 }
@@ -68,10 +81,44 @@ func (s *statefulKEKStore) ListRepositories(_ context.Context) ([]store.Reposito
 func (s *statefulKEKStore) UpdateSyncState(_ context.Context, _, _ string, _ time.Time) error {
 	return nil
 }
-func (s *statefulKEKStore) PutServiceConfig(_ context.Context, _, _ string, _ json.RawMessage) error {
+func (s *statefulKEKStore) PutServiceConfig(_ context.Context, namespace, service string, content json.RawMessage, repoID string) error {
+	if s.configs == nil {
+		s.configs = make(map[string]json.RawMessage)
+	}
+	if s.configRepoID == nil {
+		s.configRepoID = make(map[string]string)
+	}
+	k := configKey(namespace, service)
+	s.configs[k] = content
+	s.configRepoID[k] = repoID
 	return nil
 }
-func (s *statefulKEKStore) DeleteServiceConfig(_ context.Context, _, _ string) error { return nil }
+func (s *statefulKEKStore) DeleteServiceConfig(_ context.Context, namespace, service string) error {
+	k := configKey(namespace, service)
+	delete(s.configs, k)
+	delete(s.configRepoID, k)
+	return nil
+}
+func (s *statefulKEKStore) ListSecretKeysForRepo(_ context.Context, repoID string) ([]store.SecretKey, error) {
+	var keys []store.SecretKey
+	for _, sec := range s.secrets {
+		if sec.RepoID == repoID {
+			keys = append(keys, store.SecretKey{Namespace: sec.Namespace, Service: sec.Service, Name: sec.Name})
+		}
+	}
+	return keys, nil
+}
+func (s *statefulKEKStore) ListConfigKeysForRepo(_ context.Context, repoID string) ([]store.ConfigKey, error) {
+	var keys []store.ConfigKey
+	for k, rid := range s.configRepoID {
+		if rid != repoID {
+			continue
+		}
+		ns, svc, _ := strings.Cut(k, "/")
+		keys = append(keys, store.ConfigKey{Namespace: ns, Service: svc})
+	}
+	return keys, nil
+}
 
 func TestActiveKEK_BootstrapsWhenNoneExists(t *testing.T) {
 	st := &statefulKEKStore{}

@@ -35,7 +35,7 @@ func (m *mockStore) ListRepositories(_ context.Context) ([]store.Repository, err
 func (m *mockStore) UpdateSyncState(_ context.Context, _, _ string, _ time.Time) error {
 	return nil
 }
-func (m *mockStore) PutServiceConfig(_ context.Context, _, _ string, _ json.RawMessage) error {
+func (m *mockStore) PutServiceConfig(_ context.Context, _, _ string, _ json.RawMessage, _ string) error {
 	return nil
 }
 func (m *mockStore) DeleteServiceConfig(_ context.Context, _, _ string) error { return nil }
@@ -43,6 +43,12 @@ func (m *mockStore) GetActiveKEK(_ context.Context) (*store.KEK, error) {
 	return nil, store.ErrNotFound
 }
 func (m *mockStore) PutKEK(_ context.Context, _ *store.KEK) error { return nil }
+func (m *mockStore) ListSecretKeysForRepo(_ context.Context, _ string) ([]store.SecretKey, error) {
+	return nil, nil
+}
+func (m *mockStore) ListConfigKeysForRepo(_ context.Context, _ string) ([]store.ConfigKey, error) {
+	return nil, nil
+}
 
 // mockKeys implements keyUnwrapper for unit testing.
 type mockKeys struct{}
@@ -60,7 +66,7 @@ func TestSyncFromDir_NoSOPSKeys(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(secretsDir, "token.yaml"), []byte("sops: {}"), 0o600))
 
 	syncer := NewSyncer(&mockStore{keys: nil}, &mockKeys{}, nil, "")
-	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "abc123")
+	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "abc123", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no age keys")
 }
@@ -72,7 +78,7 @@ func TestSyncFromDir_MissingSecretsDir(t *testing.T) {
 	// secrets/ subdirectory intentionally absent
 
 	syncer := NewSyncer(&mockStore{keys: nil}, &mockKeys{}, nil, "")
-	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "")
+	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "", "")
 	require.Error(t, err, "should fail when secrets dir is absent")
 }
 
@@ -99,7 +105,7 @@ func TestSyncFromDir_HeadSHAPassedThrough(t *testing.T) {
 	// Will fail at loadIdentities (can't decrypt the fake key), but the
 	// architecture guarantee is: if it succeeds, SHA is passed through.
 	// Here we just confirm the error is from key decryption, not from the SHA.
-	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "deadbeef")
+	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "deadbeef", "")
 	// Error expected (fake encrypted key), but it must NOT be about the SHA.
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), "deadbeef", "error should be about key loading, not the SHA")
@@ -116,25 +122,28 @@ func TestSyncConfigFromDir_BasicParse(t *testing.T) {
 
 	ms := &mockStore{}
 	syncer := NewSyncer(ms, &mockKeys{}, nil, "")
-	count, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/")
+	count, deleted, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "")
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
+	assert.Equal(t, 0, deleted)
 }
 
 // TestSyncConfigFromDir_EmptyPath verifies that an empty configPath is a no-op.
 func TestSyncConfigFromDir_EmptyPath(t *testing.T) {
 	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, "")
-	count, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "")
+	count, deleted, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "", "")
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
+	assert.Equal(t, 0, deleted)
 }
 
 // TestSyncConfigFromDir_MissingDir verifies that a missing config dir is silently skipped.
 func TestSyncConfigFromDir_MissingDir(t *testing.T) {
 	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, "")
-	count, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/")
+	count, deleted, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/", "")
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
+	assert.Equal(t, 0, deleted)
 }
 
 // TestNormalizeForJSON verifies that yaml.v3 date values are converted to strings.
