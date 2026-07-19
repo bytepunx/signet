@@ -15,5 +15,11 @@
 ALTER TABLE secrets ADD COLUMN IF NOT EXISTS repo_id UUID REFERENCES git_repositories(id) ON DELETE SET NULL;
 ALTER TABLE configs ADD COLUMN IF NOT EXISTS repo_id UUID REFERENCES git_repositories(id) ON DELETE SET NULL;
 
-CREATE INDEX IF NOT EXISTS idx_secrets_repo_id ON secrets (repo_id) WHERE repo_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_configs_repo_id ON configs (repo_id) WHERE repo_id IS NOT NULL;
+-- Not a partial index (no WHERE repo_id IS NOT NULL): CockroachDB rejects a
+-- partial index predicate that references a column added earlier in the
+-- same migration transaction ("cannot create partial index on column ...
+-- which is not public" — the column hasn't finished its online schema
+-- change within this transaction yet). A plain index has no such
+-- restriction.
+CREATE INDEX IF NOT EXISTS idx_secrets_repo_id ON secrets (repo_id);
+CREATE INDEX IF NOT EXISTS idx_configs_repo_id ON configs (repo_id);
