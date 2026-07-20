@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/bytepunx/signet/compare/v0.5.1...v0.6.0) (2026-07-19)
+
+
+### Features
+
+* **gitops:** detect and delete secrets/configs removed from a repo ([#15](https://github.com/bytepunx/signet/issues/15)) ([a36725a](https://github.com/bytepunx/signet/commit/a36725a7fd18e895bc9e854b3a9c80138403b151))
+
 ## [0.5.1](https://github.com/bytepunx/signet/compare/v0.5.0...v0.5.1) (2026-07-19)
 
 
