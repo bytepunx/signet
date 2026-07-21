@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/bytepunx/signet/compare/v0.6.0...v0.6.1) (2026-07-21)
+
+
+### Bug Fixes
+
+* **store:** restart-lock acquisition was broken against real CockroachDB ([#17](https://github.com/bytepunx/signet/issues/17)) ([6216d59](https://github.com/bytepunx/signet/commit/6216d59365809f95f8cb126482a649e58d8525a4))
+
 ## [0.6.0](https://github.com/bytepunx/signet/compare/v0.5.1...v0.6.0) (2026-07-19)
 
 
