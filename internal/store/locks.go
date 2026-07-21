@@ -14,19 +14,43 @@ type LockKey struct {
 	Service   string
 }
 
-// TryAcquireLock attempts to insert a new lock record for (namespace, service).
-// Any existing record whose expires_at is in the past is removed first.
-// Returns true if the lock was acquired, false if currently held by another holder.
-// The caller supplies both the token (unique per acquisition) and the expiry time.
+// TryAcquireLock attempts to insert a new lock record for (namespace, service),
+// stealing an existing record in place if it has already expired.
+// Returns true if the lock was acquired, false if currently held (and not yet
+// expired) by another holder. The caller supplies both the token (unique per
+// acquisition) and the expiry time.
+//
+// This used to be a DELETE-then-INSERT expressed as a CTE feeding an INSERT:
+//
+//	WITH cleanup AS (DELETE FROM restart_locks WHERE ... RETURNING namespace)
+//	INSERT INTO restart_locks (...) VALUES (...) ON CONFLICT (...) DO NOTHING
+//	RETURNING token
+//
+// CockroachDB rejects that outright — "multiple mutations of the same table
+// ... are not supported unless they all use INSERT without ON CONFLICT"
+// (SQLSTATE 0A000) — whenever the DELETE actually matches a row, i.e.
+// whenever a prior lock for this namespace/service had expired. Postgres
+// allows it unconditionally, which is why the testcontainers-backed
+// integration suite (real Postgres, never real CockroachDB) never caught
+// this: a fresh test DB never has a pre-existing expired lock row to
+// trigger it. Found live, during extended smoke testing against a real
+// signet + CockroachDB deployment — see
+// locks_cockroachdb_integration_test.go for the regression test.
+//
+// The fix is a single conditional upsert instead: one INSERT ... ON CONFLICT
+// DO UPDATE is exactly one mutation of the table, so CRDB's restriction
+// (which is specifically about combining a DELETE with an INSERT/UPSERT on
+// the same table) doesn't apply. The DO UPDATE's WHERE clause only steals
+// the row if it's actually expired; if the row exists and is still held,
+// neither the INSERT nor the UPDATE branch fires, RETURNING yields no row,
+// and the caller correctly sees "not acquired" exactly as before.
 func (s *Store) TryAcquireLock(ctx context.Context, namespace, service, token string, expiresAt time.Time) (bool, error) {
 	const q = `
-		WITH cleanup AS (
-			DELETE FROM restart_locks
-			WHERE namespace = $1 AND service = $2 AND expires_at < now()
-		)
 		INSERT INTO restart_locks (namespace, service, token, expires_at)
 		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (namespace, service) DO NOTHING
+		ON CONFLICT (namespace, service) DO UPDATE
+			SET token = excluded.token, expires_at = excluded.expires_at
+			WHERE restart_locks.expires_at < now()
 		RETURNING token`
 
 	var got string

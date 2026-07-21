@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"log/slog"
 
 	"github.com/bytepunx/signet/internal/auth"
 	icrypto "github.com/bytepunx/signet/internal/crypto"
@@ -41,6 +42,15 @@ func toGRPCError(err error) error {
 	case errors.Is(err, unseal.ErrInvalidConfig):
 		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
+		// Every other branch above maps to a specific, already-understood
+		// condition and returns a specific message; this default case is by
+		// definition something unclassified, and previously vanished
+		// entirely — the client saw only "internal error" and there was no
+		// server-side trace at all to diagnose it from. Logging here is what
+		// actually surfaced a real bug (a CockroachDB-incompatible query in
+		// TryAcquireLock) during live smoke testing; without it, that bug
+		// was completely silent on the server side.
+		slog.Error("unmapped internal error", "err", err)
 		return status.Error(codes.Internal, "internal error")
 	}
 }
