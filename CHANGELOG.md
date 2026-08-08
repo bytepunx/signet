@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/bytepunx/signet/compare/v0.6.1...v0.7.0) (2026-08-08)
+
+
+### Features
+
+* **chart:** add admin.clusterAccess flag for in-cluster admin gRPC access ([#20](https://github.com/bytepunx/signet/issues/20)) ([0f43c8b](https://github.com/bytepunx/signet/commit/0f43c8bf9fd3ba2db5d6b9c9d21df7a1446f508e)), closes [#19](https://github.com/bytepunx/signet/issues/19)
+
 ## [0.6.1](https://github.com/bytepunx/signet/compare/v0.6.0...v0.6.1) (2026-07-21)
 
 
