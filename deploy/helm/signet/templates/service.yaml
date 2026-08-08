@@ -20,6 +20,19 @@ spec:
       targetPort: webhook
       protocol: TCP
     {{- end }}
-# Note: the admin port (8444) is NOT exposed here. It is bound to 127.0.0.1
-# inside the container. Operators access it exclusively via:
+    {{- if .Values.admin.clusterAccess }}
+    - name: admin
+      port: 8444
+      targetPort: admin
+      protocol: TCP
+    {{- end }}
+# Note: by default the admin port (8444) is NOT exposed here. It is bound to
+# 127.0.0.1 inside the container, and operators access it exclusively via:
 #   kubectl port-forward -n <namespace> svc/signet 8444:8444
+#
+# Set admin.clusterAccess: true (values.yaml) to also expose it in-cluster
+# for automated callers that cannot port-forward -- this atomically rebinds
+# the listener off loopback, adds the "admin" port above, and opens the
+# matching NetworkPolicy ingress rule. The bearer token required on every
+# admin RPC is the real security boundary either way; the loopback bind is
+# defense-in-depth on top of it, not the only protection.

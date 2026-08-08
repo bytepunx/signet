@@ -183,6 +183,14 @@
         "enabled": { "type": "boolean" }
       }
     },
+    "admin": {
+      "type": "object",
+      "description": "In-cluster access to the admin gRPC listener (port 8444), which is loopback-only / port-forward-only otherwise. See values.yaml for the security rationale.",
+      "additionalProperties": false,
+      "properties": {
+        "clusterAccess": { "type": "boolean" }
+      }
+    },
     "spire": {
       "type": "object",
       "additionalProperties": false,

@@ -88,6 +88,26 @@ jobs:
             --set signet.existingSecret=signet-secrets \
             > /dev/null
 
+      - name: admin.clusterAccess=false (default) omits admin Service/NetworkPolicy resources
+        run: |
+          OUT=$(helm template signet deploy/helm/signet \
+            --set signet.trustDomain=example.org \
+            --set signet.existingSecret=signet-secrets)
+          echo "$OUT" | grep -q '"127.0.0.1:8444"' || { echo "::error::expected loopback-only SIGNET_ADMIN_ADDR by default"; exit 1; }
+          if echo "$OUT" | grep -q 'name: admin'; then
+            echo "::error::did not expect an admin-named port when clusterAccess is disabled"
+            exit 1
+          fi
+
+      - name: admin.clusterAccess=true adds admin Service port and NetworkPolicy rule
+        run: |
+          OUT=$(helm template signet deploy/helm/signet \
+            --set signet.trustDomain=example.org \
+            --set signet.existingSecret=signet-secrets \
+            --set admin.clusterAccess=true)
+          echo "$OUT" | grep -q '"0.0.0.0:8444"' || { echo "::error::expected SIGNET_ADMIN_ADDR to be rebound off loopback"; exit 1; }
+          echo "$OUT" | grep -q 'name: admin' || { echo "::error::expected an admin-named port in the rendered manifests"; exit 1; }
+
   build:
     name: Build binaries
     runs-on: ubuntu-latest

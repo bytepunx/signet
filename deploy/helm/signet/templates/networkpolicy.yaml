@@ -2,7 +2,11 @@
 # NetworkPolicy for signetd pods.
 # Ingress: permit gRPC workload traffic (port 8443) from any cluster source.
 #          Permit GitHub webhook traffic (port 8445) when webhookAddr is set.
-#          The admin port (8444) is localhost-only and unreachable via the network.
+#          The admin port (8444) is localhost-only and unreachable via the
+#          network, unless admin.clusterAccess is enabled, in which case it
+#          is opened to any cluster source too -- the bearer token required
+#          on every admin RPC is the real security boundary, not the network
+#          path, so this mirrors the workload port's ingress rule.
 # Egress:  DNS, CockroachDB (when in-cluster), the Kubernetes API (TokenReview),
 #          and git remotes (443 for HTTPS, 22 for SSH deploy-key GitOps sync).
 apiVersion: networking.k8s.io/v1
@@ -26,6 +30,11 @@ spec:
     {{- if .Values.signet.webhookAddr }}
     - ports:
         - port: 8445
+          protocol: TCP
+    {{- end }}
+    {{- if .Values.admin.clusterAccess }}
+    - ports:
+        - port: 8444
           protocol: TCP
     {{- end }}
   egress:

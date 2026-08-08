@@ -9,7 +9,7 @@ data:
   SIGNET_SPIRE_SOCKET:      {{ .Values.signet.spireSocket | quote }}
   SIGNET_TRUST_DOMAIN:      {{ .Values.signet.trustDomain | required "signet.trustDomain is required" | quote }}
   SIGNET_WORKLOAD_ADDR:     {{ .Values.signet.workloadAddr | quote }}
-  SIGNET_ADMIN_ADDR:        {{ .Values.signet.adminAddr | quote }}
+  SIGNET_ADMIN_ADDR:        {{ include "signet.adminAddr" . | quote }}
   SIGNET_WEBHOOK_ADDR:      {{ .Values.signet.webhookAddr | quote }}
   SIGNET_WEBHOOK_BASE_URL:  {{ .Values.signet.webhookBaseURL | quote }}
   SIGNET_DRAIN_TIMEOUT:     {{ .Values.signet.drainTimeout | quote }}

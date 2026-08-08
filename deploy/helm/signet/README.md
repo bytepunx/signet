@@ -66,6 +66,7 @@ Either `signet.existingSecret` (recommended) or both `signet.dbConnString` and
 | `ingress.enabled` | `false` | Expose webhook port via Ingress |
 | `cockroachdb.enabled` | `false` | Deploy a single-node CockroachDB (dev only) |
 | `networkPolicy.enabled` | `true` | Restrict ingress/egress with NetworkPolicy |
+| `admin.clusterAccess` | `false` | Expose the admin gRPC port (8444) in-cluster for automated callers, instead of port-forward-only |
 
 ## Auto-unseal
 
@@ -106,6 +107,45 @@ helm upgrade signet oci://ghcr.io/bytepunx/charts/signet \
 > distribute key shares to separate people. For additional hardening, consider
 > storing the Secret via [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets)
 > or a secrets operator with strict RBAC rather than a plain Kubernetes Secret.
+
+## Admin in-cluster access
+
+By default the admin gRPC listener (port 8444) is bound to `127.0.0.1` inside
+the container and is not exposed by the Service. The only supported way in is:
+
+```bash
+kubectl port-forward -n signet svc/signet 8444:8444
+```
+
+That's sufficient for a human operator, but automated in-cluster callers
+(a credential-provisioning Job, an operator, a controller) have no way to
+port-forward. Set `admin.clusterAccess: true` for that case:
+
+```yaml
+admin:
+  clusterAccess: true
+```
+
+This atomically (a) rebinds the admin listener off loopback onto all
+interfaces, (b) adds an `admin` port to the Service, and (c) opens the
+matching `NetworkPolicy` ingress rule — the admin port then becomes reachable
+from any pod in the cluster, the same way the workload port (8443) already
+is.
+
+**When to use it:** an automated caller inside the cluster needs the admin
+API and cannot port-forward.
+
+**When not to:** if every consumer of the admin API is a human at a
+terminal, leave this `false` (the default) and keep using port-forward —
+there's no benefit to widening the network path further.
+
+**Security rationale:** the bearer token required on every admin RPC (see
+`signet.adminSubjects` / `signet.kubeAudiences`) is the real security
+boundary for the admin API, not the network path. The loopback bind is
+defense-in-depth on top of that token check, not the only thing standing
+between an attacker and the admin API — so enabling `clusterAccess` does not
+hand out unauthenticated access to anything; it only changes *how* an
+already-authenticated caller reaches the listener.
 
 ---
 
