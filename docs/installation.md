@@ -47,7 +47,7 @@ supported value.
 |---|---|---|---|
 | `signet.trustDomain` | `""` | **Yes** | SPIFFE trust domain — must match your SPIRE server |
 | `signet.workloadAddr` | `":8443"` | | gRPC workload listener address |
-| `signet.adminAddr` | `"127.0.0.1:8444"` | | Admin gRPC listener; bound to localhost, never exposed |
+| `signet.adminAddr` | `"127.0.0.1:8444"` | | Admin gRPC listener; bound to localhost and not exposed by default. Normally left as-is — set `admin.clusterAccess: true` instead of editing this directly (see [`admin.*`](#admin-clusteraccess)) |
 | `signet.webhookAddr` | `":8445"` | | GitHub webhook listener; set to `""` to disable |
 | `signet.webhookBaseURL` | `""` | | Public base URL returned by `signet repo add` |
 | `signet.drainTimeout` | `"30s"` | | Graceful shutdown drain timeout |
@@ -238,8 +238,42 @@ normal and a CPU limit would cause unnecessary throttling.
 ### `networkPolicy.enabled`
 
 Default `true`. Restricts ingress to the gRPC port (8443) from within the
-cluster, and webhook port (8445) when `signet.webhookAddr` is set. Egress to
+cluster, and webhook port (8445) when `signet.webhookAddr` is set (and the
+admin port, 8444, when `admin.clusterAccess` is set — see below). Egress to
 the database and SPIRE agent socket is allowed; all other egress is blocked.
+
+### `admin.clusterAccess` {#admin-clusteraccess}
+
+Default `false`. The admin gRPC listener (port 8444) is loopback-only inside
+the pod by default; the only supported way to reach it is
+`kubectl port-forward svc/signet 8444:8444`. That's fine for a human
+operator, but automated in-cluster callers (a credential-provisioning Job, an
+operator, a controller) have no supported path in.
+
+Setting `admin.clusterAccess: true` atomically:
+
+1. Rebinds the admin listener off `127.0.0.1` onto all interfaces (by
+   rewriting `signet.adminAddr` internally — you don't need to change it
+   yourself).
+2. Adds an `admin` port to the Service.
+3. Opens a matching `NetworkPolicy` ingress rule, the same way the workload
+   port (8443) is already open to any cluster source.
+
+Enable it only when you have an automated in-cluster caller that cannot
+port-forward. If every consumer of the admin API is a human, leave this
+`false` and keep using port-forward as today.
+
+**Security rationale:** the bearer token required on every admin RPC (see
+`signet.adminSubjects` / `signet.kubeAudiences` above) is the real security
+boundary for the admin API — the loopback bind is defense-in-depth on top of
+that token check, not the only thing protecting it. Enabling
+`admin.clusterAccess` does not hand out unauthenticated access to anything;
+it only changes how an already-authenticated caller reaches the listener.
+
+```yaml
+admin:
+  clusterAccess: true
+```
 
 ### `cockroachdb.*` — In-cluster CockroachDB (dev only)
 

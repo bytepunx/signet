@@ -26,8 +26,11 @@ signet:
   trustDomain: ""
 
   workloadAddr: ":8443"
-  # Admin listener is localhost-only inside the container. Operators access it
-  # exclusively via kubectl port-forward; it is never exposed in the Service.
+  # Admin listener is localhost-only inside the container by default. Operators
+  # access it via kubectl port-forward; it is not exposed in the Service unless
+  # admin.clusterAccess (below) is enabled, in which case this is rewritten to
+  # bind on all interfaces automatically -- you normally don't need to edit
+  # this value yourself.
   adminAddr: "127.0.0.1:8444"
   # GitHub webhook listener. Leave empty to disable.
   webhookAddr: ":8445"
@@ -157,6 +160,33 @@ autoUnseal:
 
 networkPolicy:
   enabled: true
+
+# -- Admin gRPC in-cluster access --
+# The admin port (8444) is loopback-only by default; the only supported way
+# to reach it is `kubectl port-forward svc/signet 8444:8444`, which is fine
+# for a human operator but leaves automated in-cluster callers (a
+# credential-provisioning Job, an operator, a controller) with no supported
+# path in.
+#
+# Security rationale: the bearer token required on every admin RPC (see
+# signet.adminSubjects / signet.kubeAudiences above) is the real security
+# boundary for the admin API. The loopback bind is defense-in-depth on top
+# of that token check, not the only thing protecting it -- so opening
+# in-cluster network access here does not hand out unauthenticated access
+# to anything.
+admin:
+  # When true, atomically: (a) rebinds the admin listener off 127.0.0.1 onto
+  # all interfaces, (b) adds an "admin" port to the Service, and (c) opens a
+  # matching NetworkPolicy ingress rule -- so it's reachable from any pod in
+  # the cluster, the same way the workload port (8443) already is. Wiring
+  # only the Service or only the NetworkPolicy without the other (or without
+  # rebinding the listener) silently doesn't work, so keep this a single
+  # flag rather than three settings to line up by hand.
+  #
+  # Enable this only when you have an automated in-cluster caller that
+  # cannot port-forward. If every consumer of the admin API is a human,
+  # leave this false (default) and keep using port-forward as today.
+  clusterAccess: false
 
 spire:
   # Path inside the container where the SPIRE agent socket directory is mounted.

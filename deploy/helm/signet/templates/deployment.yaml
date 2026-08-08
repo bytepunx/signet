@@ -52,6 +52,11 @@ spec:
               containerPort: 8445
               protocol: TCP
             {{- end }}
+            {{- if .Values.admin.clusterAccess }}
+            - name: admin
+              containerPort: 8444
+              protocol: TCP
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "signet.fullname" . }}
@@ -68,8 +73,10 @@ spec:
                   name: {{ include "signet.secretName" . }}
                   key: SIGNET_AUDIT_CHAIN_KEY
           # TCP probes on the mTLS workload port confirm the gRPC server is listening.
-          # The admin port (8444) is bound to 127.0.0.1 and intentionally unreachable
-          # from outside the container.
+          # The admin port (8444) is bound to 127.0.0.1 and unreachable from outside
+          # the container by default. Set admin.clusterAccess: true to bind it on all
+          # interfaces and expose it in-cluster via a Service + NetworkPolicy rule
+          # (see values.yaml); kubectl port-forward remains available either way.
           livenessProbe:
             tcpSocket:
               port: grpc

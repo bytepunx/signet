@@ -93,6 +93,23 @@ CockroachDB headless service DNS name.
 {{- end }}
 
 {{/*
+Effective admin gRPC bind address. signet.adminAddr defaults to
+127.0.0.1:8444 (loopback-only). When admin.clusterAccess is enabled, the
+loopback host is rewritten to 0.0.0.0 so the admin listener is actually
+reachable via the Service/NetworkPolicy this chart creates for it -- a
+Service alone cannot make a loopback-bound listener reachable from outside
+the pod's network namespace. A no-op if the operator has already pointed
+signet.adminAddr somewhere other than 127.0.0.1.
+*/}}
+{{- define "signet.adminAddr" -}}
+{{- if .Values.admin.clusterAccess -}}
+{{- .Values.signet.adminAddr | replace "127.0.0.1:" "0.0.0.0:" -}}
+{{- else -}}
+{{- .Values.signet.adminAddr -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Full image reference for signetd.
 global.image.registry (if set) replaces image.registry, enabling air-gapped
 installs without requiring changes to image.repository.
