@@ -11,6 +11,15 @@ import (
 // namespace/service coordinates.
 var ErrInvalidPath = errors.New("invalid secret path")
 
+// ErrPathOutsideRoot is returned when a file path is not under the configured
+// root at all (rather than under the root but shaped wrong). It is a distinct
+// sentinel — always wrapped together with ErrInvalidPath — so callers walking
+// a wider tree (e.g. SyncFromPush, which sees every changed file in a repo,
+// not just those under a given root) can tell "this file was never meant to
+// be a secret/config" apart from "this file is under the root but doesn't
+// match the path-depth convention," and only warn about the latter.
+var ErrPathOutsideRoot = errors.New("path outside configured root")
+
 // ParseSecretPath maps a repository file path to a (namespace, service, name)
 // triple under the configured secrets root.
 //
@@ -37,9 +46,9 @@ func ParseSecretPath(secretsRoot, filePath string) (namespace, service, name str
 	if !ok {
 		// filePath must be strictly under root (not equal to root itself).
 		if fp != root {
-			return "", "", "", fmt.Errorf("%w: %q is not under secrets root %q", ErrInvalidPath, filePath, secretsRoot)
+			return "", "", "", fmt.Errorf("%w: %w: %q is not under secrets root %q", ErrPathOutsideRoot, ErrInvalidPath, filePath, secretsRoot)
 		}
-		return "", "", "", fmt.Errorf("%w: path equals secrets root", ErrInvalidPath)
+		return "", "", "", fmt.Errorf("%w: %w: path equals secrets root", ErrPathOutsideRoot, ErrInvalidPath)
 	}
 
 	// Reject any remaining traversal attempts.
@@ -90,9 +99,9 @@ func ParseConfigPath(configRoot, filePath string) (namespace, service string, er
 	rel, ok := strings.CutPrefix(fp, prefix)
 	if !ok {
 		if fp != root {
-			return "", "", fmt.Errorf("%w: %q is not under config root %q", ErrInvalidPath, filePath, configRoot)
+			return "", "", fmt.Errorf("%w: %w: %q is not under config root %q", ErrPathOutsideRoot, ErrInvalidPath, filePath, configRoot)
 		}
-		return "", "", fmt.Errorf("%w: path equals config root", ErrInvalidPath)
+		return "", "", fmt.Errorf("%w: %w: path equals config root", ErrPathOutsideRoot, ErrInvalidPath)
 	}
 
 	if strings.Contains(rel, "..") {
