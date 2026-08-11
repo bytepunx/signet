@@ -110,6 +110,14 @@ signet.adminAddr somewhere other than 127.0.0.1.
 {{- end }}
 
 {{/*
+Name of the Secret cert-manager writes the admin listener's TLS cert/key
+into (see admin.tls in values.yaml and templates/certificate.yaml).
+*/}}
+{{- define "signet.adminTLSSecretName" -}}
+{{- printf "%s-admin-tls" (include "signet.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Full image reference for signetd.
 global.image.registry (if set) replaces image.registry, enabling air-gapped
 installs without requiring changes to image.repository.

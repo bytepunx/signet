@@ -561,6 +561,27 @@ using the system trust store, or a CA supplied via `--ca` — before the token i
 the server's certificate cannot be verified, the connection fails rather than silently falling
 back to plaintext. `--tls` forces TLS even for a loopback address.
 
+### In-Cluster Admin Access (`admin.clusterAccess`)
+
+The `admin.clusterAccess` chart flag (bytepunx/signet#19) rebinds the admin listener off
+loopback so automated in-cluster callers — a credential-provisioning Job, a controller —
+that cannot `kubectl port-forward` have a supported path in. Doing so removes the second
+layer of the loopback-only model above (the kubeconfig-protected tunnel); only the bearer
+token remains, and it would otherwise cross the pod network in cleartext to anything with
+pod-network visibility (a compromised pod, a permissive CNI) — see bytepunx/signet#24.
+
+`admin.tls` closes that gap by having signetd terminate real TLS on the admin listener
+itself, using the same cert-manager PKI already decided in Section 9. `signetd` (via
+`-admin-tls-cert-file`/`-admin-tls-key-file`, or `SIGNET_ADMIN_TLS_CERT_FILE`/
+`SIGNET_ADMIN_TLS_KEY_FILE`) re-reads the certificate/key files from disk every five
+minutes by default, so a cert-manager renewal (which rewrites the Secret-volume files in
+place) is picked up without a pod restart. This is orthogonal to the workload listener's
+SPIFFE mTLS (Section 4) — the admin listener is not workload-identity-scoped, so it keeps
+its own PKI rather than reusing SPIRE-issued SVIDs. `admin.tls.enabled: true` is strongly
+recommended whenever `admin.clusterAccess` is set; the chart does not hard-require it (an
+operator may already terminate TLS via a service mesh sidecar instead), but leaving both
+plaintext and cluster-reachable is the exact configuration that produced #24.
+
 ### Local Development
 
 For local clusters (kind, minikube, k3s), the admin endpoint may be configured to accept
@@ -896,7 +917,7 @@ Server side (GitOpsServer.SyncBundle):
 │  │                                                           │  │
 │  │  Signet API Server                                        │  │
 │  │    :8443  gRPC + mTLS  (workload secrets)                 │  │
-│  │    :8444  gRPC plain   (admin, port-forward only)         │  │
+│  │    :8444  gRPC plain*  (admin; *TLS if clusterAccess)      │  │
 │  │    :8445  HTTP         (GitHub webhooks)                  │  │
 │  │                                                           │  │
 │  │    - SPIFFE ID extraction + policy evaluation             │  │

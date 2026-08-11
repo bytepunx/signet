@@ -33,6 +33,7 @@ spec:
 # Set admin.clusterAccess: true (values.yaml) to also expose it in-cluster
 # for automated callers that cannot port-forward -- this atomically rebinds
 # the listener off loopback, adds the "admin" port above, and opens the
-# matching NetworkPolicy ingress rule. The bearer token required on every
-# admin RPC is the real security boundary either way; the loopback bind is
-# defense-in-depth on top of it, not the only protection.
+# matching NetworkPolicy ingress rule. Once exposed this way, the bearer
+# token required on every admin RPC crosses the pod network, so also set
+# admin.tls.enabled: true (see bytepunx/signet#24) -- otherwise that token
+# travels in cleartext to anything with pod-network visibility.

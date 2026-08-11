@@ -188,7 +188,25 @@
       "description": "In-cluster access to the admin gRPC listener (port 8444), which is loopback-only / port-forward-only otherwise. See values.yaml for the security rationale.",
       "additionalProperties": false,
       "properties": {
-        "clusterAccess": { "type": "boolean" }
+        "clusterAccess": { "type": "boolean" },
+        "tls": {
+          "type": "object",
+          "description": "TLS termination for the admin listener via cert-manager, for when clusterAccess exposes it beyond loopback. See values.yaml and bytepunx/signet#24.",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "issuerRef": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string" },
+                "kind": { "type": "string", "enum": ["ClusterIssuer", "Issuer"] }
+              }
+            },
+            "duration":    { "type": "string" },
+            "renewBefore": { "type": "string" }
+          }
+        }
       }
     },
     "spire": {
