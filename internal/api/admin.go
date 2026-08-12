@@ -39,7 +39,7 @@ func (s *AdminServer) requireToken(ctx context.Context) error {
 	if err != nil {
 		return toGRPCError(err)
 	}
-	if err := s.validator.Validate(ctx, token); err != nil {
+	if _, err := s.validator.Validate(ctx, token); err != nil {
 		return toGRPCError(err)
 	}
 	return nil

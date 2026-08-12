@@ -51,7 +51,7 @@ func (r *Reconciler) reconcileAll(ctx context.Context) {
 	}
 	for i := range repos {
 		repo := &repos[i]
-		result, err := r.syncer.FullSync(ctx, repo)
+		result, err := r.syncer.FullSync(ctx, repo, "repo:"+repo.Name)
 		if err != nil {
 			slog.Error("reconcile: sync failed", "repo", repo.Name, "err", err)
 			continue

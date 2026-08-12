@@ -43,10 +43,13 @@ func (f *fakeUnsealMgr) RotateMasterKey(newKey []byte) error {
 }
 
 type fakeTokenChecker struct {
-	err error
+	err      error
+	identity string
 }
 
-func (f *fakeTokenChecker) Validate(_ context.Context, _ string) error { return f.err }
+func (f *fakeTokenChecker) Validate(_ context.Context, _ string) (string, error) {
+	return f.identity, f.err
+}
 
 // fakeAdminStore implements adminStore for testing, actually persisting KEKs
 // and the key-check value in memory so rotation flows can be exercised.

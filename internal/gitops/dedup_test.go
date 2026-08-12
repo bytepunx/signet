@@ -33,7 +33,7 @@ func storeUnderActiveKEK(t *testing.T, st *statefulKEKStore, kekID string, kekBy
 func TestIsUnchanged_TrueWhenPlaintextAndKEKMatch(t *testing.T) {
 	st := &statefulKEKStore{}
 	keys := &mockKeys{}
-	s := NewSyncer(st, keys, nil, "")
+	s := NewSyncer(st, keys, nil, nil, "")
 
 	kekID, kekBytes, err := activeKEK(context.Background(), st, keys)
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestIsUnchanged_TrueWhenPlaintextAndKEKMatch(t *testing.T) {
 func TestIsUnchanged_FalseWhenPlaintextDiffers(t *testing.T) {
 	st := &statefulKEKStore{}
 	keys := &mockKeys{}
-	s := NewSyncer(st, keys, nil, "")
+	s := NewSyncer(st, keys, nil, nil, "")
 
 	kekID, kekBytes, err := activeKEK(context.Background(), st, keys)
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestIsUnchanged_FalseWhenPlaintextDiffers(t *testing.T) {
 
 func TestIsUnchanged_FalseWhenSecretNotFound(t *testing.T) {
 	st := &statefulKEKStore{}
-	s := NewSyncer(st, &mockKeys{}, nil, "")
+	s := NewSyncer(st, &mockKeys{}, nil, nil, "")
 
 	assert.False(t, s.isUnchanged(context.Background(), "ns", "svc", "missing", []byte("x"), nil, "kek-1", make([]byte, icrypto.KeySize)))
 }
@@ -78,7 +78,7 @@ func TestIsUnchanged_FalseWhenKEKIDMismatch_ForcesMigrationRewrite(t *testing.T)
 	require.NoError(t, err)
 	_ = storeUnderActiveKEK(t, st, "old-kek-id", oldKEKBytes, "ns", "svc", "key", []byte("same-value"))
 
-	s := NewSyncer(st, &mockKeys{}, nil, "")
+	s := NewSyncer(st, &mockKeys{}, nil, nil, "")
 	aad := icrypto.BindAAD(icrypto.AADSecret, "ns", "svc", "key")
 	currentKEKBytes := make([]byte, icrypto.KeySize)
 
@@ -96,7 +96,7 @@ func TestIsUnchanged_FalseWhenLegacyEmptyKEKID(t *testing.T) {
 		Namespace: "ns", Service: "svc", Name: "key",
 		EncryptedDEK: []byte("whatever"), Ciphertext: []byte("whatever"), KEKID: "",
 	}))
-	s := NewSyncer(st, &mockKeys{}, nil, "")
+	s := NewSyncer(st, &mockKeys{}, nil, nil, "")
 
 	assert.False(t, s.isUnchanged(context.Background(), "ns", "svc", "key", []byte("same-value"), nil, "kek-1", make([]byte, icrypto.KeySize)))
 }

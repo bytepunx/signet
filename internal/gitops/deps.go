@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/bytepunx/signet/internal/audit"
 	"github.com/bytepunx/signet/internal/store"
 )
 
@@ -36,4 +37,12 @@ type notifier interface {
 	Notify(namespace, service, name string)
 	NotifyService(namespace, service string)
 	NotifyBundle(namespace, service string)
+}
+
+// auditRecorder is the subset of *audit.Writer used to record GitOps writes
+// (bytepunx/signet#25). Every entry Syncer records uses Entry.SPIFFEID as a
+// generic actor-identity field, not necessarily a literal spiffe:// URI — see
+// Syncer's actor parameter doc comment.
+type auditRecorder interface {
+	Record(ctx context.Context, e audit.Entry) error
 }

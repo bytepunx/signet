@@ -47,8 +47,12 @@ type unsealMgr interface {
 }
 
 // tokenChecker is the subset of *auth.TokenValidator used for admin SA token validation.
+// Validate returns the token's resolved Kubernetes identity on success — used
+// to attribute GitOps writes triggered via an admin bearer token (see
+// GitOpsServer.requireTokenIdentity) — which callers that only need pass/fail
+// may discard.
 type tokenChecker interface {
-	Validate(ctx context.Context, token string) error
+	Validate(ctx context.Context, token string) (identity string, err error)
 }
 
 // sealChecker is satisfied by *unseal.Manager and lets handlers query seal state.

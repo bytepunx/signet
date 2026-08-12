@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"filippo.io/age"
+	"github.com/bytepunx/signet/internal/audit"
 	icrypto "github.com/bytepunx/signet/internal/crypto"
 	"github.com/bytepunx/signet/internal/store"
 	gogit "github.com/go-git/go-git/v5"
@@ -47,7 +48,8 @@ type Syncer struct {
 	store       secretStore
 	keys        keyUnwrapper
 	bus         notifier
-	environment string // SIGNET_ENVIRONMENT; empty = no filtering
+	audit       auditRecorder // nil in tests that don't need an audit trail; must be non-nil in production, see NewSyncer
+	environment string        // SIGNET_ENVIRONMENT; empty = no filtering
 
 	// extraKnownHostsFile/hostKeyCallback* back SetExtraKnownHostsFile and
 	// hostKeyCallback (known_hosts.go) — SSH host-key verification for
@@ -64,15 +66,22 @@ type Syncer struct {
 
 // NewSyncer constructs a Syncer. bus may be nil if change notifications are
 // not needed (e.g. during reconciliation before any watchers are active).
+// audit records every secret/config actually written (bytepunx/signet#25);
+// it may be nil in tests that don't exercise auditing, but production
+// callers must always pass a real *audit.Writer — unlike bus, there is no
+// legitimate reason to run without a write audit trail outside tests.
 // environment scopes which SOPS age keys are loaded for decryption; an empty
 // string means all keys are considered (backward-compatible default).
-func NewSyncer(st secretStore, keys keyUnwrapper, bus notifier, environment string) *Syncer {
-	return &Syncer{store: st, keys: keys, bus: bus, environment: environment}
+func NewSyncer(st secretStore, keys keyUnwrapper, bus notifier, audit auditRecorder, environment string) *Syncer {
+	return &Syncer{store: st, keys: keys, bus: bus, audit: audit, environment: environment}
 }
 
 // SyncFromPush handles an incremental sync driven by a GitHub push event.
-// changedFiles and deletedFiles are repository-relative paths.
-func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headSHA string, changedFiles, deletedFiles []string) (*SyncResult, error) {
+// changedFiles and deletedFiles are repository-relative paths. actor
+// attributes every write in the audit log (bytepunx/signet#25) — callers
+// should pass something like "repo:<name>" since a webhook push has no live
+// caller identity, only an HMAC-verified repository.
+func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headSHA string, changedFiles, deletedFiles []string, actor string) (*SyncResult, error) {
 	identities, err := s.loadIdentities(ctx)
 	if err != nil {
 		return nil, err
@@ -100,7 +109,7 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 				slog.Error("read secret file", "path", f, "err", readErr)
 				continue
 			}
-			if storeErr := s.storeSecret(ctx, ns, svc, name, data, identities, repo.ID); storeErr != nil {
+			if storeErr := s.storeSecret(ctx, ns, svc, name, data, identities, repo.ID, actor); storeErr != nil {
 				slog.Error("store secret", "path", f, "err", storeErr)
 				continue
 			}
@@ -124,7 +133,7 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 					slog.Error("read config file", "path", f, "err", readErr)
 					continue
 				}
-				if storeErr := s.storeConfig(ctx, ns, svc, data, repo.ID); storeErr != nil {
+				if storeErr := s.storeConfig(ctx, ns, svc, data, repo.ID, actor); storeErr != nil {
 					slog.Error("store config", "path", f, "err", storeErr)
 					continue
 				}
@@ -156,7 +165,7 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 
 	for _, f := range deletedFiles {
 		if ns, svc, name, err := ParseSecretPath(repo.SecretsPath, f); err == nil {
-			if err := s.deleteSecret(ctx, ns, svc, name); err != nil {
+			if err := s.deleteSecret(ctx, ns, svc, name, actor); err != nil {
 				slog.Error("delete secret", "path", f, "err", err)
 				continue
 			}
@@ -177,6 +186,7 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 						slog.Error("delete config", "path", f, "err", err)
 						continue
 					}
+					s.recordAudit(ctx, actor, "delete_config", ns, svc, configAuditName)
 					if s.bus != nil {
 						s.bus.NotifyService(ns, svc)
 						s.bus.NotifyBundle(ns, svc)
@@ -193,8 +203,11 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 }
 
 // FullSync clones the repository and syncs every YAML file under SecretsPath.
-// Used for initial sync and reconciliation.
-func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository) (*SyncResult, error) {
+// Used for initial sync and reconciliation. actor attributes every write in
+// the audit log (bytepunx/signet#25) — pass the triggering admin's identity
+// for an operator-invoked sync (e.g. TriggerSync), or "repo:<name>" for the
+// background reconciler, which has no live caller identity.
+func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository, actor string) (*SyncResult, error) {
 	tmpDir, err := os.MkdirTemp("", "signet-sync-*")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)
@@ -206,12 +219,12 @@ func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository) (*SyncRes
 		return nil, err
 	}
 
-	result, err := s.SyncFromDir(ctx, tmpDir, repo.SecretsPath, headSHA, repo.ID)
+	result, err := s.SyncFromDir(ctx, tmpDir, repo.SecretsPath, headSHA, repo.ID, actor)
 	if err != nil {
 		return nil, err
 	}
 
-	configCount, configDeleted, configSkipped, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath, repo.ID)
+	configCount, configDeleted, configSkipped, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath, repo.ID, actor)
 	if configErr != nil {
 		slog.Warn("config sync error", "repo", repo.Name, "err", configErr)
 	}
@@ -237,8 +250,9 @@ func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository) (*SyncRes
 // registered repository at all) to skip both attribution and deletion.
 //
 // This is the core of both FullSync (which clones first) and SyncBundle
-// (which extracts a tar archive first).
-func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, repoID string) (*SyncResult, error) {
+// (which extracts a tar archive first). actor attributes every write in the
+// audit log — see FullSync's doc comment.
+func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, repoID, actor string) (*SyncResult, error) {
 	identities, err := s.loadIdentities(ctx)
 	if err != nil {
 		return nil, err
@@ -270,7 +284,7 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, rep
 			slog.Error("read secret file", "path", rel, "err", err)
 			return nil
 		}
-		if err := s.storeSecret(ctx, ns, svc, name, data, identities, repoID); err != nil {
+		if err := s.storeSecret(ctx, ns, svc, name, data, identities, repoID, actor); err != nil {
 			slog.Error("store secret", "path", rel, "err", err)
 			return nil
 		}
@@ -296,7 +310,7 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, rep
 			if seen[k] {
 				continue
 			}
-			if err := s.deleteSecret(ctx, k.Namespace, k.Service, k.Name); err != nil {
+			if err := s.deleteSecret(ctx, k.Namespace, k.Service, k.Name, actor); err != nil {
 				slog.Error("delete secret removed from repo", "namespace", k.Namespace, "service", k.Service, "name", k.Name, "err", err)
 				continue
 			}
@@ -338,6 +352,42 @@ func (s *Syncer) loadIdentities(ctx context.Context) ([]age.Identity, error) {
 	return ids, nil
 }
 
+// configAuditName is the sentinel used in place of a secret name when
+// recording an audit entry for a whole-config-document write — configs are
+// keyed by (namespace, service), not a third name segment, matching the
+// same sentinel convention SecretsServer.GetServiceConfig uses on the read
+// side (see internal/api/secrets.go's configAuditName).
+const configAuditName = "<config>"
+
+// recordAudit best-effort records a GitOps write in the audit log. actor is
+// a generic identity string, not necessarily a literal spiffe:// URI — see
+// the auditRecorder doc comment in deps.go — it's whatever authorizeSyncBundle
+// or the caller of FullSync/SyncFromPush resolved: a workload's SPIFFE ID, an
+// admin bearer token's Kubernetes username, or "repo:<name>" for a
+// webhook/reconciler-driven sync with no live caller at all.
+//
+// This is deliberately best-effort (log-and-continue on failure), unlike the
+// read path's SecretsServer.auditFailClosed: by the time this is called, the
+// write has already been committed to the store, so there is nothing left to
+// deny — failing the whole sync over a downstream audit-log write failure
+// would turn an availability problem into a data-loss-shaped one (the
+// secret's own file wouldn't get retried until the next full reconciliation
+// pass). See bytepunx/signet#25.
+func (s *Syncer) recordAudit(ctx context.Context, actor, action, namespace, service, name string) {
+	if s.audit == nil {
+		return
+	}
+	if err := s.audit.Record(ctx, audit.Entry{
+		SPIFFEID:   actor,
+		Action:     action,
+		Namespace:  namespace,
+		SecretName: service + "/" + name,
+		Outcome:    "permitted",
+	}); err != nil {
+		slog.Error("audit write failed for GitOps write", "action", action, "namespace", namespace, "service", service, "name", name, "err", err)
+	}
+}
+
 // storeSecret decrypts a SOPS file and writes the secret to the store. If the
 // plaintext is unchanged from the currently stored version AND that version
 // is already wrapped under the current active KEK (with AAD, which every KEK-
@@ -347,7 +397,7 @@ func (s *Syncer) loadIdentities(ctx context.Context) ([]age.Identity, error) {
 // older/rotated-away KEK is never treated as unchanged, so it is naturally
 // rewritten onto the current epoch the next time it is synced, which is how
 // the AAD/KEK migration (see decryptSecret in internal/api) converges.
-func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name string, data []byte, identities []age.Identity, repoID string) error {
+func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name string, data []byte, identities []age.Identity, repoID, actor string) error {
 	plaintext, err := DecryptFile(data, identities)
 	if err != nil {
 		return fmt.Errorf("sops decrypt: %w", err)
@@ -400,7 +450,7 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 		return fmt.Errorf("wrap dek: %w", err)
 	}
 
-	return s.store.PutSecret(ctx, &store.Secret{
+	if err := s.store.PutSecret(ctx, &store.Secret{
 		Namespace:    namespace,
 		Service:      service,
 		Name:         name,
@@ -408,7 +458,11 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 		KEKID:        kekID,
 		Ciphertext:   ciphertext,
 		RepoID:       repoID,
-	})
+	}); err != nil {
+		return err
+	}
+	s.recordAudit(ctx, actor, "put_secret", namespace, service, name)
+	return nil
 }
 
 // isUnchanged reports whether the currently stored secret already holds
@@ -437,15 +491,20 @@ func (s *Syncer) isUnchanged(ctx context.Context, namespace, service, name strin
 }
 
 // deleteSecret removes a secret from the store, tolerating not-found.
-func (s *Syncer) deleteSecret(ctx context.Context, namespace, service, name string) error {
+func (s *Syncer) deleteSecret(ctx context.Context, namespace, service, name, actor string) error {
 	// Use a concrete store.Store to call DeleteSecret; the interface is minimal.
 	// We rely on the runtime assertion in loadIdentities for type safety.
 	type deleter interface {
 		DeleteSecret(ctx context.Context, namespace, service, name string) error
 	}
-	if d, ok := s.store.(deleter); ok {
-		return d.DeleteSecret(ctx, namespace, service, name)
+	d, ok := s.store.(deleter)
+	if !ok {
+		return nil
 	}
+	if err := d.DeleteSecret(ctx, namespace, service, name); err != nil {
+		return err
+	}
+	s.recordAudit(ctx, actor, "delete_secret", namespace, service, name)
 	return nil
 }
 
@@ -539,11 +598,12 @@ func (s *Syncer) deployKeyAuth(repo *store.Repository) (gogittransport.AuthMetho
 // are parsed as nested YAML maps, converted to JSON, and stored as service configs.
 // repoID attributes every written config to that repository and, when non-
 // empty, enables deletion detection the same way SyncFromDir's repoID does —
-// see its doc comment. Returns the number of configs synced, the number
+// see its doc comment. actor attributes every write in the audit log — see
+// FullSync's doc comment. Returns the number of configs synced, the number
 // deleted, the repo-relative paths of .yaml files that were skipped because
 // they didn't match the path-depth convention (see SyncResult.Skipped), and
 // any walk error.
-func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID string) (count, deleted int, skipped []string, err error) {
+func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID, actor string) (count, deleted int, skipped []string, err error) {
 	if configPath == "" {
 		return 0, 0, nil, nil
 	}
@@ -575,7 +635,7 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID 
 			slog.Error("read config file", "path", rel, "err", err)
 			return nil
 		}
-		if err := s.storeConfig(ctx, ns, svc, data, repoID); err != nil {
+		if err := s.storeConfig(ctx, ns, svc, data, repoID, actor); err != nil {
 			slog.Error("store config", "path", rel, "err", err)
 			return nil
 		}
@@ -605,6 +665,7 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID 
 				slog.Error("delete config removed from repo", "namespace", k.Namespace, "service", k.Service, "err", err)
 				continue
 			}
+			s.recordAudit(ctx, actor, "delete_config", k.Namespace, k.Service, configAuditName)
 			deleted++
 			if s.bus != nil {
 				s.bus.NotifyService(k.Namespace, k.Service)
@@ -616,7 +677,7 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID 
 }
 
 // storeConfig parses a plain YAML config file and stores it as a JSON document.
-func (s *Syncer) storeConfig(ctx context.Context, namespace, service string, data []byte, repoID string) error {
+func (s *Syncer) storeConfig(ctx context.Context, namespace, service string, data []byte, repoID, actor string) error {
 	var raw interface{}
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return fmt.Errorf("parse yaml: %w", err)
@@ -630,7 +691,11 @@ func (s *Syncer) storeConfig(ctx context.Context, namespace, service string, dat
 	if err != nil {
 		return fmt.Errorf("marshal json: %w", err)
 	}
-	return s.store.PutServiceConfig(ctx, namespace, service, content, repoID)
+	if err := s.store.PutServiceConfig(ctx, namespace, service, content, repoID); err != nil {
+		return err
+	}
+	s.recordAudit(ctx, actor, "put_config", namespace, service, configAuditName)
+	return nil
 }
 
 // normalizeForJSON converts yaml.v3-produced values to JSON-safe equivalents.
