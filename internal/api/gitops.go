@@ -373,7 +373,23 @@ func (s *GitOpsServer) TriggerSync(ctx context.Context, req *adminv1.TriggerSync
 		SecretsDeleted: int32(result.Deleted),
 		SyncSha:        result.SHA,
 		ConfigsSynced:  int32(result.ConfigsSynced),
+		Errors:         skippedToErrors(result.Skipped),
 	}, nil
+}
+
+// skippedToErrors formats repo-relative paths skipped for not matching the
+// path-depth convention (SyncResult.Skipped) as messages for the response's
+// Errors field, so "signet repo sync" and equivalent RPC callers see them
+// instead of a sync that silently reports success (see bytepunx/signet#22).
+func skippedToErrors(skipped []string) []string {
+	if len(skipped) == 0 {
+		return nil
+	}
+	errs := make([]string, len(skipped))
+	for i, path := range skipped {
+		errs[i] = fmt.Sprintf("skipped %s: does not match the required <namespace>/<service>[/<name>].yaml path depth", path)
+	}
+	return errs
 }
 
 // SyncBundle receives a client-streamed tar.gz archive, extracts it to a temp
@@ -463,10 +479,12 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 	}
 
 	// Run the plain YAML config pass if a config_path was provided.
-	configCount, _, configErr := s.syncer.SyncConfigFromDir(ctx, tmpDir, configPath, "")
+	configCount, _, configSkipped, configErr := s.syncer.SyncConfigFromDir(ctx, tmpDir, configPath, "")
 	if configErr != nil {
 		slog.Warn("bundle config sync error", "err", configErr)
 	}
+
+	result.Skipped = append(result.Skipped, configSkipped...)
 
 	return stream.SendAndClose(&adminv1.SyncBundleResponse{
 		SecretsAdded:   int32(result.Added),
@@ -474,6 +492,7 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 		SecretsDeleted: int32(result.Deleted),
 		SyncSha:        result.SHA,
 		ConfigsSynced:  int32(configCount),
+		Errors:         skippedToErrors(result.Skipped),
 	})
 }
 

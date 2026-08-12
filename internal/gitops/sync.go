@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -30,6 +31,14 @@ type SyncResult struct {
 	Deleted       int
 	ConfigsSynced int
 	SHA           string
+	// Skipped lists repo-relative paths that were under configPath/secretsPath,
+	// ended in ".yaml", but did not match the required path-depth convention
+	// (see ParseConfigPath/ParseSecretPath) and so were not synced. A non-empty
+	// Skipped does not fail the sync — the rest of the tree still syncs — but
+	// callers (signet repo sync, TriggerSync/SyncBundle RPCs) must surface it;
+	// treating it as equivalent to "nothing to do" is what let a whole
+	// service's config silently never sync (see bytepunx/signet#22).
+	Skipped []string
 }
 
 // Syncer fetches a git repository, decrypts SOPS-encrypted secrets, and
@@ -104,8 +113,10 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 		}
 
 		// Try as plain YAML config.
+		var configErr error
 		if repo.ConfigPath != "" {
-			ns, svc, configErr := ParseConfigPath(repo.ConfigPath, f)
+			var ns, svc string
+			ns, svc, configErr = ParseConfigPath(repo.ConfigPath, f)
 			if configErr == nil {
 				fullPath := filepath.Join(tmpDir, filepath.FromSlash(f))
 				data, readErr := os.ReadFile(fullPath)
@@ -124,6 +135,20 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 				}
 				continue
 			}
+		}
+
+		// A file under secretsPath or configPath that ends in .yaml but
+		// doesn't match the required path-depth convention is a likely
+		// misconfiguration, not an unrelated file — warn loudly rather than
+		// silently dropping it (see bytepunx/signet#22). A file that isn't
+		// under either root at all (README, unrelated path) is genuinely
+		// unrecognised and stays at Debug.
+		if strings.HasSuffix(f, ".yaml") &&
+			(errors.Is(err, ErrInvalidPath) && !errors.Is(err, ErrPathOutsideRoot) ||
+				errors.Is(configErr, ErrInvalidPath) && !errors.Is(configErr, ErrPathOutsideRoot)) {
+			slog.Warn("skipping .yaml file with unrecognised path shape", "path", f, "secretErr", err, "configErr", configErr)
+			result.Skipped = append(result.Skipped, f)
+			continue
 		}
 
 		slog.Debug("skipping unrecognised file", "path", f)
@@ -186,12 +211,13 @@ func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository) (*SyncRes
 		return nil, err
 	}
 
-	configCount, configDeleted, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath, repo.ID)
+	configCount, configDeleted, configSkipped, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath, repo.ID)
 	if configErr != nil {
 		slog.Warn("config sync error", "repo", repo.Name, "err", configErr)
 	}
 	result.ConfigsSynced = configCount
 	result.Deleted += configDeleted
+	result.Skipped = append(result.Skipped, configSkipped...)
 
 	if err := s.store.UpdateSyncState(ctx, repo.ID, headSHA, time.Now().UTC()); err != nil {
 		slog.Error("update sync state", "repo", repo.Name, "err", err)
@@ -231,7 +257,13 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, rep
 
 		ns, svc, name, err := ParseSecretPath(secretsPath, rel)
 		if err != nil {
-			return nil //nolint:nilerr // not a secret file; continue walking rather than abort
+			// Every file reaching this point is already a .yaml under
+			// secretsDir (filtered above), so any parse failure here is a
+			// path-depth mismatch, not an unrelated file — surface it
+			// (see bytepunx/signet#22) rather than silently dropping it.
+			slog.Warn("skipping secret file with unrecognised path shape", "path", rel, "err", err)
+			result.Skipped = append(result.Skipped, rel)
+			return nil //nolint:nilerr // not a valid secret path; continue walking rather than abort
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -508,20 +540,21 @@ func (s *Syncer) deployKeyAuth(repo *store.Repository) (gogittransport.AuthMetho
 // repoID attributes every written config to that repository and, when non-
 // empty, enables deletion detection the same way SyncFromDir's repoID does —
 // see its doc comment. Returns the number of configs synced, the number
-// deleted, and any walk error.
-func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID string) (int, int, error) {
+// deleted, the repo-relative paths of .yaml files that were skipped because
+// they didn't match the path-depth convention (see SyncResult.Skipped), and
+// any walk error.
+func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID string) (count, deleted int, skipped []string, err error) {
 	if configPath == "" {
-		return 0, 0, nil
+		return 0, 0, nil, nil
 	}
 	configDir := filepath.Join(dir, filepath.FromSlash(configPath))
 	if _, statErr := os.Stat(configDir); os.IsNotExist(statErr) {
 		slog.Debug("config directory not present, skipping config sync", "path", configPath)
-		return 0, 0, nil
+		return 0, 0, nil, nil
 	}
 
-	var count int
 	seen := make(map[store.ConfigKey]bool)
-	err := filepath.WalkDir(configDir, func(path string, d os.DirEntry, walkErr error) error {
+	walkErr := filepath.WalkDir(configDir, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil || d.IsDir() || !strings.HasSuffix(path, ".yaml") {
 			return walkErr
 		}
@@ -530,7 +563,12 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID 
 
 		ns, svc, err := ParseConfigPath(configPath, rel)
 		if err != nil {
-			return nil //nolint:nilerr // not a config file; continue walking rather than abort
+			// Every file reaching this point is already a .yaml under
+			// configDir, so any parse failure here is a path-depth mismatch,
+			// not an unrelated file (see bytepunx/signet#22).
+			slog.Warn("skipping config file with unrecognised path shape", "path", rel, "err", err)
+			skipped = append(skipped, rel)
+			return nil //nolint:nilerr // not a valid config path; continue walking rather than abort
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -549,16 +587,15 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID 
 		}
 		return nil
 	})
-	if err != nil {
-		return 0, 0, fmt.Errorf("walk config dir: %w", err)
+	if walkErr != nil {
+		return 0, 0, nil, fmt.Errorf("walk config dir: %w", walkErr)
 	}
 
-	var deleted int
 	if repoID != "" {
 		previouslySynced, err := s.store.ListConfigKeysForRepo(ctx, repoID)
 		if err != nil {
 			slog.Error("list config keys for repo; skipping deletion detection this sync", "repo_id", repoID, "err", err)
-			return count, 0, nil
+			return count, 0, skipped, nil
 		}
 		for _, k := range previouslySynced {
 			if seen[k] {
@@ -575,7 +612,7 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID 
 			}
 		}
 	}
-	return count, deleted, nil
+	return count, deleted, skipped, nil
 }
 
 // storeConfig parses a plain YAML config file and stores it as a JSON document.

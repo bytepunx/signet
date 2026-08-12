@@ -36,6 +36,14 @@ type config struct {
 	WebhookBaseURL string        // SIGNET_WEBHOOK_BASE_URL
 	DrainTimeout   time.Duration // SIGNET_DRAIN_TIMEOUT
 
+	// Admin listener TLS (optional — both empty means plaintext, the
+	// loopback/port-forward-only deployment). Required whenever AdminAddr is
+	// reachable off loopback (e.g. the chart's admin.clusterAccess), since
+	// the bearer token required on every admin RPC would otherwise cross the
+	// pod network in cleartext.
+	AdminTLSCertFile string // SIGNET_ADMIN_TLS_CERT_FILE
+	AdminTLSKeyFile  string // SIGNET_ADMIN_TLS_KEY_FILE
+
 	// Shamir unseal (both zero → direct key mode)
 	ShamirShares    int           // SIGNET_SHAMIR_SHARES
 	ShamirThreshold int           // SIGNET_SHAMIR_THRESHOLD
@@ -73,6 +81,8 @@ func loadConfig() (config, error) {
 		adminAddr         string
 		webhookAddr       string
 		webhookBaseURL    string
+		adminTLSCertFile  string
+		adminTLSKeyFile   string
 		drainTimeout      string
 		shamirShares      int
 		shamirThreshold   int
@@ -100,6 +110,11 @@ func loadConfig() (config, error) {
 		"GitHub webhook HTTP listener address (env: SIGNET_WEBHOOK_ADDR); empty to disable")
 	flag.StringVar(&raw.webhookBaseURL, "webhook-base-url", envOr("SIGNET_WEBHOOK_BASE_URL", ""),
 		"public base URL for webhook callbacks, e.g. https://signet.example.com (env: SIGNET_WEBHOOK_BASE_URL)")
+	flag.StringVar(&raw.adminTLSCertFile, "admin-tls-cert-file", envOr("SIGNET_ADMIN_TLS_CERT_FILE", ""),
+		"PEM certificate file the admin listener terminates TLS with; required together with "+
+			"-admin-tls-key-file whenever -admin-addr is reachable off loopback (env: SIGNET_ADMIN_TLS_CERT_FILE)")
+	flag.StringVar(&raw.adminTLSKeyFile, "admin-tls-key-file", envOr("SIGNET_ADMIN_TLS_KEY_FILE", ""),
+		"PEM private key file paired with -admin-tls-cert-file (env: SIGNET_ADMIN_TLS_KEY_FILE)")
 	flag.StringVar(&raw.drainTimeout, "drain-timeout", envOr("SIGNET_DRAIN_TIMEOUT", "30s"),
 		"graceful shutdown drain period, e.g. 30s (env: SIGNET_DRAIN_TIMEOUT)")
 	flag.IntVar(&raw.shamirShares, "shamir-shares", envOrInt("SIGNET_SHAMIR_SHARES", 0),
@@ -139,6 +154,8 @@ type rawConfig = struct {
 	adminAddr         string
 	webhookAddr       string
 	webhookBaseURL    string
+	adminTLSCertFile  string
+	adminTLSKeyFile   string
 	drainTimeout      string
 	shamirShares      int
 	shamirThreshold   int
@@ -162,6 +179,11 @@ func validate(raw rawConfig) (config, error) {
 
 	require(raw.dbConnString, "-db / SIGNET_DB_CONN_STRING")
 	require(raw.trustDomain, "-trust-domain / SIGNET_TRUST_DOMAIN")
+
+	if (raw.adminTLSCertFile == "") != (raw.adminTLSKeyFile == "") {
+		errs = append(errs, "-admin-tls-cert-file / SIGNET_ADMIN_TLS_CERT_FILE and -admin-tls-key-file / "+
+			"SIGNET_ADMIN_TLS_KEY_FILE must be set together, or both left empty")
+	}
 
 	auditChainKeyHex := raw.auditChainKey
 	switch {
@@ -233,6 +255,8 @@ func validate(raw rawConfig) (config, error) {
 		AdminAddr:        raw.adminAddr,
 		WebhookAddr:      raw.webhookAddr,
 		WebhookBaseURL:   raw.webhookBaseURL,
+		AdminTLSCertFile: raw.adminTLSCertFile,
+		AdminTLSKeyFile:  raw.adminTLSKeyFile,
 		DrainTimeout:     drainTimeout,
 		ShamirShares:     raw.shamirShares,
 		ShamirThreshold:  raw.shamirThreshold,
