@@ -385,7 +385,7 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 		slog.Warn("bundle config sync error", "err", configErr)
 	}
 
-	skipped := append(result.Skipped, configSkipped...)
+	result.Skipped = append(result.Skipped, configSkipped...)
 
 	return stream.SendAndClose(&adminv1.SyncBundleResponse{
 		SecretsAdded:   int32(result.Added),
@@ -393,7 +393,7 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 		SecretsDeleted: int32(result.Deleted),
 		SyncSha:        result.SHA,
 		ConfigsSynced:  int32(configCount),
-		Errors:         skippedToErrors(skipped),
+		Errors:         skippedToErrors(result.Skipped),
 	})
 }
 
