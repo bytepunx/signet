@@ -1,0 +1,24 @@
+{{- if and .Values.admin.clusterAccess .Values.admin.tls.enabled }}
+# TLS certificate for the admin gRPC listener, terminated by signetd itself
+# (see internal/server's AdminTLSCertFile/AdminTLSKeyFile) rather than by a
+# Kubernetes Ingress/Gateway -- the admin listener is a raw gRPC service
+# reached in-cluster, not via the webhook Ingress. Requires cert-manager.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "signet.adminTLSSecretName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "signet.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "signet.adminTLSSecretName" . }}
+  dnsNames:
+    - {{ include "signet.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+    - {{ include "signet.fullname" . }}.{{ .Release.Namespace }}.svc
+    - {{ include "signet.fullname" . }}
+  duration: {{ .Values.admin.tls.duration | quote }}
+  renewBefore: {{ .Values.admin.tls.renewBefore | quote }}
+  issuerRef:
+    name: {{ .Values.admin.tls.issuerRef.name | required "admin.tls.issuerRef.name is required when admin.tls.enabled is true" }}
+    kind: {{ .Values.admin.tls.issuerRef.kind }}
+{{- end }}

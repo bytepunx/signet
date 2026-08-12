@@ -117,10 +117,12 @@ func run() error {
 	srv, err := server.NewFromSPIRE(
 		ctx,
 		server.Config{
-			WorkloadAddr: cfg.WorkloadAddr,
-			AdminAddr:    cfg.AdminAddr,
-			WebhookAddr:  cfg.WebhookAddr,
-			DrainTimeout: cfg.DrainTimeout,
+			WorkloadAddr:     cfg.WorkloadAddr,
+			AdminAddr:        cfg.AdminAddr,
+			AdminTLSCertFile: cfg.AdminTLSCertFile,
+			AdminTLSKeyFile:  cfg.AdminTLSKeyFile,
+			WebhookAddr:      cfg.WebhookAddr,
+			DrainTimeout:     cfg.DrainTimeout,
 		},
 		cfg.SpireSocket,
 		cfg.TrustDomain,
@@ -209,6 +211,7 @@ func logStartup(cfg config) {
 	attrs := []any{
 		"workload_addr", cfg.WorkloadAddr,
 		"admin_addr", cfg.AdminAddr,
+		"admin_tls", cfg.AdminTLSCertFile != "",
 		"trust_domain", cfg.TrustDomain,
 		"state", "sealed",
 		"shamir_mode", shamirMode,

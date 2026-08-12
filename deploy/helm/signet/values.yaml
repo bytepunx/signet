@@ -168,12 +168,15 @@ networkPolicy:
 # credential-provisioning Job, an operator, a controller) with no supported
 # path in.
 #
-# Security rationale: the bearer token required on every admin RPC (see
-# signet.adminSubjects / signet.kubeAudiences above) is the real security
-# boundary for the admin API. The loopback bind is defense-in-depth on top
-# of that token check, not the only thing protecting it -- so opening
-# in-cluster network access here does not hand out unauthenticated access
-# to anything.
+# Security rationale: loopback-only access is protected two ways -- the
+# bearer token required on every admin RPC (see signet.adminSubjects /
+# signet.kubeAudiences above), AND the fact that `kubectl port-forward`'s
+# tunnel is itself protected by kubeconfig credentials, so the token never
+# crosses a network an on-path attacker could read. Enabling clusterAccess
+# removes that second protection -- the token now crosses the pod network,
+# in cleartext, unless admin.tls is also enabled (see bytepunx/signet#24).
+# admin.tls.enabled: true is strongly recommended -- effectively required --
+# whenever clusterAccess is true.
 admin:
   # When true, atomically: (a) rebinds the admin listener off 127.0.0.1 onto
   # all interfaces, (b) adds an "admin" port to the Service, and (c) opens a
@@ -187,6 +190,29 @@ admin:
   # cannot port-forward. If every consumer of the admin API is a human,
   # leave this false (default) and keep using port-forward as today.
   clusterAccess: false
+
+  # -- Admin listener TLS --
+  # Terminates real TLS on the admin listener using a cert-manager-issued
+  # certificate (the same PKI pattern used elsewhere in this deployment --
+  # see design/draft.md Section 9), instead of leaving the bearer token to
+  # cross the pod network in cleartext once clusterAccess exposes the
+  # listener beyond loopback. Only meaningful when admin.clusterAccess is
+  # true; ignored otherwise. Requires cert-manager to already be installed
+  # in the cluster.
+  tls:
+    enabled: false
+    # cert-manager issuer to request the certificate from. Required when
+    # tls.enabled is true.
+    issuerRef:
+      name: ""
+      kind: "ClusterIssuer" # or "Issuer" for a namespace-scoped issuer
+    # Certificate lifetime and renewal window, passed through to the
+    # cert-manager Certificate resource as-is. cert-manager rewrites the
+    # backing Secret's tls.crt/tls.key in place on renewal; signetd reloads
+    # them from disk automatically (default: every 5 minutes), no restart
+    # needed.
+    duration: "2160h"   # 90 days
+    renewBefore: "720h" # 30 days
 
 spire:
   # Path inside the container where the SPIRE agent socket directory is mounted.
