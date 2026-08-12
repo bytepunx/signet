@@ -144,3 +144,34 @@ func TestParseSecretPath(t *testing.T) {
 		})
 	}
 }
+
+// TestParsePath_DistinguishesOutsideRootFromMalformed verifies the sentinel
+// split ParseConfigPath/ParseSecretPath's callers (sync.go's SyncFromPush)
+// rely on to warn only about likely misconfiguration: a path genuinely
+// outside the configured root wraps ErrPathOutsideRoot (silently skip — it
+// was never meant to be a secret/config file); a path under the root that
+// merely has the wrong shape does not (surface it — see bytepunx/signet#22).
+func TestParsePath_DistinguishesOutsideRootFromMalformed(t *testing.T) {
+	_, _, err := ParseConfigPath("config/", "other/ns/svc.yaml")
+	if !errors.Is(err, ErrPathOutsideRoot) {
+		t.Errorf("path outside root: got err %v, want it to wrap ErrPathOutsideRoot", err)
+	}
+
+	_, _, err = ParseConfigPath("config/", "config/ns/svc/extra.yaml")
+	if errors.Is(err, ErrPathOutsideRoot) {
+		t.Errorf("path under root with wrong depth: got err %v, must NOT wrap ErrPathOutsideRoot", err)
+	}
+	if !errors.Is(err, ErrInvalidPath) {
+		t.Errorf("path under root with wrong depth: got err %v, want it to wrap ErrInvalidPath", err)
+	}
+
+	_, _, _, err = ParseSecretPath("secrets/", "other/ns/svc/key.yaml")
+	if !errors.Is(err, ErrPathOutsideRoot) {
+		t.Errorf("path outside root: got err %v, want it to wrap ErrPathOutsideRoot", err)
+	}
+
+	_, _, _, err = ParseSecretPath("secrets/", "secrets/ns/svc.yaml")
+	if errors.Is(err, ErrPathOutsideRoot) {
+		t.Errorf("path under root with wrong depth: got err %v, must NOT wrap ErrPathOutsideRoot", err)
+	}
+}

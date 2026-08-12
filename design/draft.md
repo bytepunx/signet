@@ -877,6 +877,15 @@ Server side (GitOpsServer.SyncBundle):
 
 `SyncFromDir` is the extracted core of `FullSync` — both code paths share the same walk + SOPS + store logic without duplication.
 
+**Skipped-file visibility**: a `.yaml` file under `secrets_path`/`config_path` that doesn't match
+the required `<namespace>/<service>[/<name>].yaml` depth (`ParseSecretPath`/`ParseConfigPath`) is
+not an error for the rest of the tree — sync continues — but it is not silently dropped either.
+`SyncResult.Skipped` collects the repo-relative paths of every such file, logged at `Warn` and
+returned to callers via `TriggerSyncResponse.errors`/`SyncBundleResponse.errors`, which `signet
+repo sync` and `signet bundle push` print as a `Warnings:` block. Earlier behavior logged this at
+`Debug` only, so a whole service's config could go unsynced indefinitely with `repo sync` reporting
+plain success — see bytepunx/signet#22.
+
 **Archive security constraints** (`extractTarGz`):
 - Rejects paths containing `..` after `filepath.Clean`
 - Rejects paths whose resolved dest does not have the extraction dir as a prefix

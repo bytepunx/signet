@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
@@ -218,8 +219,22 @@ var repoSyncCmd = &cobra.Command{
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Sync complete.\n  SHA:     %s\n  Added:   %d\n  Updated: %d\n  Deleted: %d\n",
 			resp.GetSyncSha(), resp.GetSecretsAdded(), resp.GetSecretsUpdated(), resp.GetSecretsDeleted())
+		printSyncWarnings(cmd.OutOrStdout(), resp.GetErrors())
 		return nil
 	},
+}
+
+// printSyncWarnings surfaces files skipped during sync (e.g. path-depth
+// mismatches, see bytepunx/signet#22) so "Sync complete" is never the only
+// output when part of the tree was silently not applied.
+func printSyncWarnings(w io.Writer, errs []string) {
+	if len(errs) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "  Warnings (%d):\n", len(errs))
+	for _, e := range errs {
+		fmt.Fprintf(w, "    - %s\n", e)
+	}
 }
 
 func init() {
