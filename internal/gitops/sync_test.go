@@ -66,8 +66,8 @@ func TestSyncFromDir_NoSOPSKeys(t *testing.T) {
 	require.NoError(t, os.MkdirAll(secretsDir, 0o700))
 	require.NoError(t, os.WriteFile(filepath.Join(secretsDir, "token.yaml"), []byte("sops: {}"), 0o600))
 
-	syncer := NewSyncer(&mockStore{keys: nil}, &mockKeys{}, nil, "")
-	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "abc123", "")
+	syncer := NewSyncer(&mockStore{keys: nil}, &mockKeys{}, nil, nil, "")
+	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "abc123", "", "test-actor")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no age keys")
 }
@@ -78,8 +78,8 @@ func TestSyncFromDir_MissingSecretsDir(t *testing.T) {
 	dir := t.TempDir()
 	// secrets/ subdirectory intentionally absent
 
-	syncer := NewSyncer(&mockStore{keys: nil}, &mockKeys{}, nil, "")
-	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "", "")
+	syncer := NewSyncer(&mockStore{keys: nil}, &mockKeys{}, nil, nil, "")
+	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "", "", "test-actor")
 	require.Error(t, err, "should fail when secrets dir is absent")
 }
 
@@ -102,11 +102,11 @@ func TestSyncFromDir_HeadSHAPassedThrough(t *testing.T) {
 	// Put a non-YAML file so the walk completes without hitting storeSecret.
 	require.NoError(t, os.WriteFile(filepath.Join(secretsDir, "README.md"), []byte("# readme"), 0o600))
 
-	syncer := NewSyncer(&mockStore{keys: []store.SOPSKey{{PublicKey: "age1test"}}}, &mockKeys{}, nil, "")
+	syncer := NewSyncer(&mockStore{keys: []store.SOPSKey{{PublicKey: "age1test"}}}, &mockKeys{}, nil, nil, "")
 	// Will fail at loadIdentities (can't decrypt the fake key), but the
 	// architecture guarantee is: if it succeeds, SHA is passed through.
 	// Here we just confirm the error is from key decryption, not from the SHA.
-	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "deadbeef", "")
+	_, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "deadbeef", "", "test-actor")
 	// Error expected (fake encrypted key), but it must NOT be about the SHA.
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), "deadbeef", "error should be about key loading, not the SHA")
@@ -122,8 +122,8 @@ func TestSyncConfigFromDir_BasicParse(t *testing.T) {
 		[]byte("port: 8080\ndb:\n  host: postgres\n  port: 5432\n"), 0o600))
 
 	ms := &mockStore{}
-	syncer := NewSyncer(ms, &mockKeys{}, nil, "")
-	count, deleted, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "")
+	syncer := NewSyncer(ms, &mockKeys{}, nil, nil, "")
+	count, deleted, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 0, deleted)
@@ -148,8 +148,8 @@ func TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
 		[]byte("tenants: []\n"), 0o600))
 
 	ms := &mockStore{}
-	syncer := NewSyncer(ms, &mockKeys{}, nil, "")
-	count, deleted, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "")
+	syncer := NewSyncer(ms, &mockKeys{}, nil, nil, "")
+	count, deleted, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, count, "only the correctly-shaped file should be counted as synced")
 	assert.Equal(t, 0, deleted)
@@ -159,8 +159,8 @@ func TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
 
 // TestSyncConfigFromDir_EmptyPath verifies that an empty configPath is a no-op.
 func TestSyncConfigFromDir_EmptyPath(t *testing.T) {
-	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, "")
-	count, deleted, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "", "")
+	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, nil, "")
+	count, deleted, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
 	assert.Equal(t, 0, deleted)
@@ -168,8 +168,8 @@ func TestSyncConfigFromDir_EmptyPath(t *testing.T) {
 
 // TestSyncConfigFromDir_MissingDir verifies that a missing config dir is silently skipped.
 func TestSyncConfigFromDir_MissingDir(t *testing.T) {
-	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, "")
-	count, deleted, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/", "")
+	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, nil, "")
+	count, deleted, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
 	assert.Equal(t, 0, deleted)

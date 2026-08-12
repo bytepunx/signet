@@ -77,7 +77,7 @@ func newTestWebhookHandler(t *testing.T, repo *store.Repository, sealed bool) *W
 	if sealed {
 		state = unseal.StateSealed
 	}
-	syncer := gitops.NewSyncer(stubGitopsStore{}, &fakeKeyUnwrapper{}, nil, "")
+	syncer := gitops.NewSyncer(stubGitopsStore{}, &fakeKeyUnwrapper{}, nil, nil, "")
 	return NewWebhookHandler(
 		&fakeWebhookStore{repo: repo},
 		&fakeKeyUnwrapper{key: masterKeyForWebhookTests},
@@ -158,7 +158,7 @@ func TestWebhook_UnknownRepoAndBadSignature_IndistinguishableResponse(t *testing
 	unknownRepoHandler := NewWebhookHandler(
 		&fakeWebhookStore{repoErr: store.ErrNotFound},
 		&fakeKeyUnwrapper{key: masterKeyForWebhookTests},
-		gitops.NewSyncer(stubGitopsStore{}, &fakeKeyUnwrapper{}, nil, ""),
+		gitops.NewSyncer(stubGitopsStore{}, &fakeKeyUnwrapper{}, nil, nil, ""),
 		&fakeUnsealMgr{statusResult: unseal.Status{State: unseal.StateUnsealed}},
 	)
 	req1 := httptest.NewRequest(http.MethodPost, "/webhook/github/unknown-repo", strings.NewReader(string(body)))

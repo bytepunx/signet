@@ -155,7 +155,7 @@ func (h *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	headSHA := event.GetAfter()
 	changed, deleted := gitops.ChangedFiles(event)
 
-	result, err := h.syncer.SyncFromPush(ctx, repo, headSHA, changed, deleted)
+	result, err := h.syncer.SyncFromPush(ctx, repo, headSHA, changed, deleted, "repo:"+repo.Name)
 	if err != nil {
 		slog.Error("webhook: sync failed", "repo", repo.Name, "err", err)
 		http.Error(w, "sync error", http.StatusInternalServerError)

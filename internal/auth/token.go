@@ -77,13 +77,14 @@ func NewTokenValidator(client kubernetes.Interface, audiences []string, allowedS
 
 // Validate submits token to the Kubernetes TokenReview API, then authorizes
 // the resulting identity via the allowlist or a SubjectAccessReview. Returns
-// nil if the token is valid, authenticated, and authorized for admin access.
-// Returns ErrUnauthenticated if the token is empty, ErrInvalidToken if the
-// API rejects it, or ErrUnauthorized if neither authorization mechanism
-// grants access.
-func (v *TokenValidator) Validate(ctx context.Context, token string) error {
+// the token's Kubernetes username (e.g. "system:serviceaccount:signet:signet-admin")
+// if the token is valid, authenticated, and authorized for admin access — callers
+// that only care about pass/fail may discard it. Returns ErrUnauthenticated if
+// the token is empty, ErrInvalidToken if the API rejects it, or ErrUnauthorized
+// if neither authorization mechanism grants access.
+func (v *TokenValidator) Validate(ctx context.Context, token string) (identity string, err error) {
 	if token == "" {
-		return fmt.Errorf("%w: token must not be empty", ErrUnauthenticated)
+		return "", fmt.Errorf("%w: token must not be empty", ErrUnauthenticated)
 	}
 
 	review := &authv1.TokenReview{
@@ -95,7 +96,7 @@ func (v *TokenValidator) Validate(ctx context.Context, token string) error {
 
 	result, err := v.client.AuthenticationV1().TokenReviews().Create(ctx, review, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("auth: token review API: %w", err)
+		return "", fmt.Errorf("auth: token review API: %w", err)
 	}
 
 	if !result.Status.Authenticated {
@@ -103,24 +104,24 @@ func (v *TokenValidator) Validate(ctx context.Context, token string) error {
 		if reason == "" {
 			reason = "token not authenticated"
 		}
-		return fmt.Errorf("%w: %s", ErrInvalidToken, reason)
+		return "", fmt.Errorf("%w: %s", ErrInvalidToken, reason)
 	}
 
 	user := result.Status.User
 
 	if v.isAllowlisted(user.Username, user.Groups) {
-		return nil
+		return user.Username, nil
 	}
 
 	allowed, err := v.checkSubjectAccessReview(ctx, user)
 	if err != nil {
-		return fmt.Errorf("%w: subject access review: %v", ErrUnauthorized, err)
+		return "", fmt.Errorf("%w: subject access review: %v", ErrUnauthorized, err)
 	}
 	if !allowed {
-		return fmt.Errorf("%w: %s is not authorized to administer signet (grant via SIGNET_ADMIN_SUBJECTS or RBAC on %s/%s verb %s)",
+		return "", fmt.Errorf("%w: %s is not authorized to administer signet (grant via SIGNET_ADMIN_SUBJECTS or RBAC on %s/%s verb %s)",
 			ErrUnauthorized, user.Username, adminSARGroup, adminSARResource, adminSARVerb)
 	}
-	return nil
+	return user.Username, nil
 }
 
 func (v *TokenValidator) isAllowlisted(username string, groups []string) bool {
