@@ -68,11 +68,11 @@ func TestSyncFromDir_DeletesSecretRemovedFromRepo(t *testing.T) {
 	sopsEncrypt(t, dir, "secrets/ns/svc/keep.yaml", "value: keep-me\n", pubKey)
 	sopsEncrypt(t, dir, "secrets/ns/svc/remove.yaml", "value: remove-me\n", pubKey)
 
-	syncer := NewSyncer(st, keys, nil, "")
+	syncer := NewSyncer(st, keys, nil, nil, "")
 	ctx := context.Background()
 
 	// First sync: both secrets present, both attributed to "repo-1".
-	result, err := syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "repo-1")
+	result, err := syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "repo-1", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 2, result.Added)
 	assert.Equal(t, 0, result.Deleted)
@@ -84,7 +84,7 @@ func TestSyncFromDir_DeletesSecretRemovedFromRepo(t *testing.T) {
 
 	// Second sync: same repoID. The removed file must be detected and its
 	// secret deleted from the store; the untouched one must survive.
-	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha2", "repo-1")
+	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha2", "repo-1", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.Deleted, "the secret whose file was removed must be deleted")
 	assert.Len(t, st.secrets, 1)
@@ -104,16 +104,16 @@ func TestSyncFromDir_EmptyRepoIDSkipsDeletionDetection(t *testing.T) {
 	st, pubKey := newSyncableStore(t, keys)
 	sopsEncrypt(t, dir, "secrets/ns/svc/only.yaml", "value: only\n", pubKey)
 
-	syncer := NewSyncer(st, keys, nil, "")
+	syncer := NewSyncer(st, keys, nil, nil, "")
 	ctx := context.Background()
 
-	result, err := syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "")
+	result, err := syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.Added)
 
 	require.NoError(t, os.Remove(filepath.Join(dir, "secrets", "ns", "svc", "only.yaml")))
 
-	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha2", "")
+	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha2", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 0, result.Deleted, "repoID=\"\" must never trigger deletion detection")
 	assert.Len(t, st.secrets, 1, "the secret must still be present since deletion detection was skipped")
@@ -133,18 +133,18 @@ func TestSyncFromDir_DoesNotDeleteAnotherRepoSSecrets(t *testing.T) {
 	dirB := t.TempDir()
 	sopsEncrypt(t, dirB, "secrets/ns/svc/b.yaml", "value: b\n", pubKey)
 
-	syncer := NewSyncer(st, keys, nil, "")
+	syncer := NewSyncer(st, keys, nil, nil, "")
 	ctx := context.Background()
 
-	_, err := syncer.SyncFromDir(ctx, dirA, "secrets/", "sha1", "repo-a")
+	_, err := syncer.SyncFromDir(ctx, dirA, "secrets/", "sha1", "repo-a", "test-actor")
 	require.NoError(t, err)
-	_, err = syncer.SyncFromDir(ctx, dirB, "secrets/", "sha1", "repo-b")
+	_, err = syncer.SyncFromDir(ctx, dirB, "secrets/", "sha1", "repo-b", "test-actor")
 	require.NoError(t, err)
 	require.Len(t, st.secrets, 2)
 
 	// Re-sync repo-a; repo-b's secret must survive untouched even though
 	// repo-a's walk never sees it.
-	result, err := syncer.SyncFromDir(ctx, dirA, "secrets/", "sha2", "repo-a")
+	result, err := syncer.SyncFromDir(ctx, dirA, "secrets/", "sha2", "repo-a", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 0, result.Deleted)
 	assert.Len(t, st.secrets, 2, "repo-b's secret must not be affected by repo-a's sync")
@@ -163,17 +163,17 @@ func TestSyncConfigFromDir_DeletesConfigRemovedFromRepo(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(removeDir, "svc.yaml"), []byte("port: 2\n"), 0o600))
 
 	st := &statefulKEKStore{}
-	syncer := NewSyncer(st, &mockKeys{}, nil, "")
+	syncer := NewSyncer(st, &mockKeys{}, nil, nil, "")
 	ctx := context.Background()
 
-	count, deleted, err := syncer.SyncConfigFromDir(ctx, dir, "config/", "repo-1")
+	count, deleted, err := syncer.SyncConfigFromDir(ctx, dir, "config/", "repo-1", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 2, count)
 	assert.Equal(t, 0, deleted)
 
 	require.NoError(t, os.Remove(filepath.Join(removeDir, "svc.yaml")))
 
-	count, deleted, err = syncer.SyncConfigFromDir(ctx, dir, "config/", "repo-1")
+	count, deleted, err = syncer.SyncConfigFromDir(ctx, dir, "config/", "repo-1", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, deleted)
@@ -198,10 +198,10 @@ func TestSyncFromDir_BackfillsRepoIDOnUnchangedResync(t *testing.T) {
 	st, pubKey := newSyncableStore(t, keys)
 	sopsEncrypt(t, dir, "secrets/ns/svc/stable.yaml", "value: stable\n", pubKey)
 
-	syncer := NewSyncer(st, keys, nil, "")
+	syncer := NewSyncer(st, keys, nil, nil, "")
 	ctx := context.Background()
 
-	result, err := syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "repo-old")
+	result, err := syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "repo-old", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.Added)
 	sec := st.secrets[secretKey("ns", "svc", "stable")]
@@ -213,7 +213,7 @@ func TestSyncFromDir_BackfillsRepoIDOnUnchangedResync(t *testing.T) {
 	// repo — this hits storeSecret's isUnchanged dedup path (no new version
 	// written), which must still update repo_id.
 	sopsEncrypt(t, dir, "secrets/ns/svc/stable.yaml", "value: stable\n", pubKey)
-	_, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha2", "repo-new")
+	_, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha2", "repo-new", "test-actor")
 	require.NoError(t, err)
 	sec = st.secrets[secretKey("ns", "svc", "stable")]
 	require.NotNil(t, sec)
@@ -223,7 +223,7 @@ func TestSyncFromDir_BackfillsRepoIDOnUnchangedResync(t *testing.T) {
 	// actually detect and delete it — which requires the backfilled repo_id
 	// from the previous step to have taken effect.
 	require.NoError(t, os.Remove(filepath.Join(dir, "secrets", "ns", "svc", "stable.yaml")))
-	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha3", "repo-new")
+	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha3", "repo-new", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.Deleted)
 	_, stillPresent := st.secrets[secretKey("ns", "svc", "stable")]

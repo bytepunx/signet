@@ -87,7 +87,7 @@ func run() error {
 	adminSrv := api.NewAdminServer(unsealMgr, tokenValidator, st, keyStore)
 
 	// GitOps layer.
-	syncer := gitops.NewSyncer(st, keyStore, bus, cfg.Environment)
+	syncer := gitops.NewSyncer(st, keyStore, bus, auditWriter, cfg.Environment)
 	reconciler := gitops.NewReconciler(st, syncer, 0)
 	gitopsSrv := api.NewGitOpsServer(st, keyStore, syncer, cfg.WebhookBaseURL, tokenValidator, checker, cfg.Environment)
 	webhookHandler := api.NewWebhookHandler(st, keyStore, syncer, unsealMgr)

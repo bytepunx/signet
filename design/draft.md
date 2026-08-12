@@ -590,6 +590,28 @@ HMAC chaining for tamper detection.**
 - Log destination: out-of-cluster Loki or syslog-over-TLS to a separate host
 - CockroachDB TTL on `audit_log` table handles retention automatically (default: 90 days)
 
+### GitOps write coverage (bytepunx/signet#25)
+
+Every secret/config actually written by `gitops.Syncer` — via `FullSync`/`SyncFromDir`
+(git sync or `TriggerSync`), `SyncFromPush` (webhook), or `SyncBundle` (bearer-token or, as
+of #23, SPIFFE-scoped) — is recorded the same way, one entry per file: `Action` is
+`put_secret`/`delete_secret`/`put_config`/`delete_config`; `SecretName` holds
+`"<service>/<name>"` (or `"<service>/<config>"` for a whole config document, mirroring the
+`<config>`/`<bundle>` sentinel convention above). `Entry.SPIFFEID` is repurposed as a
+generic actor-identity string here, not necessarily a literal `spiffe://` URI — it holds
+whatever identity authenticated the write: a workload's real SPIFFE ID (#23's self-service
+push path), an admin bearer token's Kubernetes username (`TriggerSync`, admin-authenticated
+`SyncBundle`), or `"repo:<name>"` for the reconciler/webhook paths, which have no live
+caller at all.
+
+Unlike the read path, this is **best-effort, not fail-closed**: by the time `recordAudit`
+runs, the write has already been committed to the store, so there's nothing left to deny —
+failing the sync over a downstream audit-log error would turn an availability problem into
+one where the secret's own file doesn't get retried until the next reconciliation pass. A
+failed audit write is logged (`slog.Error`) and the sync proceeds. A resync that finds no
+actual change (the `isUnchanged` dedup optimization) produces no audit entry — nothing was
+written, so there's nothing to record.
+
 ---
 
 ## 12. GitOps / SOPS Integration

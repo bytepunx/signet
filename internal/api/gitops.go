@@ -61,14 +61,23 @@ func NewGitOpsServer(
 }
 
 func (s *GitOpsServer) requireToken(ctx context.Context) error {
+	_, err := s.requireTokenIdentity(ctx)
+	return err
+}
+
+// requireTokenIdentity is requireToken's identity-returning counterpart, for
+// callers that need to attribute a write to the acting admin identity (e.g.
+// TriggerSync — see bytepunx/signet#25's audit trail for GitOps writes).
+func (s *GitOpsServer) requireTokenIdentity(ctx context.Context) (identity string, err error) {
 	token, err := auth.TokenFromMetadata(ctx)
 	if err != nil {
-		return toGRPCError(err)
+		return "", toGRPCError(err)
 	}
-	if err := s.validator.Validate(ctx, token); err != nil {
-		return toGRPCError(err)
+	identity, err = s.validator.Validate(ctx, token)
+	if err != nil {
+		return "", toGRPCError(err)
 	}
-	return nil
+	return identity, nil
 }
 
 // authorizeSyncBundle authenticates a SyncBundle call via whichever
@@ -78,24 +87,27 @@ func (s *GitOpsServer) requireToken(ctx context.Context) error {
 // verified SPIFFE mTLS identity (bytepunx/signet#23). A malformed or invalid
 // token fails immediately rather than falling back to the SPIFFE path, so a
 // caller that clearly attempted admin auth gets a clear error instead of a
-// confusing scope-mismatch one. The returned spiffeID is empty for the
-// bearer-token path (no additional scoping needed) and non-empty for the
-// SPIFFE path (the caller must then go through validateBundleScope).
-func (s *GitOpsServer) authorizeSyncBundle(ctx context.Context) (spiffeID string, err error) {
+// confusing scope-mismatch one. actor is always non-empty on success — the
+// admin's Kubernetes identity or the caller's SPIFFE ID — for attributing
+// the resulting writes in the audit log (bytepunx/signet#25). scoped is true
+// only for the SPIFFE path, meaning the caller must also go through
+// validateBundleScope before anything is written.
+func (s *GitOpsServer) authorizeSyncBundle(ctx context.Context) (actor string, scoped bool, err error) {
 	if token, tokenErr := auth.TokenFromMetadata(ctx); tokenErr == nil {
-		if err := s.validator.Validate(ctx, token); err != nil {
-			return "", toGRPCError(err)
+		identity, err := s.validator.Validate(ctx, token)
+		if err != nil {
+			return "", false, toGRPCError(err)
 		}
-		return "", nil
+		return identity, false, nil
 	}
 
 	id, idErr := auth.SPIFFEIDFromContext(ctx)
 	if idErr != nil {
-		return "", toGRPCError(fmt.Errorf(
+		return "", false, toGRPCError(fmt.Errorf(
 			"%w: SyncBundle requires either an admin bearer token or a verified workload mTLS identity",
 			auth.ErrUnauthenticated))
 	}
-	return id, nil
+	return id, true, nil
 }
 
 // validateBundleScope enforces the SPIFFE-authenticated SyncBundle path's
@@ -356,14 +368,15 @@ func (s *GitOpsServer) RemoveRepository(ctx context.Context, req *adminv1.Remove
 
 // TriggerSync performs a full sync of the repository immediately.
 func (s *GitOpsServer) TriggerSync(ctx context.Context, req *adminv1.TriggerSyncRequest) (*adminv1.TriggerSyncResponse, error) {
-	if err := s.requireToken(ctx); err != nil {
+	actor, err := s.requireTokenIdentity(ctx)
+	if err != nil {
 		return nil, err
 	}
 	repo, err := s.store.GetRepository(ctx, req.GetId())
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
-	result, err := s.syncer.FullSync(ctx, repo)
+	result, err := s.syncer.FullSync(ctx, repo, actor)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "sync failed: %v", err)
 	}
@@ -394,7 +407,7 @@ func (s *GitOpsServer) TriggerSync(ctx context.Context, req *adminv1.TriggerSync
 // authorized to "put" to (see validateBundleScope), or nothing is written.
 func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer) error {
 	ctx := stream.Context()
-	scopeSpiffeID, err := s.authorizeSyncBundle(ctx)
+	actor, scoped, err := s.authorizeSyncBundle(ctx)
 	if err != nil {
 		return err
 	}
@@ -448,8 +461,8 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 	// against every file before anything is written, so a bundle that's
 	// partly in-scope and partly not is rejected outright rather than
 	// partially applied.
-	if scopeSpiffeID != "" {
-		if err := s.validateBundleScope(ctx, tmpDir, secretsPath, configPath, scopeSpiffeID); err != nil {
+	if scoped {
+		if err := s.validateBundleScope(ctx, tmpDir, secretsPath, configPath, actor); err != nil {
 			return err
 		}
 	}
@@ -457,13 +470,13 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 	// Run the SOPS decrypt + store pass. repoID is "" — a pushed bundle has
 	// no registered git repository to attribute secrets to or diff deletions
 	// against (see SyncFromDir's doc comment).
-	result, err := s.syncer.SyncFromDir(ctx, tmpDir, secretsPath, headSHA, "")
+	result, err := s.syncer.SyncFromDir(ctx, tmpDir, secretsPath, headSHA, "", actor)
 	if err != nil {
 		return status.Errorf(codes.Internal, "sync: %v", err)
 	}
 
 	// Run the plain YAML config pass if a config_path was provided.
-	configCount, _, configErr := s.syncer.SyncConfigFromDir(ctx, tmpDir, configPath, "")
+	configCount, _, configErr := s.syncer.SyncConfigFromDir(ctx, tmpDir, configPath, "", actor)
 	if configErr != nil {
 		slog.Warn("bundle config sync error", "err", configErr)
 	}

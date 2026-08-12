@@ -39,7 +39,7 @@ func subjectAccessReviewReactor(allowed bool) k8stesting.ReactionFunc {
 
 func TestTokenValidator_EmptyToken(t *testing.T) {
 	v := NewTokenValidator(fake.NewClientset(), nil, nil)
-	err := v.Validate(context.Background(), "")
+	_, err := v.Validate(context.Background(), "")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnauthenticated)
 }
@@ -49,7 +49,7 @@ func TestTokenValidator_NotAuthenticated(t *testing.T) {
 	client.Fake.PrependReactor("create", "tokenreviews", tokenReviewReactor(false, "", nil))
 	v := NewTokenValidator(client, nil, nil)
 
-	err := v.Validate(context.Background(), "bad-token")
+	_, err := v.Validate(context.Background(), "bad-token")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrInvalidToken)
 }
@@ -61,7 +61,7 @@ func TestTokenValidator_AuthenticatedButNotAuthorized(t *testing.T) {
 	client.Fake.PrependReactor("create", "subjectaccessreviews", subjectAccessReviewReactor(false))
 	v := NewTokenValidator(client, nil, nil)
 
-	err := v.Validate(context.Background(), "valid-token")
+	_, err := v.Validate(context.Background(), "valid-token")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnauthorized)
 }
@@ -74,8 +74,10 @@ func TestTokenValidator_AuthorizedViaAllowlist_Username(t *testing.T) {
 	// this call would fail with "no reactor found" and the test would error.
 	v := NewTokenValidator(client, nil, []string{"serviceaccount:signet:signet-admin"})
 
-	err := v.Validate(context.Background(), "valid-token")
+	identity, err := v.Validate(context.Background(), "valid-token")
 	require.NoError(t, err)
+	assert.Equal(t, "system:serviceaccount:signet:signet-admin", identity,
+		"Validate must return the token's resolved identity for audit attribution (bytepunx/signet#25)")
 }
 
 func TestTokenValidator_AuthorizedViaAllowlist_Group(t *testing.T) {
@@ -84,8 +86,9 @@ func TestTokenValidator_AuthorizedViaAllowlist_Group(t *testing.T) {
 		tokenReviewReactor(true, "system:serviceaccount:signet:some-sa", []string{"signet-operators"}))
 	v := NewTokenValidator(client, nil, []string{"group:signet-operators"})
 
-	err := v.Validate(context.Background(), "valid-token")
+	identity, err := v.Validate(context.Background(), "valid-token")
 	require.NoError(t, err)
+	assert.Equal(t, "system:serviceaccount:signet:some-sa", identity)
 }
 
 func TestTokenValidator_NotOnAllowlist_FallsBackToSAR_Allowed(t *testing.T) {
@@ -95,8 +98,9 @@ func TestTokenValidator_NotOnAllowlist_FallsBackToSAR_Allowed(t *testing.T) {
 	client.Fake.PrependReactor("create", "subjectaccessreviews", subjectAccessReviewReactor(true))
 	v := NewTokenValidator(client, nil, []string{"serviceaccount:signet:signet-admin"})
 
-	err := v.Validate(context.Background(), "valid-token")
+	identity, err := v.Validate(context.Background(), "valid-token")
 	require.NoError(t, err, "identity not on the allowlist must still be authorized via RBAC/SAR")
+	assert.Equal(t, "system:serviceaccount:signet:other-sa", identity)
 }
 
 func TestTokenValidator_SubjectAccessReviewAPIError(t *testing.T) {
@@ -109,7 +113,7 @@ func TestTokenValidator_SubjectAccessReviewAPIError(t *testing.T) {
 		})
 	v := NewTokenValidator(client, nil, nil)
 
-	err := v.Validate(context.Background(), "valid-token")
+	_, err := v.Validate(context.Background(), "valid-token")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnauthorized)
 }

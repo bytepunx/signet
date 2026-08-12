@@ -15,10 +15,13 @@ import (
 
 // fakeTokenValidator implements tokenChecker for SyncBundle auth tests.
 type fakeTokenValidator struct {
-	err error
+	identity string
+	err      error
 }
 
-func (f *fakeTokenValidator) Validate(context.Context, string) error { return f.err }
+func (f *fakeTokenValidator) Validate(context.Context, string) (string, error) {
+	return f.identity, f.err
+}
 
 // scopeCheckerFunc implements permissionChecker for SyncBundle scope tests.
 type scopeCheckerFunc struct {
@@ -32,15 +35,17 @@ func (f *scopeCheckerFunc) Allow(ctx context.Context, spiffeID, permission, name
 // --- authorizeSyncBundle ---
 
 func TestAuthorizeSyncBundle_ValidBearerTokenGrantsUnscopedAccess(t *testing.T) {
-	srv := &GitOpsServer{validator: &fakeTokenValidator{}}
-	spiffeID, err := srv.authorizeSyncBundle(bearerCtx("good-token"))
+	srv := &GitOpsServer{validator: &fakeTokenValidator{identity: "system:serviceaccount:signet:signet-admin"}}
+	actor, scoped, err := srv.authorizeSyncBundle(bearerCtx("good-token"))
 	require.NoError(t, err)
-	assert.Empty(t, spiffeID, "bearer-token auth must not scope by SPIFFE ID")
+	assert.False(t, scoped, "bearer-token auth must not scope by SPIFFE ID")
+	assert.Equal(t, "system:serviceaccount:signet:signet-admin", actor,
+		"actor must carry the admin's resolved identity for audit attribution (bytepunx/signet#25)")
 }
 
 func TestAuthorizeSyncBundle_InvalidBearerTokenFailsClosed(t *testing.T) {
 	srv := &GitOpsServer{validator: &fakeTokenValidator{err: auth.ErrInvalidToken}}
-	_, err := srv.authorizeSyncBundle(bearerCtx("bad-token"))
+	_, _, err := srv.authorizeSyncBundle(bearerCtx("bad-token"))
 	require.Error(t, err)
 	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 }
@@ -48,14 +53,15 @@ func TestAuthorizeSyncBundle_InvalidBearerTokenFailsClosed(t *testing.T) {
 func TestAuthorizeSyncBundle_ValidSPIFFEIdentityScopesAccess(t *testing.T) {
 	srv := &GitOpsServer{validator: &fakeTokenValidator{}} // never consulted: no bearer token present
 	ctx := spiffeCtx("spiffe://cluster.local/ns/authstar/sa/tower")
-	spiffeID, err := srv.authorizeSyncBundle(ctx)
+	actor, scoped, err := srv.authorizeSyncBundle(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "spiffe://cluster.local/ns/authstar/sa/tower", spiffeID)
+	assert.True(t, scoped)
+	assert.Equal(t, "spiffe://cluster.local/ns/authstar/sa/tower", actor)
 }
 
 func TestAuthorizeSyncBundle_NoCredentialsRejected(t *testing.T) {
 	srv := &GitOpsServer{validator: &fakeTokenValidator{}}
-	_, err := srv.authorizeSyncBundle(context.Background())
+	_, _, err := srv.authorizeSyncBundle(context.Background())
 	require.Error(t, err)
 	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 }
