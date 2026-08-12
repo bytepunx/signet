@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/bytepunx/signet/compare/v0.8.0...v0.9.0) (2026-08-12)
+
+
+### Features
+
+* **audit:** record every GitOps write in the audit log ([#36](https://github.com/bytepunx/signet/issues/36)) ([92edac0](https://github.com/bytepunx/signet/commit/92edac0444765144958cfca2e807e43241bae203))
+
 ## [0.8.0](https://github.com/bytepunx/signet/compare/v0.7.0...v0.8.0) (2026-08-12)
 
 
