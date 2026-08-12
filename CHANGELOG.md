@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0](https://github.com/bytepunx/signet/compare/v0.7.0...v0.8.0) (2026-08-12)
+
+
+### Features
+
+* **gitops:** let a workload push GitOps secrets scoped to its own identity ([#32](https://github.com/bytepunx/signet/issues/32)) ([1effb69](https://github.com/bytepunx/signet/commit/1effb69f71e4240bc60ff3a846c3099c0d500f3b))
+* **server:** terminate real TLS on the admin listener ([#31](https://github.com/bytepunx/signet/issues/31)) ([478aa60](https://github.com/bytepunx/signet/commit/478aa60b7fd3ee55118a3f0bd9812dcefdec5a16))
+
+
+### Bug Fixes
+
+* **gitops:** surface files skipped for path-depth mismatch during sync ([#30](https://github.com/bytepunx/signet/issues/30)) ([f6e6a23](https://github.com/bytepunx/signet/commit/f6e6a234de33728586910b4f0e994589d492357c))
+* **proto:** pin remote codegen plugin versions; auto-fix drift in CI ([#34](https://github.com/bytepunx/signet/issues/34)) ([96032c0](https://github.com/bytepunx/signet/commit/96032c03a518eca3ce3d35cbb40c6bd077412c3d))
+
 ## [0.7.0](https://github.com/bytepunx/signet/compare/v0.6.1...v0.7.0) (2026-08-08)
 
 
