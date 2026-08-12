@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -116,10 +117,12 @@ func (r *certReloader) watch(ctx context.Context, interval time.Duration) {
 }
 
 // Server manages two gRPC listeners and an optional HTTP webhook listener:
-//   - workload  — mTLS, serves SecretsService to workloads identified by SPIFFE SVIDs.
+//   - workload  — mTLS, serves SecretsService to workloads identified by SPIFFE SVIDs, plus
+//     GitOpsService.SyncBundle only (bytepunx/signet#23 — self-service, namespace-scoped
+//     pushes authenticated by the caller's own SPIFFE identity instead of an admin token).
 //   - admin     — plain TCP by default (port-forward, loopback-only), or TLS-terminated
 //     when AdminTLSCertFile/AdminTLSKeyFile are set (see Config.AdminAddr); serves
-//     AdminService and GitOpsService to operators.
+//     AdminService and the full GitOpsService to operators, gated by an admin bearer token.
 //   - webhook   — HTTP, serves GitHub push webhooks (optional, enabled by Config.WebhookAddr).
 type Server struct {
 	cfg         Config
@@ -206,8 +209,8 @@ func newWithCloser(
 
 	workloadSrv := grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.ChainUnaryInterceptor(recoveryInterceptor),
-		grpc.ChainStreamInterceptor(recoveryStreamInterceptor),
+		grpc.ChainUnaryInterceptor(recoveryInterceptor, workloadGitOpsScopeInterceptor),
+		grpc.ChainStreamInterceptor(recoveryStreamInterceptor, workloadGitOpsScopeStreamInterceptor),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			MaxConnectionIdle: 5 * time.Minute,
 			Time:              30 * time.Second,
@@ -219,6 +222,19 @@ func newWithCloser(
 		}),
 	)
 	signetv1.RegisterSecretsServiceServer(workloadSrv, secrets)
+	// GitOpsService.SyncBundle is also reachable here, authenticated by the
+	// caller's own SPIFFE mTLS identity rather than an admin bearer token
+	// (bytepunx/signet#23) — e.g. a service self-service-provisioning a
+	// secret for another service to pick up on its next bundle fetch.
+	// Registering the whole GitOpsServiceServer technically wires every
+	// other GitOps/admin RPC onto this listener too, but
+	// workloadGitOpsScopeInterceptor/workloadGitOpsScopeStreamInterceptor
+	// below reject all of them outright, independent of (not a substitute
+	// for) each RPC's own auth check — only SyncBundle is meant to be
+	// reachable without an admin bearer token, and it enforces its own
+	// per-file namespace/service scope on top of that (see
+	// GitOpsServer.SyncBundle/validateBundleScope).
+	adminv1.RegisterGitOpsServiceServer(workloadSrv, gitops)
 
 	adminOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(recoveryInterceptor),
@@ -411,6 +427,45 @@ func recoveryStreamInterceptor(srv any, ss grpc.ServerStream, _ *grpc.StreamServ
 		}
 	}()
 	return handler(srv, ss)
+}
+
+// workloadGitOpsScopeAllowedMethod is the only AdminService/GitOpsService RPC
+// reachable via the workload mTLS listener — see the registration comment in
+// newWithCloser. Every other admin RPC still requires the admin bearer
+// token, but this interceptor enforces that independently at the transport
+// boundary rather than relying solely on each handler's own auth check.
+const workloadGitOpsScopeAllowedMethod = adminv1.GitOpsService_SyncBundle_FullMethodName
+
+// workloadGitOpsScopeInterceptor rejects any unary AdminService/GitOpsService
+// RPC other than SyncBundle on the workload listener. SecretsService RPCs
+// (the vast majority of traffic here) are unaffected — this only inspects
+// admin.v1-namespaced methods.
+func workloadGitOpsScopeInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	if err := checkWorkloadGitOpsScope(info.FullMethod); err != nil {
+		return nil, err
+	}
+	return handler(ctx, req)
+}
+
+// workloadGitOpsScopeStreamInterceptor is workloadGitOpsScopeInterceptor's
+// streaming counterpart; SyncBundle is the only streaming RPC this needs to
+// admit.
+func workloadGitOpsScopeStreamInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	if err := checkWorkloadGitOpsScope(info.FullMethod); err != nil {
+		return err
+	}
+	return handler(srv, ss)
+}
+
+func checkWorkloadGitOpsScope(fullMethod string) error {
+	if !strings.HasPrefix(fullMethod, "/admin.v1.") {
+		return nil // not an AdminService/GitOpsService method
+	}
+	if fullMethod == workloadGitOpsScopeAllowedMethod {
+		return nil
+	}
+	return status.Errorf(codes.PermissionDenied,
+		"%s is only reachable via the admin listener, not the workload listener", fullMethod)
 }
 
 // --- SPIRE helpers ---

@@ -10,6 +10,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -30,18 +31,22 @@ type GitOpsServer struct {
 	syncer         *gitops.Syncer
 	webhookBaseURL string
 	validator      tokenChecker
+	checker        permissionChecker
 	environment    string // from SIGNET_ENVIRONMENT; empty = unscoped
 }
 
 // NewGitOpsServer constructs a GitOpsServer. environment scopes SOPS key
 // operations to a specific deployment tier (e.g. "prod", "staging"); an empty
-// string means no filtering is applied.
+// string means no filtering is applied. checker authorizes SyncBundle calls
+// made over a workload's own SPIFFE mTLS identity rather than an admin
+// bearer token — see authorizeSyncBundle.
 func NewGitOpsServer(
 	st gitopsStore,
 	keys keyUnwrapper,
 	syncer *gitops.Syncer,
 	webhookBaseURL string,
 	validator tokenChecker,
+	checker permissionChecker,
 	environment string,
 ) *GitOpsServer {
 	return &GitOpsServer{
@@ -50,6 +55,7 @@ func NewGitOpsServer(
 		syncer:         syncer,
 		webhookBaseURL: webhookBaseURL,
 		validator:      validator,
+		checker:        checker,
 		environment:    environment,
 	}
 }
@@ -63,6 +69,77 @@ func (s *GitOpsServer) requireToken(ctx context.Context) error {
 		return toGRPCError(err)
 	}
 	return nil
+}
+
+// authorizeSyncBundle authenticates a SyncBundle call via whichever
+// credential the caller actually presented: an admin bearer token (checked
+// exactly like requireToken, granting the same unscoped access SyncBundle
+// has always had), or — when no token is present at all — the caller's own
+// verified SPIFFE mTLS identity (bytepunx/signet#23). A malformed or invalid
+// token fails immediately rather than falling back to the SPIFFE path, so a
+// caller that clearly attempted admin auth gets a clear error instead of a
+// confusing scope-mismatch one. The returned spiffeID is empty for the
+// bearer-token path (no additional scoping needed) and non-empty for the
+// SPIFFE path (the caller must then go through validateBundleScope).
+func (s *GitOpsServer) authorizeSyncBundle(ctx context.Context) (spiffeID string, err error) {
+	if token, tokenErr := auth.TokenFromMetadata(ctx); tokenErr == nil {
+		if err := s.validator.Validate(ctx, token); err != nil {
+			return "", toGRPCError(err)
+		}
+		return "", nil
+	}
+
+	id, idErr := auth.SPIFFEIDFromContext(ctx)
+	if idErr != nil {
+		return "", toGRPCError(fmt.Errorf(
+			"%w: SyncBundle requires either an admin bearer token or a verified workload mTLS identity",
+			auth.ErrUnauthenticated))
+	}
+	return id, nil
+}
+
+// validateBundleScope enforces the SPIFFE-authenticated SyncBundle path's
+// authorization boundary: every secret/config file under secretsPath/
+// configPath that resolves to a valid namespace/service (via
+// gitops.ParseSecretPath/ParseConfigPath — files that don't parse are left
+// for the syncer's own skip handling, see bytepunx/signet#22) must pass
+// checker.Allow for the "put" permission, exactly like a read would need
+// "get". In practice this means the caller's own namespace/service via the
+// checker's exact-match convention, or an explicit policy grant for
+// anything broader. The first file that fails aborts the whole call before
+// SyncFromDir/SyncConfigFromDir write anything — a partially-authorized
+// bundle must not partially apply.
+func (s *GitOpsServer) validateBundleScope(ctx context.Context, dir, secretsPath, configPath, spiffeID string) error {
+	walk := func(root string, parse func(root, rel string) (namespace, service, name string, err error)) error {
+		if root == "" {
+			return nil
+		}
+		base := filepath.Join(dir, filepath.FromSlash(root))
+		return filepath.WalkDir(base, func(path string, d os.DirEntry, walkErr error) error {
+			if walkErr != nil || d.IsDir() || !strings.HasSuffix(path, ".yaml") {
+				return walkErr
+			}
+			rel, _ := filepath.Rel(dir, path)
+			rel = filepath.ToSlash(rel)
+
+			ns, svc, name, parseErr := parse(root, rel)
+			if parseErr != nil {
+				return nil //nolint:nilerr // not our concern here; the syncer surfaces this separately
+			}
+			if allowErr := s.checker.Allow(ctx, spiffeID, "put", ns, svc, name); allowErr != nil {
+				return toGRPCError(fmt.Errorf("%w: %s may not push %s", auth.ErrUnauthorized, spiffeID, rel))
+			}
+			return nil
+		})
+	}
+
+	if err := walk(secretsPath, gitops.ParseSecretPath); err != nil {
+		return err
+	}
+	return walk(configPath, func(root, rel string) (namespace, service, name string, err error) {
+		namespace, service, err = gitops.ParseConfigPath(root, rel)
+		return namespace, service, "", err
+	})
 }
 
 // GetSOPSPublicKey returns the currently active age public key for this
@@ -322,8 +399,19 @@ func skippedToErrors(skipped []string) []string {
 // Protocol: the first chunk must contain a SyncBundleHeader; subsequent chunks
 // carry raw tar.gz bytes. The RPC is sealed (server remains operational); it
 // can be called as many times as needed to refresh secrets from a local repo.
+//
+// SyncBundle is reachable two ways (see internal/server): via the admin
+// listener with a bearer token (full access, as originally designed), and
+// via the workload mTLS listener with no token at all, authenticated by the
+// caller's own SPIFFE identity instead (bytepunx/signet#23) — e.g. a service
+// self-service-provisioning a secret for another service to pick up on its
+// next bundle fetch. The latter path is scope-restricted: every file in the
+// uploaded bundle must resolve to a namespace/service the caller is
+// authorized to "put" to (see validateBundleScope), or nothing is written.
 func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer) error {
-	if err := s.requireToken(stream.Context()); err != nil {
+	ctx := stream.Context()
+	scopeSpiffeID, err := s.authorizeSyncBundle(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -371,16 +459,27 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 		return status.Errorf(codes.InvalidArgument, "extract bundle: %v", err)
 	}
 
+	// A SPIFFE-authenticated (non-admin) caller may only push files that
+	// resolve to a namespace/service it's authorized to write to — checked
+	// against every file before anything is written, so a bundle that's
+	// partly in-scope and partly not is rejected outright rather than
+	// partially applied.
+	if scopeSpiffeID != "" {
+		if err := s.validateBundleScope(ctx, tmpDir, secretsPath, configPath, scopeSpiffeID); err != nil {
+			return err
+		}
+	}
+
 	// Run the SOPS decrypt + store pass. repoID is "" — a pushed bundle has
 	// no registered git repository to attribute secrets to or diff deletions
 	// against (see SyncFromDir's doc comment).
-	result, err := s.syncer.SyncFromDir(stream.Context(), tmpDir, secretsPath, headSHA, "")
+	result, err := s.syncer.SyncFromDir(ctx, tmpDir, secretsPath, headSHA, "")
 	if err != nil {
 		return status.Errorf(codes.Internal, "sync: %v", err)
 	}
 
 	// Run the plain YAML config pass if a config_path was provided.
-	configCount, _, configSkipped, configErr := s.syncer.SyncConfigFromDir(stream.Context(), tmpDir, configPath, "")
+	configCount, _, configSkipped, configErr := s.syncer.SyncConfigFromDir(ctx, tmpDir, configPath, "")
 	if configErr != nil {
 		slog.Warn("bundle config sync error", "err", configErr)
 	}

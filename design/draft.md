@@ -885,15 +885,20 @@ signet bundle push [repo-path] --secrets-path secrets/
 
 Server side (GitOpsServer.SyncBundle):
 
-  1. Authenticate via bearer token (requireToken)
+  1. authorizeSyncBundle: admin bearer token (requireToken-equivalent), OR —
+     if no token is present — the caller's verified SPIFFE mTLS identity
+     (see "Self-service workload pushes" below)
   2. Receive header chunk → extract secrets_path, head_sha
   3. Accumulate data chunks into buffer
   4. extractTarGz to temp dir (path traversal protection; 256 MiB cap)
-  5. syncer.SyncFromDir(tmpDir, secretsPath, headSHA)
+  5. If authenticated via SPIFFE identity: validateBundleScope — every file
+     must resolve to a namespace/service the caller may "put" to, or the
+     call is rejected before anything is written
+  6. syncer.SyncFromDir(tmpDir, secretsPath, headSHA)
      → loadIdentities (decrypt stored age keys)
      → walk .yaml files → SOPS decrypt in memory → store.PutSecret
-  6. SendAndClose(SyncBundleResponse{added, updated, deleted, sync_sha})
-  7. defer os.RemoveAll(tmpDir)
+  7. SendAndClose(SyncBundleResponse{added, updated, deleted, sync_sha})
+  8. defer os.RemoveAll(tmpDir)
 ```
 
 `SyncFromDir` is the extracted core of `FullSync` — both code paths share the same walk + SOPS + store logic without duplication.
@@ -913,6 +918,44 @@ plain success — see bytepunx/signet#22.
 - Skips symlinks, hard links, devices, and all non-regular-file entries
 - Accumulates decompressed byte count; aborts if > 256 MiB
 
+### Self-service workload pushes (bytepunx/signet#23)
+
+**Problem**: a workload provisioning something for another workload to consume — e.g.
+`tower` generating a new tenant's secret for `portcullis` to pick up on its next bundle
+fetch — has no supported way to write that secret. The only write path (`SyncBundle`)
+required an admin bearer token, which no ordinary workload can obtain, and minting one for
+this purpose would hand out full admin/GitOps access to accomplish a narrow, recurring,
+namespace-scoped task.
+
+**Decision: authenticate the same `SyncBundle` RPC via the caller's own SPIFFE mTLS
+identity when no bearer token is presented, scoped through the existing policy Checker
+rather than a new token-minting mechanism.** `SyncBundle` is registered on the workload
+mTLS listener (`:8443`) in addition to the admin listener (`:8444`) — see Section 4's
+listener table — but every other `AdminService`/`GitOpsService` RPC is explicitly rejected
+there by a transport-level interceptor (`workloadGitOpsScopeInterceptor`), independent of
+each RPC's own bearer-token check; only `SyncBundle` is meant to be reachable this way.
+
+Scoping reuses `auth.Checker.Allow` unchanged, with a new `"put"` permission alongside the
+existing `"get"`/`"lock"`:
+
+- **Exact-match bypass** (Section 4's convention-first model) already grants a SPIFFE
+  identity `spiffe://<td>/ns/<namespace>/sa/<service>` access to its own
+  `<namespace>/<service>` regardless of `permission` — so a workload pushing to its own
+  namespace/service needs no policy row, exactly like reading its own secrets today.
+- **Cross-namespace/service pushes** require an explicit `access_policies` row granting
+  `"put"` (or `"*"`), the same as any cross-namespace read.
+
+Every file in the uploaded bundle is validated against this before anything is written
+(`validateBundleScope`, called from `SyncBundle` only when authenticated via SPIFFE
+identity) — a bundle that's partly in-scope and partly not is rejected outright rather than
+partially applied. Files that don't match the path-depth convention are left for the
+syncer's own handling (bytepunx/signet#22) rather than treated as an authorization failure.
+
+This deliberately does not introduce a new RPC, a new token type, or a new listener —
+`SyncBundle`'s existing streamed-tar-of-SOPS-files contract, decrypt-then-store pipeline,
+and response shape are all unchanged; only *who* may call it without an admin token, and
+*what* they may write, are new.
+
 ---
 
 ## Architecture Summary
@@ -925,7 +968,7 @@ plain success — see bytepunx/signet#22.
 │  │           Secret Store Namespace (isolated)               │  │
 │  │                                                           │  │
 │  │  Signet API Server                                        │  │
-│  │    :8443  gRPC + mTLS  (workload secrets)                 │  │
+│  │    :8443  gRPC + mTLS  (workload secrets + scoped push)   │  │
 │  │    :8444  gRPC plain*  (admin; *TLS if clusterAccess)      │  │
 │  │    :8445  HTTP         (GitHub webhooks)                  │  │
 │  │                                                           │  │

@@ -1,8 +1,17 @@
 package api
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/bytepunx/signet/internal/auth"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // TestSkippedToErrors verifies the formatting used to surface
@@ -27,4 +36,145 @@ func TestSkippedToErrors(t *testing.T) {
 			t.Errorf("message %d = %q, want it to mention path %q", i, got[i], path)
 		}
 	}
+}
+
+// fakeTokenValidator implements tokenChecker for SyncBundle auth tests.
+type fakeTokenValidator struct {
+	err error
+}
+
+func (f *fakeTokenValidator) Validate(context.Context, string) error { return f.err }
+
+// scopeCheckerFunc implements permissionChecker for SyncBundle scope tests.
+type scopeCheckerFunc struct {
+	allow func(ctx context.Context, spiffeID, permission, namespace, service, secretName string) error
+}
+
+func (f *scopeCheckerFunc) Allow(ctx context.Context, spiffeID, permission, namespace, service, secretName string) error {
+	return f.allow(ctx, spiffeID, permission, namespace, service, secretName)
+}
+
+// --- authorizeSyncBundle ---
+
+func TestAuthorizeSyncBundle_ValidBearerTokenGrantsUnscopedAccess(t *testing.T) {
+	srv := &GitOpsServer{validator: &fakeTokenValidator{}}
+	spiffeID, err := srv.authorizeSyncBundle(bearerCtx("good-token"))
+	require.NoError(t, err)
+	assert.Empty(t, spiffeID, "bearer-token auth must not scope by SPIFFE ID")
+}
+
+func TestAuthorizeSyncBundle_InvalidBearerTokenFailsClosed(t *testing.T) {
+	srv := &GitOpsServer{validator: &fakeTokenValidator{err: auth.ErrInvalidToken}}
+	_, err := srv.authorizeSyncBundle(bearerCtx("bad-token"))
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+func TestAuthorizeSyncBundle_ValidSPIFFEIdentityScopesAccess(t *testing.T) {
+	srv := &GitOpsServer{validator: &fakeTokenValidator{}} // never consulted: no bearer token present
+	ctx := spiffeCtx("spiffe://cluster.local/ns/authstar/sa/tower")
+	spiffeID, err := srv.authorizeSyncBundle(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "spiffe://cluster.local/ns/authstar/sa/tower", spiffeID)
+}
+
+func TestAuthorizeSyncBundle_NoCredentialsRejected(t *testing.T) {
+	srv := &GitOpsServer{validator: &fakeTokenValidator{}}
+	_, err := srv.authorizeSyncBundle(context.Background())
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// --- validateBundleScope ---
+
+func writeYAML(t *testing.T, path string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte("k: v\n"), 0o600))
+}
+
+// TestValidateBundleScope_OwnNamespacePasses is the core regression test for
+// bytepunx/signet#23: a workload pushing a secret under its own
+// namespace/service must be allowed through, exactly mirroring how reads
+// already auto-permit a workload's own namespace/service.
+func TestValidateBundleScope_OwnNamespacePasses(t *testing.T) {
+	dir := t.TempDir()
+	writeYAML(t, filepath.Join(dir, "secrets", "authstar", "tower", "tenant-key.yaml"))
+
+	var gotPermission, gotNS, gotSvc, gotName string
+	srv := &GitOpsServer{checker: &scopeCheckerFunc{allow: func(_ context.Context, spiffeID, permission, namespace, service, secretName string) error {
+		gotPermission, gotNS, gotSvc, gotName = permission, namespace, service, secretName
+		if namespace == "authstar" && service == "tower" {
+			return nil
+		}
+		return auth.ErrUnauthorized
+	}}}
+
+	err := srv.validateBundleScope(context.Background(), dir, "secrets/", "", "spiffe://cluster.local/ns/authstar/sa/tower")
+	require.NoError(t, err)
+	assert.Equal(t, "put", gotPermission)
+	assert.Equal(t, "authstar", gotNS)
+	assert.Equal(t, "tower", gotSvc)
+	assert.Equal(t, "tenant-key", gotName)
+}
+
+// TestValidateBundleScope_CrossNamespaceRejected verifies a bundle containing
+// even one out-of-scope file is rejected outright — the whole point of
+// validating before SyncFromDir/SyncConfigFromDir write anything.
+func TestValidateBundleScope_CrossNamespaceRejected(t *testing.T) {
+	dir := t.TempDir()
+	writeYAML(t, filepath.Join(dir, "secrets", "authstar", "tower", "own-secret.yaml"))
+	writeYAML(t, filepath.Join(dir, "secrets", "payments", "api", "stripe-key.yaml"))
+
+	srv := &GitOpsServer{checker: &scopeCheckerFunc{allow: func(_ context.Context, _, _, namespace, service, _ string) error {
+		if namespace == "authstar" && service == "tower" {
+			return nil
+		}
+		return auth.ErrUnauthorized
+	}}}
+
+	err := srv.validateBundleScope(context.Background(), dir, "secrets/", "", "spiffe://cluster.local/ns/authstar/sa/tower")
+	require.Error(t, err, "a bundle containing an out-of-scope file must be rejected")
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+// TestValidateBundleScope_MalformedPathIgnored verifies scope validation
+// doesn't reject files that don't match the path-depth convention — that's
+// the syncer's own concern (bytepunx/signet#22), not an authorization
+// question; a file scope validation can't identify a namespace/service for
+// can't be scope-checked at all.
+func TestValidateBundleScope_MalformedPathIgnored(t *testing.T) {
+	dir := t.TempDir()
+	writeYAML(t, filepath.Join(dir, "secrets", "authstar", "too", "deep", "nested.yaml"))
+
+	called := false
+	srv := &GitOpsServer{checker: &scopeCheckerFunc{allow: func(context.Context, string, string, string, string, string) error {
+		called = true
+		return nil
+	}}}
+
+	err := srv.validateBundleScope(context.Background(), dir, "secrets/", "", "spiffe://cluster.local/ns/authstar/sa/tower")
+	require.NoError(t, err)
+	assert.False(t, called, "a file the parser can't identify a namespace/service for must not reach the checker")
+}
+
+// TestValidateBundleScope_ConfigPathUsesEmptySecretName verifies config
+// files (which have no third path segment) are checked with an empty
+// secretName, matching the existing bundle/service-level Allow convention
+// used elsewhere (e.g. GetServiceBundle).
+func TestValidateBundleScope_ConfigPathUsesEmptySecretName(t *testing.T) {
+	dir := t.TempDir()
+	writeYAML(t, filepath.Join(dir, "config", "authstar", "tower.yaml"))
+
+	var gotName string
+	nameSeen := false
+	srv := &GitOpsServer{checker: &scopeCheckerFunc{allow: func(_ context.Context, _, _, _, _, secretName string) error {
+		gotName, nameSeen = secretName, true
+		return nil
+	}}}
+
+	err := srv.validateBundleScope(context.Background(), dir, "", "config/", "spiffe://cluster.local/ns/authstar/sa/tower")
+	require.NoError(t, err)
+	require.True(t, nameSeen)
+	assert.Empty(t, gotName)
 }

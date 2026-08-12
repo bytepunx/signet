@@ -234,6 +234,105 @@ func TestRun_GitOpsListenerReachable(t *testing.T) {
 	}
 }
 
+// --- Workload listener GitOps scope (bytepunx/signet#23) ---
+
+// TestRun_WorkloadListener_SyncBundleReachable verifies GitOpsService.
+// SyncBundle — and only SyncBundle — is reachable via the workload mTLS
+// listener, authenticated by the caller's own identity rather than an admin
+// bearer token. Unimplemented (from stubGitOps's embedded
+// UnimplementedGitOpsServiceServer) proves the call reached the handler
+// rather than being rejected by workloadGitOpsScopeStreamInterceptor.
+func TestRun_WorkloadListener_SyncBundleReachable(t *testing.T) {
+	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
+	cancel, _ := runBackground(srv)
+	defer cancel()
+	waitReady()
+
+	conn, err := grpc.NewClient(srv.WorkloadAddr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("dial workload: %v", err)
+	}
+	defer conn.Close()
+
+	stream, err := adminv1.NewGitOpsServiceClient(conn).SyncBundle(context.Background())
+	if err != nil {
+		t.Fatalf("open SyncBundle stream: %v", err)
+	}
+	_, err = stream.CloseAndRecv()
+	if status.Code(err) != codes.Unimplemented {
+		t.Errorf("want Unimplemented (proof SyncBundle reached the handler), got %v", err)
+	}
+}
+
+// TestRun_WorkloadListener_OtherGitOpsMethodsRejected verifies every
+// GitOpsService RPC other than SyncBundle is rejected at the workload
+// listener with PermissionDenied — it never reaches the handler at all,
+// independent of whether an admin bearer token happens to be attached.
+func TestRun_WorkloadListener_OtherGitOpsMethodsRejected(t *testing.T) {
+	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
+	cancel, _ := runBackground(srv)
+	defer cancel()
+	waitReady()
+
+	conn, err := grpc.NewClient(srv.WorkloadAddr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("dial workload: %v", err)
+	}
+	defer conn.Close()
+
+	_, err = adminv1.NewGitOpsServiceClient(conn).GetSOPSPublicKey(context.Background(), &adminv1.GetSOPSPublicKeyRequest{})
+	if status.Code(err) != codes.PermissionDenied {
+		t.Errorf("GetSOPSPublicKey via workload listener: want PermissionDenied, got %v", err)
+	}
+
+	_, err = adminv1.NewGitOpsServiceClient(conn).TriggerSync(context.Background(), &adminv1.TriggerSyncRequest{})
+	if status.Code(err) != codes.PermissionDenied {
+		t.Errorf("TriggerSync via workload listener: want PermissionDenied, got %v", err)
+	}
+}
+
+// TestRun_WorkloadListener_AdminServiceRejected verifies AdminService (never
+// registered on the workload listener, but exercised here defensively via
+// the same interceptor's method-prefix check) is unreachable.
+func TestRun_WorkloadListener_AdminServiceRejected(t *testing.T) {
+	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
+	cancel, _ := runBackground(srv)
+	defer cancel()
+	waitReady()
+
+	conn, err := grpc.NewClient(srv.WorkloadAddr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("dial workload: %v", err)
+	}
+	defer conn.Close()
+
+	_, err = adminv1.NewAdminServiceClient(conn).Status(context.Background(), &adminv1.StatusRequest{})
+	if status.Code(err) == codes.OK {
+		t.Fatal("AdminService must not be reachable via the workload listener at all")
+	}
+}
+
+// TestRun_AdminListener_GitOpsFullAccessUnaffected verifies the scope
+// interceptor is workload-listener-only: every GitOpsService RPC remains
+// reachable via the admin listener exactly as before.
+func TestRun_AdminListener_GitOpsFullAccessUnaffected(t *testing.T) {
+	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
+	cancel, _ := runBackground(srv)
+	defer cancel()
+	waitReady()
+
+	conn, err := grpc.NewClient(srv.AdminAddr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("dial admin: %v", err)
+	}
+	defer conn.Close()
+
+	_, err = adminv1.NewGitOpsServiceClient(conn).TriggerSync(context.Background(), &adminv1.TriggerSyncRequest{})
+	if status.Code(err) != codes.Unimplemented {
+		t.Errorf("TriggerSync via admin listener: want Unimplemented, got %v", err)
+	}
+}
+
 // --- Panic recovery ---
 
 func TestRun_PanicInHandlerReturnsInternal(t *testing.T) {
