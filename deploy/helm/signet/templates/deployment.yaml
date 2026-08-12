@@ -72,6 +72,12 @@ spec:
                 secretKeyRef:
                   name: {{ include "signet.secretName" . }}
                   key: SIGNET_AUDIT_CHAIN_KEY
+            {{- if and .Values.admin.clusterAccess .Values.admin.tls.enabled }}
+            - name: SIGNET_ADMIN_TLS_CERT_FILE
+              value: /etc/signet/admin-tls/tls.crt
+            - name: SIGNET_ADMIN_TLS_KEY_FILE
+              value: /etc/signet/admin-tls/tls.key
+            {{- end }}
           # TCP probes on the mTLS workload port confirm the gRPC server is listening.
           # The admin port (8444) is bound to 127.0.0.1 and unreachable from outside
           # the container by default. Set admin.clusterAccess: true to bind it on all
@@ -97,6 +103,11 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
+            {{- if and .Values.admin.clusterAccess .Values.admin.tls.enabled }}
+            - name: admin-tls
+              mountPath: /etc/signet/admin-tls
+              readOnly: true
+            {{- end }}
       volumes:
         # The SPIRE agent runs as a DaemonSet on each node and exposes the
         # workload API socket via a hostPath. signetd dials this socket at
@@ -117,3 +128,11 @@ spec:
         - name: tmp
           emptyDir:
             sizeLimit: {{ .Values.tmpVolumeSizeLimit }}
+        {{- if and .Values.admin.clusterAccess .Values.admin.tls.enabled }}
+        # Written by cert-manager (see templates/certificate.yaml); signetd
+        # reloads tls.crt/tls.key from this mount periodically, so a renewal
+        # is picked up without a pod restart.
+        - name: admin-tls
+          secret:
+            secretName: {{ include "signet.adminTLSSecretName" . }}
+        {{- end }}

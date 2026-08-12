@@ -119,6 +119,27 @@ func TestSyncFromDir_EmptyRepoIDSkipsDeletionDetection(t *testing.T) {
 	assert.Len(t, st.secrets, 1, "the secret must still be present since deletion detection was skipped")
 }
 
+// TestSyncFromDir_SkipsAndReportsPathDepthMismatch is the secrets-side
+// counterpart to TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch,
+// regression-testing bytepunx/signet#22 for SyncFromDir: a secret file
+// committed at the wrong depth (4 components instead of the required
+// <namespace>/<service>/<name>.yaml) must be reported in Skipped, not
+// silently dropped, while a correctly-shaped secret next to it still syncs.
+func TestSyncFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
+	dir := t.TempDir()
+	keys := &mockKeys{}
+	st, pubKey := newSyncableStore(t, keys)
+	sopsEncrypt(t, dir, "secrets/ns/svc/good.yaml", "value: good\n", pubKey)
+	sopsEncrypt(t, dir, "secrets/ns/svc/extra/deep.yaml", "value: bad\n", pubKey)
+
+	syncer := NewSyncer(st, keys, nil, nil, "")
+	result, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "sha1", "repo-1", "test-actor")
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.Added, "only the correctly-shaped secret should be counted as synced")
+	require.Len(t, result.Skipped, 1, "the wrong-depth file must be reported, not silently dropped")
+	assert.Equal(t, "secrets/ns/svc/extra/deep.yaml", result.Skipped[0])
+}
+
 // TestSyncFromDir_DoesNotDeleteAnotherRepoSSecrets verifies that deletion
 // detection is scoped per-repo: a secret attributed to a different repo_id
 // must never be touched by another repo's sync, even if that other repo's
@@ -166,14 +187,14 @@ func TestSyncConfigFromDir_DeletesConfigRemovedFromRepo(t *testing.T) {
 	syncer := NewSyncer(st, &mockKeys{}, nil, nil, "")
 	ctx := context.Background()
 
-	count, deleted, err := syncer.SyncConfigFromDir(ctx, dir, "config/", "repo-1", "test-actor")
+	count, deleted, _, err := syncer.SyncConfigFromDir(ctx, dir, "config/", "repo-1", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 2, count)
 	assert.Equal(t, 0, deleted)
 
 	require.NoError(t, os.Remove(filepath.Join(removeDir, "svc.yaml")))
 
-	count, deleted, err = syncer.SyncConfigFromDir(ctx, dir, "config/", "repo-1", "test-actor")
+	count, deleted, _, err = syncer.SyncConfigFromDir(ctx, dir, "config/", "repo-1", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, deleted)

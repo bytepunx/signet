@@ -123,16 +123,44 @@ func TestSyncConfigFromDir_BasicParse(t *testing.T) {
 
 	ms := &mockStore{}
 	syncer := NewSyncer(ms, &mockKeys{}, nil, nil, "")
-	count, deleted, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
+	count, deleted, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 0, deleted)
+	assert.Empty(t, skipped)
+}
+
+// TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch is the regression
+// test for bytepunx/signet#22: a config file committed one level too deep
+// (<namespace>/<service>/config.yaml, 3 components, instead of the required
+// <namespace>/<service>.yaml, 2 components) must not sync silently. It should
+// be reported in Skipped so "signet repo sync" can surface it, while the
+// correctly-shaped file next to it still syncs normally.
+func TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "config", "authstar"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "config", "authstar", "portcullis.yaml"),
+		[]byte("tenants: []\n"), 0o600))
+
+	// One level too deep — the exact shape reported in the issue.
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "config", "authstar", "tower"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "config", "authstar", "tower", "config.yaml"),
+		[]byte("tenants: []\n"), 0o600))
+
+	ms := &mockStore{}
+	syncer := NewSyncer(ms, &mockKeys{}, nil, nil, "")
+	count, deleted, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
+	require.NoError(t, err)
+	assert.Equal(t, 1, count, "only the correctly-shaped file should be counted as synced")
+	assert.Equal(t, 0, deleted)
+	require.Len(t, skipped, 1, "the wrong-depth file must be reported, not silently dropped")
+	assert.Equal(t, "config/authstar/tower/config.yaml", skipped[0])
 }
 
 // TestSyncConfigFromDir_EmptyPath verifies that an empty configPath is a no-op.
 func TestSyncConfigFromDir_EmptyPath(t *testing.T) {
 	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, nil, "")
-	count, deleted, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "", "", "test-actor")
+	count, deleted, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
 	assert.Equal(t, 0, deleted)
@@ -141,7 +169,7 @@ func TestSyncConfigFromDir_EmptyPath(t *testing.T) {
 // TestSyncConfigFromDir_MissingDir verifies that a missing config dir is silently skipped.
 func TestSyncConfigFromDir_MissingDir(t *testing.T) {
 	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, nil, "")
-	count, deleted, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/", "", "test-actor")
+	count, deleted, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
 	assert.Equal(t, 0, deleted)

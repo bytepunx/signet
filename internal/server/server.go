@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log/slog"
@@ -30,8 +31,25 @@ type Config struct {
 	// WorkloadAddr is the TCP address for the mTLS gRPC workload listener (e.g. ":8443").
 	WorkloadAddr string
 	// AdminAddr is the TCP address for the admin gRPC listener (e.g. "127.0.0.1:8444").
-	// This listener has no TLS; it is exposed only via kubectl port-forward in production.
+	// When bound to loopback only, this is reached exclusively via
+	// `kubectl port-forward`, which is already protected by kubeconfig
+	// credentials — AdminTLSCertFile/AdminTLSKeyFile may be left empty in
+	// that case. Reachable-off-loopback deployments (see the chart's
+	// admin.clusterAccess) must set both, or the bearer token required on
+	// every admin RPC would otherwise cross the pod network in cleartext.
 	AdminAddr string
+	// AdminTLSCertFile and AdminTLSKeyFile are the PEM certificate/key pair
+	// the admin listener terminates TLS with, e.g. a cert-manager-issued
+	// pair mounted from a Secret volume. Both must be set together, or both
+	// left empty for the loopback-only/port-forward deployment. The files
+	// are re-read every AdminTLSReloadInterval (default 5m) so a
+	// cert-manager rotation is picked up without a pod restart.
+	AdminTLSCertFile string
+	AdminTLSKeyFile  string
+	// AdminTLSReloadInterval overrides the default 5-minute reload cadence
+	// for AdminTLSCertFile/AdminTLSKeyFile. Ignored when TLS is not
+	// configured.
+	AdminTLSReloadInterval time.Duration
 	// WebhookAddr is the TCP address for the optional GitHub webhook HTTP listener
 	// (e.g. ":8445"). Leave empty to disable the webhook server.
 	WebhookAddr string
@@ -44,12 +62,67 @@ type sealable interface {
 	Seal()
 }
 
+// certReloader serves a TLS certificate/key pair read from disk, re-reading
+// it periodically so a cert-manager-driven rotation (which rewrites the
+// files in place, e.g. via an atomic symlink swap into a Secret volume) is
+// picked up without restarting the process. A failed reload logs and keeps
+// serving the last good certificate rather than taking the listener down —
+// a transient read during the swap must not turn into an outage.
+type certReloader struct {
+	certFile, keyFile string
+
+	mu   sync.RWMutex
+	cert *tls.Certificate
+}
+
+func newCertReloader(certFile, keyFile string) (*certReloader, error) {
+	r := &certReloader{certFile: certFile, keyFile: keyFile}
+	if err := r.reload(); err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func (r *certReloader) reload() error {
+	cert, err := tls.LoadX509KeyPair(r.certFile, r.keyFile)
+	if err != nil {
+		return fmt.Errorf("load admin TLS keypair: %w", err)
+	}
+	r.mu.Lock()
+	r.cert = &cert
+	r.mu.Unlock()
+	return nil
+}
+
+func (r *certReloader) GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.cert, nil
+}
+
+// watch polls for certificate changes until ctx is cancelled.
+func (r *certReloader) watch(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := r.reload(); err != nil {
+				slog.Warn("admin TLS certificate reload failed; continuing to serve the previous certificate", "err", err)
+			}
+		}
+	}
+}
+
 // Server manages two gRPC listeners and an optional HTTP webhook listener:
 //   - workload  — mTLS, serves SecretsService to workloads identified by SPIFFE SVIDs, plus
 //     GitOpsService.SyncBundle only (bytepunx/signet#23 — self-service, namespace-scoped
 //     pushes authenticated by the caller's own SPIFFE identity instead of an admin token).
-//   - admin     — plain TCP, serves AdminService and the full GitOpsService to operators via
-//     port-forward, gated by an admin bearer token.
+//   - admin     — plain TCP by default (port-forward, loopback-only), or TLS-terminated
+//     when AdminTLSCertFile/AdminTLSKeyFile are set (see Config.AdminAddr); serves
+//     AdminService and the full GitOpsService to operators, gated by an admin bearer token.
 //   - webhook   — HTTP, serves GitHub push webhooks (optional, enabled by Config.WebhookAddr).
 type Server struct {
 	cfg         Config
@@ -61,6 +134,9 @@ type Server struct {
 	webhookLis  net.Listener // nil when WebhookAddr is empty
 	mgr         sealable
 	closer      io.Closer // X509Source; nil in tests using insecure credentials
+
+	adminCertReloader      *certReloader // nil unless AdminTLSCertFile/KeyFile are set
+	adminTLSReloadInterval time.Duration
 }
 
 // New wires the gRPC servers and starts listening on both addresses.
@@ -101,8 +177,23 @@ func newWithCloser(
 	if creds == nil {
 		return nil, fmt.Errorf("server: workload transport credentials are required")
 	}
+	if (cfg.AdminTLSCertFile == "") != (cfg.AdminTLSKeyFile == "") {
+		return nil, fmt.Errorf("server: AdminTLSCertFile and AdminTLSKeyFile must be set together, or both left empty")
+	}
 	if cfg.DrainTimeout <= 0 {
 		cfg.DrainTimeout = 30 * time.Second
+	}
+	if cfg.AdminTLSReloadInterval <= 0 {
+		cfg.AdminTLSReloadInterval = 5 * time.Minute
+	}
+
+	var adminCertReloader *certReloader
+	if cfg.AdminTLSCertFile != "" {
+		r, err := newCertReloader(cfg.AdminTLSCertFile, cfg.AdminTLSKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("server: %w", err)
+		}
+		adminCertReloader = r
 	}
 
 	workloadLis, err := net.Listen("tcp", cfg.WorkloadAddr)
@@ -145,14 +236,21 @@ func newWithCloser(
 	// GitOpsServer.SyncBundle/validateBundleScope).
 	adminv1.RegisterGitOpsServiceServer(workloadSrv, gitops)
 
-	adminSrv := grpc.NewServer(
+	adminOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(recoveryInterceptor),
 		grpc.ChainStreamInterceptor(recoveryStreamInterceptor),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			Time:    30 * time.Second,
 			Timeout: 10 * time.Second,
 		}),
-	)
+	}
+	if adminCertReloader != nil {
+		adminOpts = append(adminOpts, grpc.Creds(credentials.NewTLS(&tls.Config{
+			MinVersion:     tls.VersionTLS12,
+			GetCertificate: adminCertReloader.GetCertificate,
+		})))
+	}
+	adminSrv := grpc.NewServer(adminOpts...)
 	adminv1.RegisterAdminServiceServer(adminSrv, admin)
 	adminv1.RegisterGitOpsServiceServer(adminSrv, gitops)
 
@@ -176,15 +274,17 @@ func newWithCloser(
 	}
 
 	return &Server{
-		cfg:         cfg,
-		workloadSrv: workloadSrv,
-		adminSrv:    adminSrv,
-		webhookSrv:  webhookSrv,
-		workloadLis: workloadLis,
-		adminLis:    adminLis,
-		webhookLis:  webhookLis,
-		mgr:         mgr,
-		closer:      closer,
+		cfg:                    cfg,
+		workloadSrv:            workloadSrv,
+		adminSrv:               adminSrv,
+		webhookSrv:             webhookSrv,
+		workloadLis:            workloadLis,
+		adminLis:               adminLis,
+		webhookLis:             webhookLis,
+		mgr:                    mgr,
+		closer:                 closer,
+		adminCertReloader:      adminCertReloader,
+		adminTLSReloadInterval: cfg.AdminTLSReloadInterval,
 	}, nil
 }
 
@@ -210,6 +310,10 @@ func (s *Server) Run(ctx context.Context) error {
 		listeners = 3
 	}
 	errs := make(chan result, listeners)
+
+	if s.adminCertReloader != nil {
+		go s.adminCertReloader.watch(ctx, s.adminTLSReloadInterval)
+	}
 
 	go func() {
 		if err := s.workloadSrv.Serve(s.workloadLis); err != nil {
