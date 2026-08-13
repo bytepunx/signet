@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	filippo.io/age v1.3.1
 	github.com/awnumar/memguard v0.23.0
+	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/getsops/sops/v3 v3.13.1
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/google/go-github/v68 v68.0.0

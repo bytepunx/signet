@@ -71,6 +71,9 @@ type gitopsStore interface {
 	GetRepository(ctx context.Context, id string) (*store.Repository, error)
 	ListRepositories(ctx context.Context) ([]store.Repository, error)
 	DeleteRepository(ctx context.Context, id string) error
+	// PatchServiceConfig atomically applies a patch to a stored config
+	// document — see store.Store.PatchServiceConfig (bytepunx/signet#38).
+	PatchServiceConfig(ctx context.Context, namespace, service string, apply func(current json.RawMessage) (json.RawMessage, error)) (version int, err error)
 }
 
 // adminStore is the subset of *store.Store used by AdminServer for the

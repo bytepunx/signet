@@ -264,10 +264,33 @@ func TestRun_WorkloadListener_SyncBundleReachable(t *testing.T) {
 	}
 }
 
+// TestRun_WorkloadListener_PatchServiceConfigReachable is
+// TestRun_WorkloadListener_SyncBundleReachable's counterpart for
+// bytepunx/signet#38's PatchServiceConfig RPC — the second (and, so far,
+// only other) method in workloadGitOpsScopeAllowedMethods.
+func TestRun_WorkloadListener_PatchServiceConfigReachable(t *testing.T) {
+	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
+	cancel, _ := runBackground(srv)
+	defer cancel()
+	waitReady()
+
+	conn, err := grpc.NewClient(srv.WorkloadAddr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("dial workload: %v", err)
+	}
+	defer conn.Close()
+
+	_, err = adminv1.NewGitOpsServiceClient(conn).PatchServiceConfig(context.Background(), &adminv1.PatchServiceConfigRequest{})
+	if status.Code(err) != codes.Unimplemented {
+		t.Errorf("want Unimplemented (proof PatchServiceConfig reached the handler), got %v", err)
+	}
+}
+
 // TestRun_WorkloadListener_OtherGitOpsMethodsRejected verifies every
-// GitOpsService RPC other than SyncBundle is rejected at the workload
-// listener with PermissionDenied — it never reaches the handler at all,
-// independent of whether an admin bearer token happens to be attached.
+// GitOpsService RPC other than SyncBundle/PatchServiceConfig is rejected at
+// the workload listener with PermissionDenied — it never reaches the
+// handler at all, independent of whether an admin bearer token happens to
+// be attached.
 func TestRun_WorkloadListener_OtherGitOpsMethodsRejected(t *testing.T) {
 	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
 	cancel, _ := runBackground(srv)

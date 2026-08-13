@@ -61,7 +61,7 @@ func (f *scopeCheckerFunc) Allow(ctx context.Context, spiffeID, permission, name
 
 func TestAuthorizeSyncBundle_ValidBearerTokenGrantsUnscopedAccess(t *testing.T) {
 	srv := &GitOpsServer{validator: &fakeTokenValidator{identity: "system:serviceaccount:signet:signet-admin"}}
-	actor, scoped, err := srv.authorizeSyncBundle(bearerCtx("good-token"))
+	actor, scoped, err := srv.authorizeGitOpsWrite(bearerCtx("good-token"), "SyncBundle")
 	require.NoError(t, err)
 	assert.False(t, scoped, "bearer-token auth must not scope by SPIFFE ID")
 	assert.Equal(t, "system:serviceaccount:signet:signet-admin", actor,
@@ -70,7 +70,7 @@ func TestAuthorizeSyncBundle_ValidBearerTokenGrantsUnscopedAccess(t *testing.T) 
 
 func TestAuthorizeSyncBundle_InvalidBearerTokenFailsClosed(t *testing.T) {
 	srv := &GitOpsServer{validator: &fakeTokenValidator{err: auth.ErrInvalidToken}}
-	_, _, err := srv.authorizeSyncBundle(bearerCtx("bad-token"))
+	_, _, err := srv.authorizeGitOpsWrite(bearerCtx("bad-token"), "SyncBundle")
 	require.Error(t, err)
 	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 }
@@ -78,7 +78,7 @@ func TestAuthorizeSyncBundle_InvalidBearerTokenFailsClosed(t *testing.T) {
 func TestAuthorizeSyncBundle_ValidSPIFFEIdentityScopesAccess(t *testing.T) {
 	srv := &GitOpsServer{validator: &fakeTokenValidator{}} // never consulted: no bearer token present
 	ctx := spiffeCtx("spiffe://cluster.local/ns/authstar/sa/tower")
-	actor, scoped, err := srv.authorizeSyncBundle(ctx)
+	actor, scoped, err := srv.authorizeGitOpsWrite(ctx, "SyncBundle")
 	require.NoError(t, err)
 	assert.True(t, scoped)
 	assert.Equal(t, "spiffe://cluster.local/ns/authstar/sa/tower", actor)
@@ -86,7 +86,7 @@ func TestAuthorizeSyncBundle_ValidSPIFFEIdentityScopesAccess(t *testing.T) {
 
 func TestAuthorizeSyncBundle_NoCredentialsRejected(t *testing.T) {
 	srv := &GitOpsServer{validator: &fakeTokenValidator{}}
-	_, _, err := srv.authorizeSyncBundle(context.Background())
+	_, _, err := srv.authorizeGitOpsWrite(context.Background(), "SyncBundle")
 	require.Error(t, err)
 	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 }

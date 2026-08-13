@@ -118,8 +118,9 @@ func (r *certReloader) watch(ctx context.Context, interval time.Duration) {
 
 // Server manages two gRPC listeners and an optional HTTP webhook listener:
 //   - workload  — mTLS, serves SecretsService to workloads identified by SPIFFE SVIDs, plus
-//     GitOpsService.SyncBundle only (bytepunx/signet#23 — self-service, namespace-scoped
-//     pushes authenticated by the caller's own SPIFFE identity instead of an admin token).
+//     GitOpsService.SyncBundle and PatchServiceConfig only (bytepunx/signet#23, #38 —
+//     self-service, namespace-scoped writes authenticated by the caller's own SPIFFE
+//     identity instead of an admin token; see workloadGitOpsScopeAllowedMethods).
 //   - admin     — plain TCP by default (port-forward, loopback-only), or TLS-terminated
 //     when AdminTLSCertFile/AdminTLSKeyFile are set (see Config.AdminAddr); serves
 //     AdminService and the full GitOpsService to operators, gated by an admin bearer token.
@@ -222,18 +223,21 @@ func newWithCloser(
 		}),
 	)
 	signetv1.RegisterSecretsServiceServer(workloadSrv, secrets)
-	// GitOpsService.SyncBundle is also reachable here, authenticated by the
-	// caller's own SPIFFE mTLS identity rather than an admin bearer token
-	// (bytepunx/signet#23) — e.g. a service self-service-provisioning a
-	// secret for another service to pick up on its next bundle fetch.
-	// Registering the whole GitOpsServiceServer technically wires every
-	// other GitOps/admin RPC onto this listener too, but
+	// GitOpsService.SyncBundle and PatchServiceConfig are also reachable
+	// here, authenticated by the caller's own SPIFFE mTLS identity rather
+	// than an admin bearer token (bytepunx/signet#23, #38) — e.g. a service
+	// self-service-provisioning a secret for another service to pick up on
+	// its next bundle fetch, or atomically patching one field of a shared
+	// config document instead of a full-document replace. Registering the
+	// whole GitOpsServiceServer technically wires every other GitOps/admin
+	// RPC onto this listener too, but
 	// workloadGitOpsScopeInterceptor/workloadGitOpsScopeStreamInterceptor
 	// below reject all of them outright, independent of (not a substitute
-	// for) each RPC's own auth check — only SyncBundle is meant to be
-	// reachable without an admin bearer token, and it enforces its own
-	// per-file namespace/service scope on top of that (see
-	// GitOpsServer.SyncBundle/validateBundleScope).
+	// for) each RPC's own auth check — only the two methods in
+	// workloadGitOpsScopeAllowedMethods are meant to be reachable without an
+	// admin bearer token, and each enforces its own namespace/service scope
+	// on top of that (see GitOpsServer.SyncBundle/validateBundleScope and
+	// GitOpsServer.PatchServiceConfig).
 	adminv1.RegisterGitOpsServiceServer(workloadSrv, gitops)
 
 	adminOpts := []grpc.ServerOption{
@@ -429,17 +433,23 @@ func recoveryStreamInterceptor(srv any, ss grpc.ServerStream, _ *grpc.StreamServ
 	return handler(srv, ss)
 }
 
-// workloadGitOpsScopeAllowedMethod is the only AdminService/GitOpsService RPC
-// reachable via the workload mTLS listener — see the registration comment in
-// newWithCloser. Every other admin RPC still requires the admin bearer
-// token, but this interceptor enforces that independently at the transport
-// boundary rather than relying solely on each handler's own auth check.
-const workloadGitOpsScopeAllowedMethod = adminv1.GitOpsService_SyncBundle_FullMethodName
+// workloadGitOpsScopeAllowedMethods are the only AdminService/GitOpsService
+// RPCs reachable via the workload mTLS listener — see the registration
+// comment in newWithCloser. Every other admin RPC still requires the admin
+// bearer token, but this interceptor enforces that independently at the
+// transport boundary rather than relying solely on each handler's own auth
+// check. Both entries are scoped per-call the same way: SyncBundle via
+// validateBundleScope, PatchServiceConfig via checker.Allow's "put"
+// permission (bytepunx/signet#23, #38).
+var workloadGitOpsScopeAllowedMethods = map[string]bool{
+	adminv1.GitOpsService_SyncBundle_FullMethodName:         true,
+	adminv1.GitOpsService_PatchServiceConfig_FullMethodName: true,
+}
 
 // workloadGitOpsScopeInterceptor rejects any unary AdminService/GitOpsService
-// RPC other than SyncBundle on the workload listener. SecretsService RPCs
-// (the vast majority of traffic here) are unaffected — this only inspects
-// admin.v1-namespaced methods.
+// RPC not in workloadGitOpsScopeAllowedMethods on the workload listener.
+// SecretsService RPCs (the vast majority of traffic here) are unaffected —
+// this only inspects admin.v1-namespaced methods.
 func workloadGitOpsScopeInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	if err := checkWorkloadGitOpsScope(info.FullMethod); err != nil {
 		return nil, err
@@ -461,7 +471,7 @@ func checkWorkloadGitOpsScope(fullMethod string) error {
 	if !strings.HasPrefix(fullMethod, "/admin.v1.") {
 		return nil // not an AdminService/GitOpsService method
 	}
-	if fullMethod == workloadGitOpsScopeAllowedMethod {
+	if workloadGitOpsScopeAllowedMethods[fullMethod] {
 		return nil
 	}
 	return status.Errorf(codes.PermissionDenied,

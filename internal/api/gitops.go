@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -14,7 +16,10 @@ import (
 	"strings"
 	"time"
 
+	jsonpatch "github.com/evanphx/json-patch/v5"
+
 	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
+	"github.com/bytepunx/signet/internal/audit"
 	"github.com/bytepunx/signet/internal/auth"
 	icrypto "github.com/bytepunx/signet/internal/crypto"
 	"github.com/bytepunx/signet/internal/gitops"
@@ -32,14 +37,25 @@ type GitOpsServer struct {
 	webhookBaseURL string
 	validator      tokenChecker
 	checker        permissionChecker
-	environment    string // from SIGNET_ENVIRONMENT; empty = unscoped
+	// audit records PatchServiceConfig writes directly (bytepunx/signet#38) —
+	// unlike SyncBundle's secret/config writes, a patch never goes through
+	// gitops.Syncer (there's no sync pass, no repo, no bundle to walk), so it
+	// can't rely on Syncer's own audit wiring (bytepunx/signet#25) and needs
+	// its own.
+	audit auditRecorder
+	// bus notifies WatchServiceConfig/WatchServiceBundle subscribers after a
+	// successful patch, the same way gitops.Syncer's storeConfig does for a
+	// git/bundle-driven config write — a caller watching a service's config
+	// should see a PatchServiceConfig change just as promptly.
+	bus         *Bus
+	environment string // from SIGNET_ENVIRONMENT; empty = unscoped
 }
 
 // NewGitOpsServer constructs a GitOpsServer. environment scopes SOPS key
 // operations to a specific deployment tier (e.g. "prod", "staging"); an empty
-// string means no filtering is applied. checker authorizes SyncBundle calls
-// made over a workload's own SPIFFE mTLS identity rather than an admin
-// bearer token — see authorizeSyncBundle.
+// string means no filtering is applied. checker authorizes SyncBundle/
+// PatchServiceConfig calls made over a workload's own SPIFFE mTLS identity
+// rather than an admin bearer token — see authorizeGitOpsWrite.
 func NewGitOpsServer(
 	st gitopsStore,
 	keys keyUnwrapper,
@@ -47,6 +63,8 @@ func NewGitOpsServer(
 	webhookBaseURL string,
 	validator tokenChecker,
 	checker permissionChecker,
+	audit auditRecorder,
+	bus *Bus,
 	environment string,
 ) *GitOpsServer {
 	return &GitOpsServer{
@@ -56,6 +74,8 @@ func NewGitOpsServer(
 		webhookBaseURL: webhookBaseURL,
 		validator:      validator,
 		checker:        checker,
+		audit:          audit,
+		bus:            bus,
 		environment:    environment,
 	}
 }
@@ -80,19 +100,22 @@ func (s *GitOpsServer) requireTokenIdentity(ctx context.Context) (identity strin
 	return identity, nil
 }
 
-// authorizeSyncBundle authenticates a SyncBundle call via whichever
+// authorizeGitOpsWrite authenticates a workload-reachable GitOpsService write
+// (SyncBundle, PatchServiceConfig — bytepunx/signet#23, #38) via whichever
 // credential the caller actually presented: an admin bearer token (checked
-// exactly like requireToken, granting the same unscoped access SyncBundle
-// has always had), or — when no token is present at all — the caller's own
-// verified SPIFFE mTLS identity (bytepunx/signet#23). A malformed or invalid
-// token fails immediately rather than falling back to the SPIFFE path, so a
-// caller that clearly attempted admin auth gets a clear error instead of a
-// confusing scope-mismatch one. actor is always non-empty on success — the
-// admin's Kubernetes identity or the caller's SPIFFE ID — for attributing
-// the resulting writes in the audit log (bytepunx/signet#25). scoped is true
-// only for the SPIFFE path, meaning the caller must also go through
-// validateBundleScope before anything is written.
-func (s *GitOpsServer) authorizeSyncBundle(ctx context.Context) (actor string, scoped bool, err error) {
+// exactly like requireToken, granting the same unscoped access these RPCs
+// have always had via the admin listener), or — when no token is present at
+// all — the caller's own verified SPIFFE mTLS identity. A malformed or
+// invalid token fails immediately rather than falling back to the SPIFFE
+// path, so a caller that clearly attempted admin auth gets a clear error
+// instead of a confusing scope-mismatch one. actor is always non-empty on
+// success — the admin's Kubernetes identity or the caller's SPIFFE ID — for
+// attributing the resulting write in the audit log (bytepunx/signet#25).
+// scoped is true only for the SPIFFE path, meaning the caller must also pass
+// an explicit per-call authorization check (e.g. validateBundleScope, or a
+// checker.Allow "put" check) before anything is written. rpcName appears in
+// the error message when neither credential is present.
+func (s *GitOpsServer) authorizeGitOpsWrite(ctx context.Context, rpcName string) (actor string, scoped bool, err error) {
 	if token, tokenErr := auth.TokenFromMetadata(ctx); tokenErr == nil {
 		identity, err := s.validator.Validate(ctx, token)
 		if err != nil {
@@ -104,8 +127,8 @@ func (s *GitOpsServer) authorizeSyncBundle(ctx context.Context) (actor string, s
 	id, idErr := auth.SPIFFEIDFromContext(ctx)
 	if idErr != nil {
 		return "", false, toGRPCError(fmt.Errorf(
-			"%w: SyncBundle requires either an admin bearer token or a verified workload mTLS identity",
-			auth.ErrUnauthenticated))
+			"%w: %s requires either an admin bearer token or a verified workload mTLS identity",
+			auth.ErrUnauthenticated, rpcName))
 	}
 	return id, true, nil
 }
@@ -423,7 +446,7 @@ func skippedToErrors(skipped []string) []string {
 // authorized to "put" to (see validateBundleScope), or nothing is written.
 func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer) error {
 	ctx := stream.Context()
-	actor, scoped, err := s.authorizeSyncBundle(ctx)
+	actor, scoped, err := s.authorizeGitOpsWrite(ctx, "SyncBundle")
 	if err != nil {
 		return err
 	}
@@ -507,6 +530,109 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 		ConfigsSynced:  int32(configCount),
 		Errors:         skippedToErrors(result.Skipped),
 	})
+}
+
+// PatchServiceConfig atomically applies an RFC 6902 JSON Patch to a
+// service's existing plain config document (bytepunx/signet#38). Unlike
+// SyncBundle's config path — a full-document replace, which would silently
+// drop every field/entry a partial push doesn't mention — this only touches
+// the paths the patch actually names, applied server-side inside a single
+// transaction (store.Store.PatchServiceConfig) so there's no client-visible
+// read step for a concurrent unrelated change to race against.
+//
+// Reachable the same two ways as SyncBundle: an admin bearer token (full
+// access), or a workload's own SPIFFE mTLS identity, scoped via checker.Allow
+// with the "put" permission — the same permission and exact-match convention
+// SyncBundle's validateBundleScope already uses, so a workload patching its
+// own namespace/service needs no policy row, and anything broader needs an
+// explicit policy grant exactly like a cross-service push would.
+func (s *GitOpsServer) PatchServiceConfig(ctx context.Context, req *adminv1.PatchServiceConfigRequest) (*adminv1.PatchServiceConfigResponse, error) {
+	actor, scoped, err := s.authorizeGitOpsWrite(ctx, "PatchServiceConfig")
+	if err != nil {
+		return nil, err
+	}
+	if req.GetNamespace() == "" || req.GetService() == "" {
+		return nil, status.Error(codes.InvalidArgument, "namespace and service are required")
+	}
+	if len(req.GetOperations()) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "operations must not be empty")
+	}
+	if scoped {
+		if err := s.checker.Allow(ctx, actor, "put", req.GetNamespace(), req.GetService(), ""); err != nil {
+			return nil, toGRPCError(err)
+		}
+	}
+
+	patch, err := decodeJSONPatch(req.GetOperations())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "decode patch: %v", err)
+	}
+
+	version, err := s.store.PatchServiceConfig(ctx, req.GetNamespace(), req.GetService(), func(current json.RawMessage) (json.RawMessage, error) {
+		patched, err := patch.Apply(current)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", errPatchApplyFailed, err)
+		}
+		return patched, nil
+	})
+	if err != nil {
+		if errors.Is(err, errPatchApplyFailed) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		return nil, toGRPCError(err)
+	}
+
+	if s.audit != nil {
+		if auditErr := s.audit.Record(ctx, audit.Entry{
+			SPIFFEID:   actor,
+			Action:     "patch_config",
+			Namespace:  req.GetNamespace(),
+			SecretName: req.GetService() + "/" + configAuditName,
+			Outcome:    "permitted",
+		}); auditErr != nil {
+			slog.Error("audit write failed for PatchServiceConfig", "namespace", req.GetNamespace(), "service", req.GetService(), "err", auditErr)
+		}
+	}
+	if s.bus != nil {
+		s.bus.NotifyService(req.GetNamespace(), req.GetService())
+		s.bus.NotifyBundle(req.GetNamespace(), req.GetService())
+	}
+
+	return &adminv1.PatchServiceConfigResponse{Version: int32(version)}, nil
+}
+
+// errPatchApplyFailed distinguishes a client-supplied-patch problem (bad
+// path, failed "test" precondition, malformed op) from a store/database
+// error inside PatchServiceConfig's apply closure — the two need different
+// gRPC codes (InvalidArgument vs. whatever toGRPCError derives).
+var errPatchApplyFailed = errors.New("apply patch")
+
+// decodeJSONPatch converts the request's typed operations into an RFC 6902
+// JSON Patch document. Proto doesn't have a native "arbitrary JSON value"
+// type for Value's omitted case (a "remove"/"move"/"copy" operation has no
+// value), so an unset Value is encoded as JSON null via structpb's own
+// nil-safety rather than omitted entirely — evanphx/json-patch ignores
+// "value" for operations that don't use it, so this is harmless.
+func decodeJSONPatch(ops []*adminv1.JsonPatchOperation) (jsonpatch.Patch, error) {
+	raw := make([]map[string]any, len(ops))
+	for i, op := range ops {
+		entry := map[string]any{
+			"op":   op.GetOp(),
+			"path": op.GetPath(),
+		}
+		if op.GetFrom() != "" {
+			entry["from"] = op.GetFrom()
+		}
+		if op.GetValue() != nil {
+			entry["value"] = op.GetValue().AsInterface()
+		}
+		raw[i] = entry
+	}
+	encoded, err := json.Marshal(raw)
+	if err != nil {
+		return nil, fmt.Errorf("encode operations: %w", err)
+	}
+	return jsonpatch.DecodePatch(encoded)
 }
 
 // webhookURL builds the full webhook URL for a repository.

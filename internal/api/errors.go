@@ -27,6 +27,12 @@ func toGRPCError(err error) error {
 		return status.Error(codes.NotFound, "not found")
 	case errors.Is(err, store.ErrInvalidInput):
 		return status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, store.ErrConflict):
+		// Aborted is the canonical gRPC code for "retry the whole operation" —
+		// unlike most codes here, this isn't a permanent failure the caller
+		// did something wrong to cause; a concurrent writer just won the race
+		// (see store.Store.PatchServiceConfig, bytepunx/signet#38).
+		return status.Error(codes.Aborted, err.Error())
 	case errors.Is(err, icrypto.ErrKeyNotSet):
 		return status.Error(codes.Unavailable, "server is sealed")
 	case errors.Is(err, icrypto.ErrAuthenticationFailed):
