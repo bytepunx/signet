@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.0](https://github.com/bytepunx/signet/compare/v0.9.0...v0.10.0) (2026-08-13)
+
+
+### Features
+
+* **gitops:** add PatchServiceConfig for atomic config patching ([5b8be2d](https://github.com/bytepunx/signet/commit/5b8be2d81b792bb3c1e337c949d143a6204f00f1))
+
+
+### Bug Fixes
+
+* **chart:** require admin.tls when admin.clusterAccess is enabled ([#42](https://github.com/bytepunx/signet/issues/42)) ([3fc5658](https://github.com/bytepunx/signet/commit/3fc56588d274b4dbfc09a426dc009149bd7a686b))
+* **chart:** restrict admin-tls Secret volume to 0400 ([b81fab1](https://github.com/bytepunx/signet/commit/b81fab1464950e90139c6a92ed8d0f66032767e6))
+
 ## [0.9.0](https://github.com/bytepunx/signet/compare/v0.8.0...v0.9.0) (2026-08-12)
 
 
