@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package admin.v1;
 
+import "google/protobuf/struct.proto";
+
 // AdminService handles operator lifecycle operations: unsealing, sealing, and status.
 service AdminService {
   rpc UnsealKey(UnsealKeyRequest)     returns (UnsealKeyResponse);
@@ -51,6 +53,19 @@ service GitOpsService {
   // SyncBundleHeader; subsequent chunks carry the raw archive bytes.
   // buf:lint:ignore RPC_REQUEST_STANDARD_NAME
   rpc SyncBundle(stream SyncBundleChunk) returns (SyncBundleResponse);
+
+  // PatchServiceConfig atomically applies a JSON Patch (RFC 6902) to a
+  // service's existing plain config document, without the caller reading,
+  // modifying, and re-pushing the whole document — SyncBundle's config path
+  // is a full-document replace, which silently drops every other field/entry
+  // a partial push doesn't mention. The patch is applied server-side inside
+  // a single transaction (read current content, apply, write back), so two
+  // concurrent PatchServiceConfig calls against the same namespace/service
+  // never lose either update, unlike a client-side read-modify-write. Fails
+  // NotFound if no config document exists yet for namespace/service — this
+  // RPC only mutates an existing document, it does not create one (use
+  // SyncBundle/git sync to create the initial document).
+  rpc PatchServiceConfig(PatchServiceConfigRequest) returns (PatchServiceConfigResponse);
 }
 
 // --- AdminService messages ---
@@ -332,4 +347,41 @@ message SyncBundleResponse {
   string sync_sha        = 4;
   repeated string errors = 5;
   int32  configs_synced  = 6;
+}
+
+// --- PatchServiceConfig messages ---
+
+// JsonPatchOperation is one operation of an RFC 6902 JSON Patch document.
+message JsonPatchOperation {
+  // op is one of "add", "remove", "replace", "move", "copy", "test" per
+  // RFC 6902 §4. Unrecognised values are rejected.
+  string op = 1;
+  // path is an RFC 6901 JSON Pointer into the config document, e.g.
+  // "/tenants/acme/sessionKeyGenerations/-" — a path segment of "-" as the
+  // final component of an "add" path appends to the end of an array, which
+  // is how a single new entry is added to an existing list without reading
+  // it first.
+  string path = 2;
+  // from is required for "move"/"copy" operations (the source JSON Pointer);
+  // unused otherwise.
+  string from = 3;
+  // value is required for "add"/"replace"/"test" operations; unused for
+  // "remove"/"move"/"copy".
+  google.protobuf.Value value = 4;
+}
+
+message PatchServiceConfigRequest {
+  string namespace = 1;
+  string service   = 2;
+  // operations are applied in order as a single RFC 6902 JSON Patch document
+  // against the current stored config; the whole patch either fully applies
+  // or the call fails with no partial effect (if any operation fails, e.g. a
+  // "test" precondition or an out-of-bounds path, none of the operations are
+  // committed).
+  repeated JsonPatchOperation operations = 3;
+}
+
+message PatchServiceConfigResponse {
+  // version is the config document's version after this patch was applied.
+  int32 version = 1;
 }
