@@ -131,8 +131,12 @@ spec:
         {{- if and .Values.admin.clusterAccess .Values.admin.tls.enabled }}
         # Written by cert-manager (see templates/certificate.yaml); signetd
         # reloads tls.crt/tls.key from this mount periodically, so a renewal
-        # is picked up without a pod restart.
+        # is picked up without a pod restart. defaultMode restricts both
+        # files to owner-read-only -- Kubernetes' own default for a Secret
+        # volume is 0644 (world-readable within the container), which is
+        # looser than a private key deserves as a matter of course.
         - name: admin-tls
           secret:
             secretName: {{ include "signet.adminTLSSecretName" . }}
+            defaultMode: 0400
         {{- end }}
