@@ -639,7 +639,22 @@ written, so there's nothing to record.
 
 **Decision: Git repositories as the source of truth for secrets; SOPS + age for encryption at rest in the repository.**
 
-Operators do not write secrets directly into signet via the API. Instead, secrets live in a git repository encrypted with SOPS and are pulled into signet automatically. This gives full git history, PR review, and branch-based promotion for secret changes.
+Git is the primary source of truth for secrets: they live in a repository encrypted with
+SOPS and are pulled into signet automatically, giving full git history, PR review, and
+branch-based promotion for secret changes. Three narrower, deliberate exceptions write
+outside that flow, each covered in its own subsection below:
+
+- **`signet bundle push`** — an admin-bearer-token-gated local bootstrap push for the
+  chicken-and-egg case where the repository can't be pushed to a remote before signet is
+  set up. Still goes through the same tar-of-SOPS-files → decrypt → store pipeline as a
+  normal sync; only the transport (streamed upload, not a git clone) differs.
+- **Self-service `SyncBundle` pushes** (bytepunx/signet#23) — the same RPC and pipeline as
+  above, but reachable over a workload's own SPIFFE mTLS identity instead of an admin
+  token, scoped to its own namespace/service.
+- **`PatchServiceConfig`** (bytepunx/signet#38) — the starkest exception: it doesn't touch
+  the tar/SOPS pipeline at all. An RFC 6902 JSON Patch is applied directly to a stored
+  config document inside a database transaction, with no encrypted file, no commit, and no
+  sync pass involved anywhere.
 
 ### Why age (not PGP or KMS)
 
