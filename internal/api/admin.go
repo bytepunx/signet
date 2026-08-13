@@ -410,6 +410,18 @@ func (s *AdminServer) CreatePolicy(ctx context.Context, req *adminv1.CreatePolic
 	if len(permissions) == 0 {
 		permissions = []string{"get"}
 	}
+	for _, perm := range permissions {
+		if perm == "*" {
+			// See internal/auth.evalPolicies: "*" matches every permission
+			// string checked against this policy, including RPCs added after
+			// this policy was created (e.g. a future write operation). A
+			// narrower explicit list is safer unless blanket access across
+			// all operations is truly intended.
+			slog.Warn("create policy: wildcard permission grants all current and future operations",
+				"spiffe_id", spiffeID, "namespace", namespace, "service", service, "secret_name", secretName)
+			break
+		}
+	}
 
 	p := &store.Policy{
 		SPIFFEID:    spiffeID,

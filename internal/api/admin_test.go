@@ -1,9 +1,11 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -729,6 +731,36 @@ func TestCreatePolicy_ExplicitSecretNameAndPermissions(t *testing.T) {
 	require.Len(t, st.policies, 1)
 	assert.Equal(t, "ns/svc/db-*", st.policies[0].Pattern)
 	assert.Equal(t, []string{"get", "list"}, st.policies[0].Permissions)
+}
+
+func TestCreatePolicy_WildcardPermissionLogsWarning(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	defer slog.SetDefault(prev)
+
+	st := &fakeAdminStore{}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.CreatePolicy(bearerCtx("tok"), &adminv1.CreatePolicyRequest{
+		SpiffeId: "spiffe://x/y", Namespace: "ns", Service: "svc", Permissions: []string{"*"},
+	})
+	require.NoError(t, err)
+	assert.Contains(t, buf.String(), "wildcard permission")
+}
+
+func TestCreatePolicy_NonWildcardPermissionDoesNotLogWarning(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	defer slog.SetDefault(prev)
+
+	st := &fakeAdminStore{}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.CreatePolicy(bearerCtx("tok"), &adminv1.CreatePolicyRequest{
+		SpiffeId: "spiffe://x/y", Namespace: "ns", Service: "svc", Permissions: []string{"get", "list"},
+	})
+	require.NoError(t, err)
+	assert.NotContains(t, buf.String(), "wildcard permission")
 }
 
 // --- ListPolicies tests ---

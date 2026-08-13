@@ -134,6 +134,16 @@ spiffe://cluster.local/ns/payments/sa/tx-service  →  payments/tx-service/strip
 spiffe://cluster.local/ns/reporting/sa/etl-job  →  payments/shared/read-only-db-url
 ```
 
+**Permission wildcard (bytepunx/signet#26):** a policy's `permissions` list may also contain
+`"*"`, matching *any* permission string checked against that policy — not just `get`/`put`
+today, but any operation added in the future (e.g. `PatchServiceConfig`'s `put` check, or a
+permission introduced by a later RPC), without the policy being touched again. This is
+deliberate: it's the mechanism for a genuinely blanket grant, and narrower explicit
+permission lists remain unaffected. Because the scope silently grows as new RPCs are added,
+`CreatePolicy` logs a warning (not a rejection — this is a supported, intentional use) whenever
+a caller requests `"*"`, so an operator reviewing logs can see where blanket grants exist.
+Prefer an explicit list (e.g. `["get", "put"]`) unless blanket access is truly intended.
+
 ---
 
 ## 5. Envelope Encryption
