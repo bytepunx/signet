@@ -538,6 +538,7 @@ const (
 	GitOpsService_RemoveRepository_FullMethodName   = "/admin.v1.GitOpsService/RemoveRepository"
 	GitOpsService_TriggerSync_FullMethodName        = "/admin.v1.GitOpsService/TriggerSync"
 	GitOpsService_SyncBundle_FullMethodName         = "/admin.v1.GitOpsService/SyncBundle"
+	GitOpsService_PatchServiceConfig_FullMethodName = "/admin.v1.GitOpsService/PatchServiceConfig"
 )
 
 // GitOpsServiceClient is the client API for GitOpsService service.
@@ -561,6 +562,18 @@ type GitOpsServiceClient interface {
 	// SyncBundleHeader; subsequent chunks carry the raw archive bytes.
 	// buf:lint:ignore RPC_REQUEST_STANDARD_NAME
 	SyncBundle(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SyncBundleChunk, SyncBundleResponse], error)
+	// PatchServiceConfig atomically applies a JSON Patch (RFC 6902) to a
+	// service's existing plain config document, without the caller reading,
+	// modifying, and re-pushing the whole document — SyncBundle's config path
+	// is a full-document replace, which silently drops every other field/entry
+	// a partial push doesn't mention. The patch is applied server-side inside
+	// a single transaction (read current content, apply, write back), so two
+	// concurrent PatchServiceConfig calls against the same namespace/service
+	// never lose either update, unlike a client-side read-modify-write. Fails
+	// NotFound if no config document exists yet for namespace/service — this
+	// RPC only mutates an existing document, it does not create one (use
+	// SyncBundle/git sync to create the initial document).
+	PatchServiceConfig(ctx context.Context, in *PatchServiceConfigRequest, opts ...grpc.CallOption) (*PatchServiceConfigResponse, error)
 }
 
 type gitOpsServiceClient struct {
@@ -664,6 +677,16 @@ func (c *gitOpsServiceClient) SyncBundle(ctx context.Context, opts ...grpc.CallO
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type GitOpsService_SyncBundleClient = grpc.ClientStreamingClient[SyncBundleChunk, SyncBundleResponse]
 
+func (c *gitOpsServiceClient) PatchServiceConfig(ctx context.Context, in *PatchServiceConfigRequest, opts ...grpc.CallOption) (*PatchServiceConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PatchServiceConfigResponse)
+	err := c.cc.Invoke(ctx, GitOpsService_PatchServiceConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GitOpsServiceServer is the server API for GitOpsService service.
 // All implementations must embed UnimplementedGitOpsServiceServer
 // for forward compatibility.
@@ -685,6 +708,18 @@ type GitOpsServiceServer interface {
 	// SyncBundleHeader; subsequent chunks carry the raw archive bytes.
 	// buf:lint:ignore RPC_REQUEST_STANDARD_NAME
 	SyncBundle(grpc.ClientStreamingServer[SyncBundleChunk, SyncBundleResponse]) error
+	// PatchServiceConfig atomically applies a JSON Patch (RFC 6902) to a
+	// service's existing plain config document, without the caller reading,
+	// modifying, and re-pushing the whole document — SyncBundle's config path
+	// is a full-document replace, which silently drops every other field/entry
+	// a partial push doesn't mention. The patch is applied server-side inside
+	// a single transaction (read current content, apply, write back), so two
+	// concurrent PatchServiceConfig calls against the same namespace/service
+	// never lose either update, unlike a client-side read-modify-write. Fails
+	// NotFound if no config document exists yet for namespace/service — this
+	// RPC only mutates an existing document, it does not create one (use
+	// SyncBundle/git sync to create the initial document).
+	PatchServiceConfig(context.Context, *PatchServiceConfigRequest) (*PatchServiceConfigResponse, error)
 	mustEmbedUnimplementedGitOpsServiceServer()
 }
 
@@ -721,6 +756,9 @@ func (UnimplementedGitOpsServiceServer) TriggerSync(context.Context, *TriggerSyn
 }
 func (UnimplementedGitOpsServiceServer) SyncBundle(grpc.ClientStreamingServer[SyncBundleChunk, SyncBundleResponse]) error {
 	return status.Error(codes.Unimplemented, "method SyncBundle not implemented")
+}
+func (UnimplementedGitOpsServiceServer) PatchServiceConfig(context.Context, *PatchServiceConfigRequest) (*PatchServiceConfigResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PatchServiceConfig not implemented")
 }
 func (UnimplementedGitOpsServiceServer) mustEmbedUnimplementedGitOpsServiceServer() {}
 func (UnimplementedGitOpsServiceServer) testEmbeddedByValue()                       {}
@@ -894,6 +932,24 @@ func _GitOpsService_SyncBundle_Handler(srv interface{}, stream grpc.ServerStream
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type GitOpsService_SyncBundleServer = grpc.ClientStreamingServer[SyncBundleChunk, SyncBundleResponse]
 
+func _GitOpsService_PatchServiceConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PatchServiceConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GitOpsServiceServer).PatchServiceConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GitOpsService_PatchServiceConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GitOpsServiceServer).PatchServiceConfig(ctx, req.(*PatchServiceConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GitOpsService_ServiceDesc is the grpc.ServiceDesc for GitOpsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -932,6 +988,10 @@ var GitOpsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TriggerSync",
 			Handler:    _GitOpsService_TriggerSync_Handler,
+		},
+		{
+			MethodName: "PatchServiceConfig",
+			Handler:    _GitOpsService_PatchServiceConfig_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

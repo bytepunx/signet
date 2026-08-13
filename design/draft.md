@@ -978,6 +978,60 @@ This deliberately does not introduce a new RPC, a new token type, or a new liste
 and response shape are all unchanged; only *who* may call it without an admin token, and
 *what* they may write, are new.
 
+### Atomic config patching (bytepunx/signet#38)
+
+**Problem**: `SyncBundle`'s config path (and git-sync's) is a full-document replace —
+`SyncConfigFromDir` → `storeConfig` → `store.PutServiceConfig` overwrites the entire stored
+JSON document for `(namespace, service)` with whatever the pushed/synced file parses to.
+When a service's config is a single document shared across many logical entries (e.g.
+`portcullis`'s config keying `tenants` by tenant ID), a caller that only has one entry's
+data — `tower` adding one key-generation entry to one tenant's array as part of a key
+rotation flow — would silently delete every other tenant's config the moment that push
+applies. There was also no RPC on `GitOpsService` that reads a config back, so a caller
+couldn't even do a manual read-modify-write through the admin surface; the only read path,
+`SecretsService.GetServiceConfig`, is a different service with different auth, and even if
+policy-granted, a client-side read-then-write still races: `store.PutServiceConfig` has no
+optimistic-concurrency check at all (a blind `UPDATE ... SET content = $3`), so two
+concurrent read-modify-write cycles from any client can silently clobber each other with no
+error, ever.
+
+**Decision: `PatchServiceConfig(namespace, service, operations)` applies an RFC 6902 JSON
+Patch to a service's existing config atomically, entirely server-side, inside a single
+CockroachDB transaction** (`store.Store.PatchServiceConfig`): read current content → apply
+the patch in Go (`github.com/evanphx/json-patch/v5`) → write back, all under one
+`pool.Begin`/`tx.Commit` (the same pattern `RewrapKEKsAndKCV` already established for
+multi-statement atomic writes). There is no client-visible read step to race against —
+CockroachDB's always-on serializable isolation guarantees a concurrent `PatchServiceConfig`
+(or `PutServiceConfig`) against the same row can never silently interleave with this one:
+one of the two transactions aborts with `store.ErrConflict` (mapped to `codes.Aborted`, the
+canonical gRPC "retry the whole operation" code) rather than either losing the other's
+update. The store method does not retry internally, matching this codebase's existing
+transaction precedent (`RewrapKEKsAndKCV` doesn't either) — the caller retries, re-deriving
+its patch from fresh state each attempt, exactly like any CockroachDB client is already
+expected to handle a `40001` serialization failure. `PatchServiceConfig` only mutates an
+existing document (`ErrNotFound` if none exists yet) — creating the initial document is
+still `SyncBundle`/git sync's job.
+
+RFC 6902 (JSON Patch — `add`/`remove`/`replace`/`move`/`copy`/`test`), not RFC 7396 (JSON
+Merge Patch), because the motivating case is an *array append* (`tower` adding one
+generation to a tenant's existing list): merge patch can only replace a field's value
+wholesale, which still requires the caller to already know the full desired array — exactly
+the read-first problem this RPC exists to avoid. JSON Patch's `add` with a path ending in
+`/-` appends to an array's end without the caller ever reading it, which is the operation
+`tower` actually needs.
+
+**Auth is identical to `SyncBundle`'s** (`authorizeGitOpsWrite`, shared by both RPCs): an
+admin bearer token, or the caller's own SPIFFE identity scoped via `checker.Allow` with the
+same `"put"` permission — a workload patching its own namespace/service needs no policy row
+(the same exact-match bypass), anything broader needs an explicit grant. `PatchServiceConfig`
+is registered on the workload mTLS listener alongside `SyncBundle` (see
+`workloadGitOpsScopeAllowedMethods` — every other `GitOpsService`/`AdminService` RPC remains
+admin-listener-only). A successful patch is audited (`Action: "patch_config"`, same
+`"<service>/<config>"` `SecretName` sentinel `storeConfig`'s own audit entries use, see
+bytepunx/signet#25) and notifies `WatchServiceConfig`/`WatchServiceBundle` subscribers the
+same way a sync-driven config write does — a caller watching a service's config sees a
+patch just as promptly as a git-sync'd change.
+
 ---
 
 ## Architecture Summary
