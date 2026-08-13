@@ -138,9 +138,20 @@ jobs:
           OUT=$(helm template signet deploy/helm/signet \
             --set signet.trustDomain=example.org \
             --set signet.existingSecret=signet-secrets \
-            --set admin.clusterAccess=true)
+            --set admin.clusterAccess=true \
+            --set admin.tls.acknowledgeInsecure=true)
           echo "$OUT" | grep -q '"0.0.0.0:8444"' || { echo "::error::expected SIGNET_ADMIN_ADDR to be rebound off loopback"; exit 1; }
           echo "$OUT" | grep -q 'name: admin' || { echo "::error::expected an admin-named port in the rendered manifests"; exit 1; }
+
+      - name: admin.clusterAccess=true without admin.tls fails to render
+        run: |
+          if helm template signet deploy/helm/signet \
+            --set signet.trustDomain=example.org \
+            --set signet.existingSecret=signet-secrets \
+            --set admin.clusterAccess=true > /dev/null 2>&1; then
+            echo "::error::expected render to fail: clusterAccess without tls.enabled or acknowledgeInsecure"
+            exit 1
+          fi
 
   build:
     name: Build binaries

@@ -118,6 +118,22 @@ into (see admin.tls in values.yaml and templates/certificate.yaml).
 {{- end }}
 
 {{/*
+Refuses to render when admin.clusterAccess is enabled without admin.tls --
+that combination puts the admin bearer token on the pod network in cleartext
+(see bytepunx/signet#24) with no explicit acknowledgement, unlike every other
+unsafe-config case this chart already guards with `required`/signetd's own
+refuse-to-start checks. admin.tls.acknowledgeInsecure is the escape hatch for
+operators who deliberately terminate TLS elsewhere (e.g. a service mesh
+sidecar). See bytepunx/signet#27. Called from deployment.yaml, which always
+renders, so this fires regardless of which admin.* flags are set.
+*/}}
+{{- define "signet.validateAdminTLS" -}}
+{{- if and .Values.admin.clusterAccess (not .Values.admin.tls.enabled) (not .Values.admin.tls.acknowledgeInsecure) -}}
+{{ fail "admin.clusterAccess is true but admin.tls.enabled is false -- the admin bearer token would cross the pod network in cleartext (see bytepunx/signet#24). Set admin.tls.enabled: true (recommended), or admin.tls.acknowledgeInsecure: true if TLS is deliberately terminated elsewhere (e.g. a service mesh sidecar)." }}
+{{- end -}}
+{{- end }}
+
+{{/*
 Full image reference for signetd.
 global.image.registry (if set) replaces image.registry, enabling air-gapped
 installs without requiring changes to image.repository.
