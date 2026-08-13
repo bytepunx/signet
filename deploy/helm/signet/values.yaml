@@ -175,8 +175,9 @@ networkPolicy:
 # crosses a network an on-path attacker could read. Enabling clusterAccess
 # removes that second protection -- the token now crosses the pod network,
 # in cleartext, unless admin.tls is also enabled (see bytepunx/signet#24).
-# admin.tls.enabled: true is strongly recommended -- effectively required --
-# whenever clusterAccess is true.
+# This is enforced, not just recommended: the chart fails to render if
+# clusterAccess is true and tls.enabled is false, unless
+# admin.tls.acknowledgeInsecure is explicitly set (see bytepunx/signet#27).
 admin:
   # When true, atomically: (a) rebinds the admin listener off 127.0.0.1 onto
   # all interfaces, (b) adds an "admin" port to the Service, and (c) opens a
@@ -213,6 +214,13 @@ admin:
     # needed.
     duration: "2160h"   # 90 days
     renewBefore: "720h" # 30 days
+
+    # Escape hatch: setting admin.clusterAccess: true without admin.tls.enabled
+    # fails the chart render (see bytepunx/signet#27) because the admin bearer
+    # token would otherwise cross the pod network in cleartext. Set this true
+    # only if TLS is deliberately terminated elsewhere in-cluster (e.g. a
+    # service mesh sidecar) so signetd itself is intentionally left plaintext.
+    acknowledgeInsecure: false
 
 spire:
   # Path inside the container where the SPIRE agent socket directory is mounted.
