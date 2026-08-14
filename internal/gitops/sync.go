@@ -27,11 +27,12 @@ import (
 
 // SyncResult summarises the outcome of a repository sync operation.
 type SyncResult struct {
-	Added         int
-	Updated       int
-	Deleted       int
-	ConfigsSynced int
-	SHA           string
+	Added             int
+	Updated           int
+	Deleted           int
+	ConfigsSynced     int
+	ConfigsConflicted int // see bytepunx/signet#45 — storeConfig's 3-way merge found an unresolved conflict
+	SHA               string
 	// Skipped lists repo-relative paths that were under configPath/secretsPath,
 	// ended in ".yaml", but did not match the required path-depth convention
 	// (see ParseConfigPath/ParseSecretPath) and so were not synced. A non-empty
@@ -133,8 +134,13 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 					slog.Error("read config file", "path", f, "err", readErr)
 					continue
 				}
-				if storeErr := s.storeConfig(ctx, ns, svc, data, repo.ID, actor); storeErr != nil {
+				configConflict, storeErr := s.storeConfig(ctx, ns, svc, data, repo.ID, actor, false)
+				if storeErr != nil {
 					slog.Error("store config", "path", f, "err", storeErr)
+					continue
+				}
+				if configConflict {
+					result.ConfigsConflicted++
 					continue
 				}
 				result.ConfigsSynced++
@@ -206,8 +212,11 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 // Used for initial sync and reconciliation. actor attributes every write in
 // the audit log (bytepunx/signet#25) — pass the triggering admin's identity
 // for an operator-invoked sync (e.g. TriggerSync), or "repo:<name>" for the
-// background reconciler, which has no live caller identity.
-func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository, actor string) (*SyncResult, error) {
+// background reconciler, which has no live caller identity. force resolves
+// any config merge conflict by taking git's content outright — see
+// storeConfig's doc comment; pass true only for an explicit operator
+// request (TriggerSync's force flag), never the background reconciler.
+func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository, actor string, force bool) (*SyncResult, error) {
 	tmpDir, err := os.MkdirTemp("", "signet-sync-*")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)
@@ -224,11 +233,12 @@ func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository, actor str
 		return nil, err
 	}
 
-	configCount, configSkipped, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath, repo.ID, actor)
+	configCount, configConflicted, configSkipped, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath, repo.ID, actor, force)
 	if configErr != nil {
 		slog.Warn("config sync error", "repo", repo.Name, "err", configErr)
 	}
 	result.ConfigsSynced = configCount
+	result.ConfigsConflicted = configConflicted
 	result.Skipped = append(result.Skipped, configSkipped...)
 
 	if err := s.store.UpdateSyncState(ctx, repo.ID, headSHA, time.Now().UTC()); err != nil {
@@ -573,24 +583,29 @@ func (s *Syncer) deployKeyAuth(repo *store.Repository) (gogittransport.AuthMetho
 
 // SyncConfigFromDir processes every plain YAML file under configPath within an
 // already-populated directory. Files at <configPath>/<namespace>/<service>.yaml
-// are parsed as nested YAML maps, converted to JSON, and stored as service
-// configs. repoID attributes every written config to that repository. actor
-// attributes every write in the audit log — see FullSync's doc comment.
-// Returns the number of configs synced, the repo-relative paths of .yaml
-// files that were skipped because they didn't match the path-depth
-// convention (see SyncResult.Skipped), and any walk error.
+// are parsed as nested YAML maps and reconciled via storeConfig's 3-way merge
+// (bytepunx/signet#45) against whatever is currently live. repoID attributes
+// every written config to that repository. actor attributes every write in
+// the audit log — see FullSync's doc comment. force resolves any merge
+// conflict by taking git's content outright — see storeConfig's doc comment;
+// only ever true for an operator-invoked TriggerSync, never the background
+// reconciler or webhook path.
+// Returns the number of configs synced, the number that hit an unresolved
+// merge conflict, the repo-relative paths of .yaml files that were skipped
+// because they didn't match the path-depth convention (see
+// SyncResult.Skipped), and any walk error.
 //
 // This walk never deletes anything (see bytepunx/signet#44) — a config
 // missing from the walk is not inferred to have been deleted from the repo;
 // use the DeleteConfig admin RPC to remove one explicitly.
-func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID, actor string) (count int, skipped []string, err error) {
+func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID, actor string, force bool) (count, conflicted int, skipped []string, err error) {
 	if configPath == "" {
-		return 0, nil, nil
+		return 0, 0, nil, nil
 	}
 	configDir := filepath.Join(dir, filepath.FromSlash(configPath))
 	if _, statErr := os.Stat(configDir); os.IsNotExist(statErr) {
 		slog.Debug("config directory not present, skipping config sync", "path", configPath)
-		return 0, nil, nil
+		return 0, 0, nil, nil
 	}
 
 	walkErr := filepath.WalkDir(configDir, func(path string, d os.DirEntry, walkErr error) error {
@@ -614,8 +629,13 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID,
 			slog.Error("read config file", "path", rel, "err", err)
 			return nil
 		}
-		if err := s.storeConfig(ctx, ns, svc, data, repoID, actor); err != nil {
+		conflict, err := s.storeConfig(ctx, ns, svc, data, repoID, actor, force)
+		if err != nil {
 			slog.Error("store config", "path", rel, "err", err)
+			return nil
+		}
+		if conflict {
+			conflicted++
 			return nil
 		}
 		count++
@@ -626,31 +646,59 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID,
 		return nil
 	})
 	if walkErr != nil {
-		return 0, nil, fmt.Errorf("walk config dir: %w", walkErr)
+		return 0, 0, nil, fmt.Errorf("walk config dir: %w", walkErr)
 	}
-	return count, skipped, nil
+	return count, conflicted, skipped, nil
 }
 
-// storeConfig parses a plain YAML config file and stores it as a JSON document.
-func (s *Syncer) storeConfig(ctx context.Context, namespace, service string, data []byte, repoID, actor string) error {
+// storeConfig parses a plain YAML config file and reconciles it against
+// whatever is currently live via a 3-way merge (bytepunx/signet#45), so a
+// sync can never silently discard a PatchServiceConfig write that hasn't
+// yet been reflected in git — see store.SyncServiceConfig and
+// mergeConfigSync's doc comments for the merge contract. force, when true
+// (only ever set by an operator-invoked TriggerSync — see its RPC handler),
+// resolves a conflict by taking git's content outright instead of leaving
+// it unresolved.
+//
+// Returns whether the reconciliation hit an unresolved conflict, so the
+// caller can count it (SyncResult.ConfigsConflicted) and surface it.
+func (s *Syncer) storeConfig(ctx context.Context, namespace, service string, data []byte, repoID, actor string, force bool) (conflict bool, err error) {
 	var raw interface{}
 	if err := yaml.Unmarshal(data, &raw); err != nil {
-		return fmt.Errorf("parse yaml: %w", err)
+		return false, fmt.Errorf("parse yaml: %w", err)
 	}
 	normalized := normalizeForJSON(raw)
 	m, ok := normalized.(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("config file must be a YAML mapping, got %T", raw)
+		return false, fmt.Errorf("config file must be a YAML mapping, got %T", raw)
 	}
 	content, err := json.Marshal(m)
 	if err != nil {
-		return fmt.Errorf("marshal json: %w", err)
+		return false, fmt.Errorf("marshal json: %w", err)
 	}
-	if err := s.store.PutServiceConfig(ctx, namespace, service, content, repoID); err != nil {
-		return err
+
+	merge := mergeConfigSync
+	if force {
+		merge = func(_, _, git json.RawMessage) (json.RawMessage, bool, error) {
+			return git, false, nil
+		}
+	}
+
+	version, conflict, err := s.store.SyncServiceConfig(ctx, namespace, service, content, repoID, merge)
+	if err != nil {
+		return false, err
+	}
+	if conflict {
+		s.recordAudit(ctx, actor, "sync_conflict_config", namespace, service, configAuditName)
+		return true, nil
+	}
+	if version == 0 {
+		// No-op: git's content was unchanged since the last sync, so
+		// nothing was written and nothing to audit.
+		return false, nil
 	}
 	s.recordAudit(ctx, actor, "put_config", namespace, service, configAuditName)
-	return nil
+	return false, nil
 }
 
 // normalizeForJSON converts yaml.v3-produced values to JSON-safe equivalents.

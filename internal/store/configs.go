@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -88,7 +89,7 @@ func (s *Store) PatchServiceConfig(ctx context.Context, namespace, service strin
 		`SELECT content FROM configs WHERE namespace = $1 AND service = $2`,
 		namespace, service,
 	).Scan(&current); err != nil {
-		return 0, wrapDBError("patch service config: read current", err)
+		return 0, wrapConflictError("patch service config: read current", err)
 	}
 
 	patched, err := apply(json.RawMessage(current))
@@ -105,13 +106,112 @@ func (s *Store) PatchServiceConfig(ctx context.Context, namespace, service strin
 		 RETURNING version`,
 		namespace, service, patched,
 	).Scan(&version); err != nil {
-		return 0, wrapDBError("patch service config: write", err)
+		// A CockroachDB serialization failure (SQLSTATE 40001) can surface
+		// here, at the write itself, not only at commit — wrapConflictError
+		// (not wrapDBError) is required so the caller's retry-on-ErrConflict
+		// contract (see this method's doc comment) actually holds.
+		return 0, wrapConflictError("patch service config: write", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return 0, wrapConflictError("patch service config: commit", err)
 	}
 	return version, nil
+}
+
+// SyncServiceConfig atomically reconciles a git-sourced write for
+// (namespace, service) against whatever is currently live, inside a single
+// transaction — the same serializable-isolation guarantee as
+// PatchServiceConfig, so a concurrent PatchServiceConfig call can never
+// race with this (see its doc comment for why that matters).
+//
+// If no config exists yet, gitContent is inserted directly as both the live
+// content and the synced-content baseline (see the synced_content column's
+// migration comment) — there's no live/synced state to reconcile against.
+//
+// Otherwise, merge is called with (syncedContent, liveContent, gitContent)
+// to decide the outcome:
+//   - newContent == nil, conflict == false: no write at all — used when
+//     git's content is unchanged since the last sync, so whatever is
+//     currently live (possibly patched via PatchServiceConfig since) is
+//     left untouched.
+//   - newContent == nil, conflict == true: no write, but the caller should
+//     treat this as a conflict needing attention — synced_content is
+//     deliberately not advanced, so the same conflict resurfaces on every
+//     future sync until resolved.
+//   - newContent != nil: written as the new live content, and
+//     synced_content is advanced to gitContent (a fast-forward or an
+//     auto-merge of non-conflicting changes — merge decides which).
+//
+// Returns the new version (0 if nothing was written) and whether merge
+// reported a conflict.
+func (s *Store) SyncServiceConfig(
+	ctx context.Context, namespace, service string, gitContent json.RawMessage, repoID string,
+	merge func(syncedContent, liveContent, gitContent json.RawMessage) (newContent json.RawMessage, conflict bool, err error),
+) (version int, conflict bool, err error) {
+	if namespace == "" || service == "" {
+		return 0, false, fmt.Errorf("%w: namespace and service must not be empty", ErrInvalidInput)
+	}
+	if len(gitContent) == 0 {
+		return 0, false, fmt.Errorf("%w: gitContent must not be empty", ErrInvalidInput)
+	}
+	var repoIDArg *string
+	if repoID != "" {
+		repoIDArg = &repoID
+	}
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("sync service config: begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // no-op if already committed
+
+	var current, synced []byte
+	err = tx.QueryRow(ctx,
+		`SELECT content, synced_content FROM configs WHERE namespace = $1 AND service = $2`,
+		namespace, service,
+	).Scan(&current, &synced)
+	if errors.Is(err, pgx.ErrNoRows) {
+		if err := tx.QueryRow(ctx,
+			`INSERT INTO configs (namespace, service, content, synced_content, version, repo_id)
+			 VALUES ($1, $2, $3, $3, 1, $4) RETURNING version`,
+			namespace, service, gitContent, repoIDArg,
+		).Scan(&version); err != nil {
+			return 0, false, wrapConflictError("sync service config: insert", err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return 0, false, wrapConflictError("sync service config: commit", err)
+		}
+		return version, false, nil
+	}
+	if err != nil {
+		return 0, false, wrapConflictError("sync service config: read current", err)
+	}
+
+	newContent, conflict, err := merge(json.RawMessage(synced), json.RawMessage(current), gitContent)
+	if err != nil {
+		return 0, false, err
+	}
+	if newContent == nil {
+		return 0, conflict, nil
+	}
+
+	if err := tx.QueryRow(ctx,
+		`UPDATE configs SET content = $3, synced_content = $4, version = version + 1,
+		    updated_at = now(), repo_id = $5
+		 WHERE namespace = $1 AND service = $2
+		 RETURNING version`,
+		namespace, service, newContent, gitContent, repoIDArg,
+	).Scan(&version); err != nil {
+		// See PatchServiceConfig's matching comment: a serialization
+		// failure can surface at the write itself, not only at commit.
+		return 0, false, wrapConflictError("sync service config: write", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, false, wrapConflictError("sync service config: commit", err)
+	}
+	return version, false, nil
 }
 
 // wrapConflictError maps a CockroachDB serialization failure (SQLSTATE

@@ -93,7 +93,7 @@ func TestSyncConfigFromDir_RecordsAuditEntryOnWrite(t *testing.T) {
 
 	fa := &fakeAuditRecorder{}
 	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, fa, "")
-	_, _, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "actor-under-test")
+	_, _, _, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "actor-under-test", false)
 	require.NoError(t, err)
 
 	entries := fa.all()

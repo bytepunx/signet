@@ -37,8 +37,16 @@ func (m *mockStore) ListRepositories(_ context.Context) ([]store.Repository, err
 func (m *mockStore) UpdateSyncState(_ context.Context, _, _ string, _ time.Time) error {
 	return nil
 }
-func (m *mockStore) PutServiceConfig(_ context.Context, _, _ string, _ json.RawMessage, _ string) error {
-	return nil
+
+// SyncServiceConfig always simulates a first-ever write (mockStore tracks
+// no state), matching PutServiceConfig's old unconditional-success behavior
+// for tests that only care that a write happened, not merge semantics —
+// see statefulKEKStore for a fake that actually exercises the merge.
+func (m *mockStore) SyncServiceConfig(
+	_ context.Context, _, _ string, _ json.RawMessage, _ string,
+	_ func(synced, live, git json.RawMessage) (json.RawMessage, bool, error),
+) (version int, conflict bool, err error) {
+	return 1, false, nil
 }
 func (m *mockStore) DeleteServiceConfig(_ context.Context, _, _ string) error { return nil }
 func (m *mockStore) GetActiveKEK(_ context.Context) (*store.KEK, error) {
@@ -119,7 +127,7 @@ func TestSyncConfigFromDir_BasicParse(t *testing.T) {
 
 	ms := &mockStore{}
 	syncer := NewSyncer(ms, &mockKeys{}, nil, nil, "")
-	count, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
+	count, _, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor", false)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 	assert.Empty(t, skipped)
@@ -144,7 +152,7 @@ func TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
 
 	ms := &mockStore{}
 	syncer := NewSyncer(ms, &mockKeys{}, nil, nil, "")
-	count, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
+	count, _, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor", false)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count, "only the correctly-shaped file should be counted as synced")
 	require.Len(t, skipped, 1, "the wrong-depth file must be reported, not silently dropped")
@@ -154,7 +162,7 @@ func TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
 // TestSyncConfigFromDir_EmptyPath verifies that an empty configPath is a no-op.
 func TestSyncConfigFromDir_EmptyPath(t *testing.T) {
 	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, nil, "")
-	count, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "", "", "test-actor")
+	count, _, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "", "", "test-actor", false)
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
 }
@@ -162,7 +170,7 @@ func TestSyncConfigFromDir_EmptyPath(t *testing.T) {
 // TestSyncConfigFromDir_MissingDir verifies that a missing config dir is silently skipped.
 func TestSyncConfigFromDir_MissingDir(t *testing.T) {
 	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, nil, "")
-	count, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/", "", "test-actor")
+	count, _, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/", "", "test-actor", false)
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
 }

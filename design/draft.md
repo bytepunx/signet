@@ -1053,6 +1053,61 @@ bytepunx/signet#25) and notifies `WatchServiceConfig`/`WatchServiceBundle` subsc
 same way a sync-driven config write does — a caller watching a service's config sees a
 patch just as promptly as a git-sync'd change.
 
+### Reconciling PatchServiceConfig against git sync (bytepunx/signet#45)
+
+**Problem**: `PatchServiceConfig` never attributes `repo_id` and never writes back to git.
+The background `Reconciler` runs `FullSync` for every registered repository every 5 minutes
+by default, and `storeConfig` used to call `store.PutServiceConfig` — a full-document
+replace — unconditionally for every file walked, with no content-diff check. So a
+`PatchServiceConfig` call against a config that's also under git sync got silently reverted
+back to git's stale content within 5 minutes: the exact data-loss scenario #38 was built to
+prevent, reproduced by the sync loop instead of a concurrent API caller.
+
+Signet remains git-import-only — no write-back to git (see the durability discussion on
+issue #29's thread: it would require a new write-capable git credential, server-side SOPS
+encryption capability that doesn't exist and was ruled out above for good reason, and has no
+way to resolve which of N registered repos should own a never-before-synced write).
+
+**Decision: a 3-way merge**, using `synced_content` (a new nullable column on `configs`) as
+the common ancestor — the config's content as of the last time it was written by a git sync
+specifically, distinct from the live `content` column, which may since have diverged via
+`PatchServiceConfig`. `store.SyncServiceConfig` (used only by git-sync writes —
+`storeConfig`, in turn used by `FullSync`/`SyncConfigFromDir` and the webhook's
+`SyncFromPush`) reads both columns inside one transaction — same serializable-isolation
+guarantee as `PatchServiceConfig`, so the two can never race — and calls a merge function
+with `(syncedContent, liveContent, gitContent)`:
+
+- Both sides are diffed against `syncedContent` using RFC 7396 merge-patch semantics
+  (`jsonpatch.CreateMergePatch`, recursed down to leaf JSON paths — e.g. `tenants.acme.gens`,
+  not just `tenants`) to find which paths changed on each side since the last sync.
+- Git unchanged relative to the baseline → skip entirely; the live (possibly patched) content
+  is left alone.
+- Live unchanged relative to the baseline (no patch since the last sync) → fast-forward to
+  git's content.
+- Disjoint changed paths (git edited `tenants.other`, a patch touched `tenants.acme`) →
+  auto-merge: apply git's delta on top of the live content via `jsonpatch.MergePatch`. This
+  is the exact multi-tenant scenario #38 solved, extended to a concurrent git-side edit
+  instead of a concurrent API caller.
+- Overlapping changed paths → a genuine conflict. Neither side is silently discarded:
+  `synced_content` is deliberately not advanced, so the same conflict resurfaces on every
+  future sync (audited as `sync_conflict_config`) until resolved — either by a follow-up
+  patch/push that no longer overlaps, or by `TriggerSyncRequest.force`, which takes git's
+  version outright and discards the unreflected patch. `force` is only ever set by an
+  explicit, operator-invoked `TriggerSync` (`signet repo sync --force`) — never the
+  background reconciler or the webhook path.
+
+A config with no recorded `synced_content` baseline yet (predates this migration, or has
+never been git-synced) has nothing safe to diff against, so git wins outright on that one
+sync — the same unconditional-overwrite behavior this fix replaces — which establishes a
+baseline for every subsequent sync to merge against properly.
+
+This fix also closes a related gap found while building it: `PatchServiceConfig`'s
+CockroachDB serialization-conflict handling only wrapped the failure as `store.ErrConflict`
+at the transaction's commit step; a `40001` (`WriteTooOldError`) can also surface at the
+write statement itself, before commit, in which case it fell through as a generic error the
+caller's documented retry-on-`ErrConflict` contract would never catch. Both `PatchServiceConfig`
+and `SyncServiceConfig` now wrap every step of their transactions consistently.
+
 ---
 
 ## Architecture Summary

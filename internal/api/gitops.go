@@ -399,17 +399,18 @@ func (s *GitOpsServer) TriggerSync(ctx context.Context, req *adminv1.TriggerSync
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
-	result, err := s.syncer.FullSync(ctx, repo, actor)
+	result, err := s.syncer.FullSync(ctx, repo, actor, req.GetForce())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "sync failed: %v", err)
 	}
 	return &adminv1.TriggerSyncResponse{
-		SecretsAdded:   int32(result.Added),
-		SecretsUpdated: int32(result.Updated),
-		SecretsDeleted: int32(result.Deleted),
-		SyncSha:        result.SHA,
-		ConfigsSynced:  int32(result.ConfigsSynced),
-		Errors:         skippedToErrors(result.Skipped),
+		SecretsAdded:      int32(result.Added),
+		SecretsUpdated:    int32(result.Updated),
+		SecretsDeleted:    int32(result.Deleted),
+		SyncSha:           result.SHA,
+		ConfigsSynced:     int32(result.ConfigsSynced),
+		ConfigsConflicted: int32(result.ConfigsConflicted),
+		Errors:            skippedToErrors(result.Skipped),
 	}, nil
 }
 
@@ -515,12 +516,18 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 	}
 
 	// Run the plain YAML config pass if a config_path was provided.
-	configCount, configSkipped, configErr := s.syncer.SyncConfigFromDir(ctx, tmpDir, configPath, "", actor)
+	configCount, configConflicted, configSkipped, configErr := s.syncer.SyncConfigFromDir(ctx, tmpDir, configPath, "", actor, false)
 	if configErr != nil {
 		slog.Warn("bundle config sync error", "err", configErr)
 	}
 
 	result.Skipped = append(result.Skipped, configSkipped...)
+	errs := skippedToErrors(result.Skipped)
+	if configConflicted > 0 {
+		errs = append(errs, fmt.Sprintf(
+			"%d config(s) conflicted with a pending server-side patch and were not applied; resolve via TriggerSync with force=true or a follow-up push",
+			configConflicted))
+	}
 
 	return stream.SendAndClose(&adminv1.SyncBundleResponse{
 		SecretsAdded:   int32(result.Added),
@@ -528,7 +535,7 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 		SecretsDeleted: int32(result.Deleted),
 		SyncSha:        result.SHA,
 		ConfigsSynced:  int32(configCount),
-		Errors:         skippedToErrors(result.Skipped),
+		Errors:         errs,
 	})
 }
 
