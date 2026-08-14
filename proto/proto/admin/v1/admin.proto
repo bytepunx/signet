@@ -32,6 +32,12 @@ service AdminService {
   rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse);
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
   rpc DeletePolicy(DeletePolicyRequest) returns (DeletePolicyResponse);
+
+  // Explicit secret/config deletion. GitOps sync no longer infers deletion
+  // from a file's absence during a walk (see bytepunx/signet#44) — these are
+  // now the only way to remove a secret or config document.
+  rpc DeleteSecret(DeleteSecretRequest) returns (DeleteSecretResponse);
+  rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
 }
 
 // GitOpsService manages SOPS key lifecycle and GitHub repository sync configuration.
@@ -205,6 +211,25 @@ message DeletePolicyRequest {
 }
 
 message DeletePolicyResponse {
+  string message = 1;
+}
+
+message DeleteSecretRequest {
+  string namespace   = 1;
+  string service     = 2;
+  string secret_name = 3;
+}
+
+message DeleteSecretResponse {
+  string message = 1;
+}
+
+message DeleteConfigRequest {
+  string namespace = 1;
+  string service   = 2;
+}
+
+message DeleteConfigResponse {
   string message = 1;
 }
 
