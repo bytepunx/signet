@@ -94,4 +94,6 @@ type adminStore interface {
 	PutPolicy(ctx context.Context, p *store.Policy) error
 	ListPolicies(ctx context.Context) ([]store.Policy, error)
 	DeletePolicy(ctx context.Context, id string) error
+	DeleteSecret(ctx context.Context, namespace, service, name string) error
+	DeleteServiceConfig(ctx context.Context, namespace, service string) error
 }

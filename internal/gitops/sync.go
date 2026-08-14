@@ -224,12 +224,11 @@ func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository, actor str
 		return nil, err
 	}
 
-	configCount, configDeleted, configSkipped, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath, repo.ID, actor)
+	configCount, configSkipped, configErr := s.SyncConfigFromDir(ctx, tmpDir, repo.ConfigPath, repo.ID, actor)
 	if configErr != nil {
 		slog.Warn("config sync error", "repo", repo.Name, "err", configErr)
 	}
 	result.ConfigsSynced = configCount
-	result.Deleted += configDeleted
 	result.Skipped = append(result.Skipped, configSkipped...)
 
 	if err := s.store.UpdateSyncState(ctx, repo.ID, headSHA, time.Now().UTC()); err != nil {
@@ -240,14 +239,17 @@ func (s *Syncer) FullSync(ctx context.Context, repo *store.Repository, actor str
 
 // SyncFromDir processes every SOPS-encrypted YAML file under secretsPath
 // within an already-populated directory. headSHA is recorded on the result
-// for audit purposes; it may be empty for non-git sources. repoID
-// attributes every written secret to that repository (see store.Secret.RepoID)
-// and, when non-empty, enables deletion detection: any secret previously
-// attributed to repoID that this walk did not encounter is removed and
-// counted in the result — this is what makes "signet repo sync" (a full
-// re-walk, not an incremental diff) actually reflect files deleted from the
-// repo since the last sync. Pass "" (as SyncBundle does, which has no
-// registered repository at all) to skip both attribution and deletion.
+// for audit purposes; it may be empty for non-git sources. repoID attributes
+// every written secret to that repository (see store.Secret.RepoID); pass ""
+// (as SyncBundle does, which has no registered repository at all) to skip
+// attribution.
+//
+// This walk never deletes anything (see bytepunx/signet#44) — a secret
+// missing from the walk is not inferred to have been deleted from the repo,
+// since a transient walk issue (misconfigured path, partial checkout) is
+// indistinguishable from a genuine deletion here. Real deletions come either
+// from the webhook's explicit deleted-files list (SyncFromPush, a direct git
+// provenance signal) or from the DeleteSecret admin RPC.
 //
 // This is the core of both FullSync (which clones first) and SyncBundle
 // (which extracts a tar archive first). actor attributes every write in the
@@ -260,7 +262,6 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, rep
 
 	result := &SyncResult{SHA: headSHA}
 	secretsDir := filepath.Join(dir, filepath.FromSlash(secretsPath))
-	seen := make(map[store.SecretKey]bool)
 
 	err = filepath.WalkDir(secretsDir, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil || d.IsDir() || !strings.HasSuffix(path, ".yaml") {
@@ -288,7 +289,6 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, rep
 			slog.Error("store secret", "path", rel, "err", err)
 			return nil
 		}
-		seen[store.SecretKey{Namespace: ns, Service: svc, Name: name}] = true
 		result.Added++
 		if s.bus != nil {
 			s.bus.Notify(ns, svc, name)
@@ -298,28 +298,6 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, rep
 	})
 	if err != nil {
 		return nil, fmt.Errorf("walk secrets dir: %w", err)
-	}
-
-	if repoID != "" {
-		previouslySynced, err := s.store.ListSecretKeysForRepo(ctx, repoID)
-		if err != nil {
-			slog.Error("list secret keys for repo; skipping deletion detection this sync", "repo_id", repoID, "err", err)
-			return result, nil
-		}
-		for _, k := range previouslySynced {
-			if seen[k] {
-				continue
-			}
-			if err := s.deleteSecret(ctx, k.Namespace, k.Service, k.Name, actor); err != nil {
-				slog.Error("delete secret removed from repo", "namespace", k.Namespace, "service", k.Service, "name", k.Name, "err", err)
-				continue
-			}
-			result.Deleted++
-			if s.bus != nil {
-				s.bus.Notify(k.Namespace, k.Service, k.Name)
-				s.bus.NotifyBundle(k.Namespace, k.Service)
-			}
-		}
 	}
 	return result, nil
 }
@@ -595,25 +573,26 @@ func (s *Syncer) deployKeyAuth(repo *store.Repository) (gogittransport.AuthMetho
 
 // SyncConfigFromDir processes every plain YAML file under configPath within an
 // already-populated directory. Files at <configPath>/<namespace>/<service>.yaml
-// are parsed as nested YAML maps, converted to JSON, and stored as service configs.
-// repoID attributes every written config to that repository and, when non-
-// empty, enables deletion detection the same way SyncFromDir's repoID does —
-// see its doc comment. actor attributes every write in the audit log — see
-// FullSync's doc comment. Returns the number of configs synced, the number
-// deleted, the repo-relative paths of .yaml files that were skipped because
-// they didn't match the path-depth convention (see SyncResult.Skipped), and
-// any walk error.
-func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID, actor string) (count, deleted int, skipped []string, err error) {
+// are parsed as nested YAML maps, converted to JSON, and stored as service
+// configs. repoID attributes every written config to that repository. actor
+// attributes every write in the audit log — see FullSync's doc comment.
+// Returns the number of configs synced, the repo-relative paths of .yaml
+// files that were skipped because they didn't match the path-depth
+// convention (see SyncResult.Skipped), and any walk error.
+//
+// This walk never deletes anything (see bytepunx/signet#44) — a config
+// missing from the walk is not inferred to have been deleted from the repo;
+// use the DeleteConfig admin RPC to remove one explicitly.
+func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID, actor string) (count int, skipped []string, err error) {
 	if configPath == "" {
-		return 0, 0, nil, nil
+		return 0, nil, nil
 	}
 	configDir := filepath.Join(dir, filepath.FromSlash(configPath))
 	if _, statErr := os.Stat(configDir); os.IsNotExist(statErr) {
 		slog.Debug("config directory not present, skipping config sync", "path", configPath)
-		return 0, 0, nil, nil
+		return 0, nil, nil
 	}
 
-	seen := make(map[store.ConfigKey]bool)
 	walkErr := filepath.WalkDir(configDir, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil || d.IsDir() || !strings.HasSuffix(path, ".yaml") {
 			return walkErr
@@ -639,7 +618,6 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID,
 			slog.Error("store config", "path", rel, "err", err)
 			return nil
 		}
-		seen[store.ConfigKey{Namespace: ns, Service: svc}] = true
 		count++
 		if s.bus != nil {
 			s.bus.NotifyService(ns, svc)
@@ -648,32 +626,9 @@ func (s *Syncer) SyncConfigFromDir(ctx context.Context, dir, configPath, repoID,
 		return nil
 	})
 	if walkErr != nil {
-		return 0, 0, nil, fmt.Errorf("walk config dir: %w", walkErr)
+		return 0, nil, fmt.Errorf("walk config dir: %w", walkErr)
 	}
-
-	if repoID != "" {
-		previouslySynced, err := s.store.ListConfigKeysForRepo(ctx, repoID)
-		if err != nil {
-			slog.Error("list config keys for repo; skipping deletion detection this sync", "repo_id", repoID, "err", err)
-			return count, 0, skipped, nil
-		}
-		for _, k := range previouslySynced {
-			if seen[k] {
-				continue
-			}
-			if err := s.store.DeleteServiceConfig(ctx, k.Namespace, k.Service); err != nil {
-				slog.Error("delete config removed from repo", "namespace", k.Namespace, "service", k.Service, "err", err)
-				continue
-			}
-			s.recordAudit(ctx, actor, "delete_config", k.Namespace, k.Service, configAuditName)
-			deleted++
-			if s.bus != nil {
-				s.bus.NotifyService(k.Namespace, k.Service)
-				s.bus.NotifyBundle(k.Namespace, k.Service)
-			}
-		}
-	}
-	return count, deleted, skipped, nil
+	return count, skipped, nil
 }
 
 // storeConfig parses a plain YAML config file and stores it as a JSON document.

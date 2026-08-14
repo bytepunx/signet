@@ -3,7 +3,9 @@ package gitops
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -42,13 +44,7 @@ func (m *mockStore) DeleteServiceConfig(_ context.Context, _, _ string) error { 
 func (m *mockStore) GetActiveKEK(_ context.Context) (*store.KEK, error) {
 	return nil, store.ErrNotFound
 }
-func (m *mockStore) PutKEK(_ context.Context, _ *store.KEK) error { return nil }
-func (m *mockStore) ListSecretKeysForRepo(_ context.Context, _ string) ([]store.SecretKey, error) {
-	return nil, nil
-}
-func (m *mockStore) ListConfigKeysForRepo(_ context.Context, _ string) ([]store.ConfigKey, error) {
-	return nil, nil
-}
+func (m *mockStore) PutKEK(_ context.Context, _ *store.KEK) error                  { return nil }
 func (m *mockStore) UpdateSecretRepoID(_ context.Context, _, _, _, _ string) error { return nil }
 
 // mockKeys implements keyUnwrapper for unit testing.
@@ -123,10 +119,9 @@ func TestSyncConfigFromDir_BasicParse(t *testing.T) {
 
 	ms := &mockStore{}
 	syncer := NewSyncer(ms, &mockKeys{}, nil, nil, "")
-	count, deleted, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
+	count, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
-	assert.Equal(t, 0, deleted)
 	assert.Empty(t, skipped)
 }
 
@@ -149,10 +144,9 @@ func TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
 
 	ms := &mockStore{}
 	syncer := NewSyncer(ms, &mockKeys{}, nil, nil, "")
-	count, deleted, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
+	count, skipped, err := syncer.SyncConfigFromDir(context.Background(), dir, "config/", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 1, count, "only the correctly-shaped file should be counted as synced")
-	assert.Equal(t, 0, deleted)
 	require.Len(t, skipped, 1, "the wrong-depth file must be reported, not silently dropped")
 	assert.Equal(t, "config/authstar/tower/config.yaml", skipped[0])
 }
@@ -160,19 +154,17 @@ func TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
 // TestSyncConfigFromDir_EmptyPath verifies that an empty configPath is a no-op.
 func TestSyncConfigFromDir_EmptyPath(t *testing.T) {
 	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, nil, "")
-	count, deleted, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "", "", "test-actor")
+	count, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
-	assert.Equal(t, 0, deleted)
 }
 
 // TestSyncConfigFromDir_MissingDir verifies that a missing config dir is silently skipped.
 func TestSyncConfigFromDir_MissingDir(t *testing.T) {
 	syncer := NewSyncer(&mockStore{}, &mockKeys{}, nil, nil, "")
-	count, deleted, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/", "", "test-actor")
+	count, _, err := syncer.SyncConfigFromDir(context.Background(), t.TempDir(), "config/", "", "test-actor")
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
-	assert.Equal(t, 0, deleted)
 }
 
 // TestNormalizeForJSON verifies that yaml.v3 date values are converted to strings.
@@ -216,4 +208,102 @@ func TestNormalizeForJSON(t *testing.T) {
 			tc.check(t, normalizeForJSON(tc.input))
 		})
 	}
+}
+
+// newSyncableStore builds a statefulKEKStore with one real, registered SOPS
+// age key (via GenerateAgeKey, the same helper production code uses), and
+// returns its public key alongside the store so callers can pass it to
+// sopsEncrypt as the encryption recipient. loadIdentities (called by every
+// SyncFromDir/SyncFromPush) needs at least one usable key or every sync
+// fails outright with "no age keys configured".
+func newSyncableStore(t *testing.T, keys keyUnwrapper) (*statefulKEKStore, string) {
+	t.Helper()
+	pubKey, encPriv, err := GenerateAgeKey(keys)
+	require.NoError(t, err)
+	return &statefulKEKStore{
+		sopsKeys: []store.SOPSKey{{PublicKey: pubKey, EncryptedPrivateKey: encPriv, IsActive: true}},
+	}, pubKey
+}
+
+// sopsEncrypt encrypts plaintext with the real sops binary under
+// recipientPubKey (an age1... public key already registered with the store
+// under test, so DecryptFile can round-trip it via the real decrypt path).
+// Skips the calling test if sops isn't on PATH — matches the precedent set
+// in sops_test.go's TestDecryptFile_RealSopsCiphertext.
+func sopsEncrypt(t *testing.T, dir, relPath, plaintext, recipientPubKey string) {
+	t.Helper()
+	sopsPath, err := exec.LookPath("sops")
+	if err != nil {
+		t.Skip("sops binary not found on PATH; skipping real ciphertext test")
+	}
+
+	configPath := filepath.Join(dir, ".sops.yaml")
+	config := fmt.Sprintf("creation_rules:\n    - path_regex: ^secrets/\n      age: %s\n", recipientPubKey)
+	require.NoError(t, os.WriteFile(configPath, []byte(config), 0o644))
+
+	fullPath := filepath.Join(dir, relPath)
+	require.NoError(t, os.MkdirAll(filepath.Dir(fullPath), 0o755))
+	require.NoError(t, os.WriteFile(fullPath, []byte(plaintext), 0o600))
+
+	cmd := exec.Command(sopsPath, "--config", configPath, "--encrypt", "--in-place", relPath)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "sops encrypt: %s", out)
+}
+
+// TestSyncFromDir_SkipsAndReportsPathDepthMismatch is the secrets-side
+// counterpart to TestSyncConfigFromDir_SkipsAndReportsPathDepthMismatch,
+// regression-testing bytepunx/signet#22 for SyncFromDir: a secret file
+// committed at the wrong depth (4 components instead of the required
+// <namespace>/<service>/<name>.yaml) must be reported in Skipped, not
+// silently dropped, while a correctly-shaped secret next to it still syncs.
+func TestSyncFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
+	dir := t.TempDir()
+	keys := &mockKeys{}
+	st, pubKey := newSyncableStore(t, keys)
+	sopsEncrypt(t, dir, "secrets/ns/svc/good.yaml", "value: good\n", pubKey)
+	sopsEncrypt(t, dir, "secrets/ns/svc/extra/deep.yaml", "value: bad\n", pubKey)
+
+	syncer := NewSyncer(st, keys, nil, nil, "")
+	result, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "sha1", "repo-1", "test-actor")
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.Added, "only the correctly-shaped secret should be counted as synced")
+	require.Len(t, result.Skipped, 1, "the wrong-depth file must be reported, not silently dropped")
+	assert.Equal(t, "secrets/ns/svc/extra/deep.yaml", result.Skipped[0])
+}
+
+// TestSyncFromDir_BackfillsRepoIDOnUnchangedResync verifies a gap in repo_id
+// attribution: storeSecret's isUnchanged dedup optimization skips PutSecret
+// (and therefore repo_id attribution) entirely when a resync's plaintext
+// matches what's already stored. Found live: a secret whose content never
+// changed since before repo_id existed kept repo_id NULL forever.
+// UpdateSecretRepoID (called from storeSecret's unchanged branch) is the
+// fix; this proves the backfill actually happens even when the write itself
+// is skipped as unchanged.
+func TestSyncFromDir_BackfillsRepoIDOnUnchangedResync(t *testing.T) {
+	dir := t.TempDir()
+	keys := &mockKeys{}
+	st, pubKey := newSyncableStore(t, keys)
+	sopsEncrypt(t, dir, "secrets/ns/svc/stable.yaml", "value: stable\n", pubKey)
+
+	syncer := NewSyncer(st, keys, nil, nil, "")
+	ctx := context.Background()
+
+	result, err := syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "repo-old", "test-actor")
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.Added)
+	sec := st.secrets[secretKey("ns", "svc", "stable")]
+	require.NotNil(t, sec)
+	assert.Equal(t, "repo-old", sec.RepoID)
+
+	// Re-encrypt the SAME plaintext (sops nonce differs, but the plaintext
+	// isUnchanged compares is identical) and sync again under a DIFFERENT
+	// repo — this hits storeSecret's isUnchanged dedup path (no new version
+	// written), which must still update repo_id.
+	sopsEncrypt(t, dir, "secrets/ns/svc/stable.yaml", "value: stable\n", pubKey)
+	_, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha2", "repo-new", "test-actor")
+	require.NoError(t, err)
+	sec = st.secrets[secretKey("ns", "svc", "stable")]
+	require.NotNil(t, sec)
+	assert.Equal(t, "repo-new", sec.RepoID, "repo_id must be updated even when the write itself was skipped as unchanged")
 }

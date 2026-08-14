@@ -14,7 +14,7 @@ import (
 // The version is incremented on each update. repoID identifies the git
 // repository (see git_repositories) this config was synced from, if any —
 // pass "" for configs written outside a registered repo sync (e.g. "signet
-// bundle push"). See ListConfigKeysForRepo.
+// bundle push").
 func (s *Store) PutServiceConfig(ctx context.Context, namespace, service string, content json.RawMessage, repoID string) error {
 	if namespace == "" || service == "" {
 		return fmt.Errorf("%w: namespace and service must not be empty", ErrInvalidInput)
@@ -36,42 +36,6 @@ func (s *Store) PutServiceConfig(ctx context.Context, namespace, service string,
 			    repo_id    = excluded.repo_id`
 	_, err := s.pool.Exec(ctx, q, namespace, service, content, repoIDArg)
 	return wrapDBError("put service config", err)
-}
-
-// ConfigKey identifies a service config without its content, for the
-// existence-diffing FullSync uses to detect deletions.
-type ConfigKey struct {
-	Namespace string
-	Service   string
-}
-
-// ListConfigKeysForRepo returns the (namespace, service) of every config
-// currently attributed to repoID (see PutServiceConfig's repoID parameter).
-// Used by FullSync to compute which configs it previously synced from this
-// repo are no longer present in it.
-func (s *Store) ListConfigKeysForRepo(ctx context.Context, repoID string) ([]ConfigKey, error) {
-	if repoID == "" {
-		return nil, fmt.Errorf("%w: repoID must not be empty", ErrInvalidInput)
-	}
-	const q = `SELECT namespace, service FROM configs WHERE repo_id = $1`
-	rows, err := s.pool.Query(ctx, q, repoID)
-	if err != nil {
-		return nil, wrapDBError("list config keys for repo", err)
-	}
-	defer rows.Close()
-
-	var keys []ConfigKey
-	for rows.Next() {
-		var k ConfigKey
-		if err := rows.Scan(&k.Namespace, &k.Service); err != nil {
-			return nil, fmt.Errorf("list config keys for repo: scan row: %w", err)
-		}
-		keys = append(keys, k)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, wrapDBError("list config keys for repo", err)
-	}
-	return keys, nil
 }
 
 // GetServiceConfig returns the full JSON configuration document and version for

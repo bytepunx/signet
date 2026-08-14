@@ -3,7 +3,6 @@ package gitops
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"testing"
 	"time"
 
@@ -15,9 +14,8 @@ import (
 
 // statefulKEKStore is a secretStore fake that actually persists KEKs,
 // secrets, and configs in memory (including RepoID attribution and real
-// deletion), so activeKEK's bootstrap-then-reuse behavior, the M-4 dedup
-// logic in storeSecret/isUnchanged, and FullSync's repo-scoped deletion
-// detection can all be exercised without a real database.
+// deletion), so activeKEK's bootstrap-then-reuse behavior and the M-4 dedup
+// logic in storeSecret/isUnchanged can be exercised without a real database.
 type statefulKEKStore struct {
 	active       *store.KEK
 	puts         int
@@ -98,26 +96,6 @@ func (s *statefulKEKStore) DeleteServiceConfig(_ context.Context, namespace, ser
 	delete(s.configs, k)
 	delete(s.configRepoID, k)
 	return nil
-}
-func (s *statefulKEKStore) ListSecretKeysForRepo(_ context.Context, repoID string) ([]store.SecretKey, error) {
-	var keys []store.SecretKey
-	for _, sec := range s.secrets {
-		if sec.RepoID == repoID {
-			keys = append(keys, store.SecretKey{Namespace: sec.Namespace, Service: sec.Service, Name: sec.Name})
-		}
-	}
-	return keys, nil
-}
-func (s *statefulKEKStore) ListConfigKeysForRepo(_ context.Context, repoID string) ([]store.ConfigKey, error) {
-	var keys []store.ConfigKey
-	for k, rid := range s.configRepoID {
-		if rid != repoID {
-			continue
-		}
-		ns, svc, _ := strings.Cut(k, "/")
-		keys = append(keys, store.ConfigKey{Namespace: ns, Service: svc})
-	}
-	return keys, nil
 }
 func (s *statefulKEKStore) UpdateSecretRepoID(_ context.Context, namespace, service, name, repoID string) error {
 	sec, ok := s.secrets[secretKey(namespace, service, name)]

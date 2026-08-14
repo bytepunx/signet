@@ -32,18 +32,8 @@ type Secret struct {
 	// RepoID identifies the git repository (see git_repositories) this
 	// version was synced from, if any. Empty for secrets written outside a
 	// registered repo sync (e.g. "signet bundle push", or rows written
-	// before this field existed). Used by FullSync to detect secrets that
-	// have been removed from a repo since the last sync — see
-	// ListSecretKeysForRepo.
+	// before this field existed).
 	RepoID string
-}
-
-// SecretKey identifies a secret without any of its content, for the
-// existence-diffing FullSync uses to detect deletions.
-type SecretKey struct {
-	Namespace string
-	Service   string
-	Name      string
 }
 
 // SecretMeta describes a secret without its encrypted payload. Used for listing.
@@ -289,43 +279,6 @@ func (s *Store) FetchServiceSecrets(ctx context.Context, namespace, service stri
 		return nil, wrapDBError("fetch service secrets", err)
 	}
 	return secrets, nil
-}
-
-// ListSecretKeysForRepo returns the (namespace, service, name) of every
-// secret whose latest version is currently attributed to repoID (see
-// Secret.RepoID). Used by FullSync to compute which secrets it previously
-// synced from this repo are no longer present in it.
-func (s *Store) ListSecretKeysForRepo(ctx context.Context, repoID string) ([]SecretKey, error) {
-	if repoID == "" {
-		return nil, fmt.Errorf("%w: repoID must not be empty", ErrInvalidInput)
-	}
-	const q = `
-		SELECT namespace, service, secret_name
-		FROM (
-			SELECT DISTINCT ON (namespace, service, secret_name)
-			       namespace, service, secret_name, repo_id
-			FROM secrets
-			ORDER BY namespace, service, secret_name, version DESC
-		) latest
-		WHERE repo_id = $1`
-	rows, err := s.pool.Query(ctx, q, repoID)
-	if err != nil {
-		return nil, wrapDBError("list secret keys for repo", err)
-	}
-	defer rows.Close()
-
-	var keys []SecretKey
-	for rows.Next() {
-		var k SecretKey
-		if err := rows.Scan(&k.Namespace, &k.Service, &k.Name); err != nil {
-			return nil, fmt.Errorf("list secret keys for repo: scan row: %w", err)
-		}
-		keys = append(keys, k)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, wrapDBError("list secret keys for repo", err)
-	}
-	return keys, nil
 }
 
 // DeleteSecret removes all versions of the named secret.
