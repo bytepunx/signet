@@ -619,7 +619,10 @@ HMAC chaining for tamper detection.**
   write failing does not change the fact that it was already being denied. Operators who accept
   the availability tradeoff may set this to `false` to fail open instead.
 - Log destination: out-of-cluster Loki or syslog-over-TLS to a separate host
-- CockroachDB TTL on `audit_log` table handles retention automatically (default: 90 days)
+- Retention: CockroachDB row-level TTL on `audit_log`, 90 days from each entry's own `ts`
+  (`ttl_expiration_expression`, not row-modification time), pruned by an hourly background job —
+  see `000010_audit_log_ttl.sql`. This was documented here from the start but never actually
+  applied in any migration until that fix; before it, `audit_log` grew unbounded.
 
 ### GitOps write coverage (bytepunx/signet#25)
 
