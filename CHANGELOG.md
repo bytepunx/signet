@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.1](https://github.com/bytepunx/signet/compare/v0.10.0...v0.10.1) (2026-08-14)
+
+
+### Bug Fixes
+
+* **gitops:** remove delete-by-absence, add explicit Delete RPCs ([#46](https://github.com/bytepunx/signet/issues/46)) ([4061d29](https://github.com/bytepunx/signet/commit/4061d2955db5c71807ba1fd9ac58ce096075ac96))
+* **gitops:** stop git sync from silently reverting PatchServiceConfig writes ([#49](https://github.com/bytepunx/signet/issues/49)) ([f9ead75](https://github.com/bytepunx/signet/commit/f9ead75d7d5c7d356ca9790a043868b15d4694ec))
+
 ## [0.10.0](https://github.com/bytepunx/signet/compare/v0.9.0...v0.10.0) (2026-08-13)
 
 
