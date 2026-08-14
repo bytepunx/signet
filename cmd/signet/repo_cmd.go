@@ -194,7 +194,8 @@ var repoRemoveCmd = &cobra.Command{
 }
 
 var repoSyncFlags struct {
-	id string
+	id    string
+	force bool
 }
 
 var repoSyncCmd = &cobra.Command{
@@ -212,13 +213,18 @@ var repoSyncCmd = &cobra.Command{
 		defer conn.Close()
 
 		resp, err := gitopsClient(conn).TriggerSync(ctx, &adminv1.TriggerSyncRequest{
-			Id: repoSyncFlags.id,
+			Id:    repoSyncFlags.id,
+			Force: repoSyncFlags.force,
 		})
 		if err != nil {
 			return err
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Sync complete.\n  SHA:     %s\n  Added:   %d\n  Updated: %d\n  Deleted: %d\n",
 			resp.GetSyncSha(), resp.GetSecretsAdded(), resp.GetSecretsUpdated(), resp.GetSecretsDeleted())
+		if resp.GetConfigsConflicted() > 0 {
+			fmt.Fprintf(cmd.OutOrStdout(), "  Config conflicts: %d (re-run with --force to take git's version, or resolve manually)\n",
+				resp.GetConfigsConflicted())
+		}
 		printSyncWarnings(cmd.OutOrStdout(), resp.GetErrors())
 		return nil
 	},
@@ -251,4 +257,6 @@ func init() {
 
 	repoRemoveCmd.Flags().StringVar(&repoRemoveFlags.id, "id", "", "repository ID (required)")
 	repoSyncCmd.Flags().StringVar(&repoSyncFlags.id, "id", "", "repository ID (required)")
+	repoSyncCmd.Flags().BoolVar(&repoSyncFlags.force, "force", false,
+		"resolve any config sync conflict by taking git's version, discarding an unreflected PatchServiceConfig change")
 }

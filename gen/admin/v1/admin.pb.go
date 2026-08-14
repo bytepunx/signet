@@ -2386,8 +2386,14 @@ func (x *RemoveRepositoryResponse) GetMessage() string {
 }
 
 type TriggerSyncRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // repository id
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // repository id
+	// force resolves any config sync conflict (see PatchServiceConfig and
+	// bytepunx/signet#45) by taking git's version, discarding whatever local
+	// PatchServiceConfig changes hadn't yet been reflected in git. Without
+	// force, a conflicted config is left untouched and keeps being reported
+	// in configs_conflicted on every sync until explicitly resolved.
+	Force         bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2429,6 +2435,13 @@ func (x *TriggerSyncRequest) GetId() string {
 	return ""
 }
 
+func (x *TriggerSyncRequest) GetForce() bool {
+	if x != nil {
+		return x.Force
+	}
+	return false
+}
+
 type TriggerSyncResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	SecretsAdded   int32                  `protobuf:"varint,1,opt,name=secrets_added,json=secretsAdded,proto3" json:"secrets_added,omitempty"`
@@ -2437,8 +2450,13 @@ type TriggerSyncResponse struct {
 	SyncSha        string                 `protobuf:"bytes,4,opt,name=sync_sha,json=syncSha,proto3" json:"sync_sha,omitempty"`
 	Errors         []string               `protobuf:"bytes,5,rep,name=errors,proto3" json:"errors,omitempty"`
 	ConfigsSynced  int32                  `protobuf:"varint,6,opt,name=configs_synced,json=configsSynced,proto3" json:"configs_synced,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// configs_conflicted counts configs where a JSON path changed on both the
+	// git side and the live (PatchServiceConfig-derived) side since the last
+	// sync — signet refuses to silently pick a winner for these. Re-run with
+	// force=true to take git's version, or resolve the divergence out of band.
+	ConfigsConflicted int32 `protobuf:"varint,7,opt,name=configs_conflicted,json=configsConflicted,proto3" json:"configs_conflicted,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *TriggerSyncResponse) Reset() {
@@ -2509,6 +2527,13 @@ func (x *TriggerSyncResponse) GetErrors() []string {
 func (x *TriggerSyncResponse) GetConfigsSynced() int32 {
 	if x != nil {
 		return x.ConfigsSynced
+	}
+	return 0
+}
+
+func (x *TriggerSyncResponse) GetConfigsConflicted() int32 {
+	if x != nil {
+		return x.ConfigsConflicted
 	}
 	return 0
 }
@@ -3096,16 +3121,18 @@ const file_admin_v1_admin_proto_rawDesc = "" +
 	"\x17RemoveRepositoryRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"4\n" +
 	"\x18RemoveRepositoryResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"$\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\":\n" +
 	"\x12TriggerSyncRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xe6\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05force\x18\x02 \x01(\bR\x05force\"\x95\x02\n" +
 	"\x13TriggerSyncResponse\x12#\n" +
 	"\rsecrets_added\x18\x01 \x01(\x05R\fsecretsAdded\x12'\n" +
 	"\x0fsecrets_updated\x18\x02 \x01(\x05R\x0esecretsUpdated\x12'\n" +
 	"\x0fsecrets_deleted\x18\x03 \x01(\x05R\x0esecretsDeleted\x12\x19\n" +
 	"\bsync_sha\x18\x04 \x01(\tR\asyncSha\x12\x16\n" +
 	"\x06errors\x18\x05 \x03(\tR\x06errors\x12%\n" +
-	"\x0econfigs_synced\x18\x06 \x01(\x05R\rconfigsSynced\"h\n" +
+	"\x0econfigs_synced\x18\x06 \x01(\x05R\rconfigsSynced\x12-\n" +
+	"\x12configs_conflicted\x18\a \x01(\x05R\x11configsConflicted\"h\n" +
 	"\x0fSyncBundleChunk\x124\n" +
 	"\x06header\x18\x01 \x01(\v2\x1a.admin.v1.SyncBundleHeaderH\x00R\x06header\x12\x14\n" +
 	"\x04data\x18\x02 \x01(\fH\x00R\x04dataB\t\n" +
