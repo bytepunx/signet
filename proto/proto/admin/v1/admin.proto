@@ -329,15 +329,26 @@ message RemoveRepositoryResponse {
 
 message TriggerSyncRequest {
   string id = 1; // repository id
+  // force resolves any config sync conflict (see PatchServiceConfig and
+  // bytepunx/signet#45) by taking git's version, discarding whatever local
+  // PatchServiceConfig changes hadn't yet been reflected in git. Without
+  // force, a conflicted config is left untouched and keeps being reported
+  // in configs_conflicted on every sync until explicitly resolved.
+  bool force = 2;
 }
 
 message TriggerSyncResponse {
-  int32  secrets_added   = 1;
-  int32  secrets_updated = 2;
-  int32  secrets_deleted = 3;
-  string sync_sha        = 4;
-  repeated string errors = 5;
-  int32  configs_synced  = 6;
+  int32  secrets_added      = 1;
+  int32  secrets_updated    = 2;
+  int32  secrets_deleted    = 3;
+  string sync_sha           = 4;
+  repeated string errors    = 5;
+  int32  configs_synced     = 6;
+  // configs_conflicted counts configs where a JSON path changed on both the
+  // git side and the live (PatchServiceConfig-derived) side since the last
+  // sync — signet refuses to silently pick a winner for these. Re-run with
+  // force=true to take git's version, or resolve the divergence out of band.
+  int32  configs_conflicted = 7;
 }
 
 // --- SyncBundle messages ---
