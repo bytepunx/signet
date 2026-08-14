@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2](https://github.com/bytepunx/signet/compare/v0.10.1...v0.10.2) (2026-08-14)
+
+
+### Bug Fixes
+
+* **store:** actually create the audit_log retention TTL ([#51](https://github.com/bytepunx/signet/issues/51)) ([8f635bb](https://github.com/bytepunx/signet/commit/8f635bb29b42c04effae10d046481217d2523a74))
+
 ## [0.10.1](https://github.com/bytepunx/signet/compare/v0.10.0...v0.10.1) (2026-08-14)
 
 
