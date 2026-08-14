@@ -55,8 +55,11 @@ func (stubGitopsStore) ListRepositories(_ context.Context) ([]store.Repository, 
 func (stubGitopsStore) UpdateSyncState(_ context.Context, _, _ string, _ time.Time) error {
 	return nil
 }
-func (stubGitopsStore) PutServiceConfig(_ context.Context, _, _ string, _ json.RawMessage, _ string) error {
-	return nil
+func (stubGitopsStore) SyncServiceConfig(
+	_ context.Context, _, _ string, _ json.RawMessage, _ string,
+	_ func(synced, live, git json.RawMessage) (json.RawMessage, bool, error),
+) (version int, conflict bool, err error) {
+	return 0, false, nil
 }
 func (stubGitopsStore) DeleteServiceConfig(_ context.Context, _, _ string) error { return nil }
 func (stubGitopsStore) GetActiveKEK(_ context.Context) (*store.KEK, error) {

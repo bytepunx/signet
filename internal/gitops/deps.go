@@ -18,7 +18,9 @@ type secretStore interface {
 	GetRepository(ctx context.Context, id string) (*store.Repository, error)
 	ListRepositories(ctx context.Context) ([]store.Repository, error)
 	UpdateSyncState(ctx context.Context, id, sha string, at time.Time) error
-	PutServiceConfig(ctx context.Context, namespace, service string, content json.RawMessage, repoID string) error
+	SyncServiceConfig(ctx context.Context, namespace, service string, gitContent json.RawMessage, repoID string,
+		merge func(syncedContent, liveContent, gitContent json.RawMessage) (newContent json.RawMessage, conflict bool, err error),
+	) (version int, conflict bool, err error)
 	DeleteServiceConfig(ctx context.Context, namespace, service string) error
 	GetActiveKEK(ctx context.Context) (*store.KEK, error)
 	PutKEK(ctx context.Context, k *store.KEK) error

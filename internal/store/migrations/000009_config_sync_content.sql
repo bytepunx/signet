@@ -1,0 +1,22 @@
+-- synced_content tracks a config's content as of the last time it was
+-- written by a GIT sync specifically (FullSync/SyncFromDir/SyncFromPush),
+-- distinct from the live `content` column, which may since have diverged
+-- via PatchServiceConfig. Without this, PatchServiceConfig's writes were
+-- silently reverted by the next scheduled sync: FullSync's storeConfig
+-- unconditionally overwrote `content` with whatever was in git, even when
+-- git's file hadn't changed at all, discarding any patch applied since the
+-- last sync (see bytepunx/signet#45).
+--
+-- synced_content lets a sync tell whether git's content actually changed
+-- since it last saw this row (skip the write if not, preserving a live
+-- patch) and, when it did change, whether the live content has also
+-- diverged from that same baseline (a 3-way merge base) so it can either
+-- fast-forward, auto-merge non-overlapping JSON-path changes, or flag a
+-- genuine conflict instead of silently picking a winner.
+--
+-- Nullable: NULL for any config never written by a git sync (e.g. a
+-- namespace/service that only ever received a PatchServiceConfig against
+-- a document that doesn't exist yet is impossible today since
+-- PatchServiceConfig only mutates existing documents -- but a config
+-- created before this migration has no recorded baseline either).
+ALTER TABLE configs ADD COLUMN IF NOT EXISTS synced_content JSONB;
