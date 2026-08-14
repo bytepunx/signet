@@ -30,6 +30,8 @@ const (
 	AdminService_CreatePolicy_FullMethodName    = "/admin.v1.AdminService/CreatePolicy"
 	AdminService_ListPolicies_FullMethodName    = "/admin.v1.AdminService/ListPolicies"
 	AdminService_DeletePolicy_FullMethodName    = "/admin.v1.AdminService/DeletePolicy"
+	AdminService_DeleteSecret_FullMethodName    = "/admin.v1.AdminService/DeleteSecret"
+	AdminService_DeleteConfig_FullMethodName    = "/admin.v1.AdminService/DeleteConfig"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -61,6 +63,11 @@ type AdminServiceClient interface {
 	CreatePolicy(ctx context.Context, in *CreatePolicyRequest, opts ...grpc.CallOption) (*CreatePolicyResponse, error)
 	ListPolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error)
 	DeletePolicy(ctx context.Context, in *DeletePolicyRequest, opts ...grpc.CallOption) (*DeletePolicyResponse, error)
+	// Explicit secret/config deletion. GitOps sync no longer infers deletion
+	// from a file's absence during a walk (see bytepunx/signet#44) — these are
+	// now the only way to remove a secret or config document.
+	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*DeleteSecretResponse, error)
+	DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
 }
 
 type adminServiceClient struct {
@@ -181,6 +188,26 @@ func (c *adminServiceClient) DeletePolicy(ctx context.Context, in *DeletePolicyR
 	return out, nil
 }
 
+func (c *adminServiceClient) DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*DeleteSecretResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteSecretResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteSecret_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteConfigResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -210,6 +237,11 @@ type AdminServiceServer interface {
 	CreatePolicy(context.Context, *CreatePolicyRequest) (*CreatePolicyResponse, error)
 	ListPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error)
 	DeletePolicy(context.Context, *DeletePolicyRequest) (*DeletePolicyResponse, error)
+	// Explicit secret/config deletion. GitOps sync no longer infers deletion
+	// from a file's absence during a walk (see bytepunx/signet#44) — these are
+	// now the only way to remove a secret or config document.
+	DeleteSecret(context.Context, *DeleteSecretRequest) (*DeleteSecretResponse, error)
+	DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -252,6 +284,12 @@ func (UnimplementedAdminServiceServer) ListPolicies(context.Context, *ListPolici
 }
 func (UnimplementedAdminServiceServer) DeletePolicy(context.Context, *DeletePolicyRequest) (*DeletePolicyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeletePolicy not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteSecret(context.Context, *DeleteSecretRequest) (*DeleteSecretResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteSecret not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteConfig not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 func (UnimplementedAdminServiceServer) testEmbeddedByValue()                      {}
@@ -472,6 +510,42 @@ func _AdminService_DeletePolicy_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_DeleteSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSecretRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteSecret(ctx, req.(*DeleteSecretRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteConfig(ctx, req.(*DeleteConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -522,6 +596,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeletePolicy",
 			Handler:    _AdminService_DeletePolicy_Handler,
+		},
+		{
+			MethodName: "DeleteSecret",
+			Handler:    _AdminService_DeleteSecret_Handler,
+		},
+		{
+			MethodName: "DeleteConfig",
+			Handler:    _AdminService_DeleteConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -76,6 +76,14 @@ func (m *mockAdminClient) DeletePolicy(_ context.Context, _ *adminv1.DeletePolic
 	return &adminv1.DeletePolicyResponse{}, nil
 }
 
+func (m *mockAdminClient) DeleteSecret(_ context.Context, _ *adminv1.DeleteSecretRequest, _ ...grpc.CallOption) (*adminv1.DeleteSecretResponse, error) {
+	return &adminv1.DeleteSecretResponse{}, nil
+}
+
+func (m *mockAdminClient) DeleteConfig(_ context.Context, _ *adminv1.DeleteConfigRequest, _ ...grpc.CallOption) (*adminv1.DeleteConfigResponse, error) {
+	return &adminv1.DeleteConfigResponse{}, nil
+}
+
 const testNS = "signet"
 const testSecret = "signet-master-key"
 

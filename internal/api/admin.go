@@ -473,6 +473,44 @@ func (s *AdminServer) DeletePolicy(ctx context.Context, req *adminv1.DeletePolic
 	return &adminv1.DeletePolicyResponse{Message: fmt.Sprintf("policy %s deleted", id)}, nil
 }
 
+// DeleteSecret permanently removes a secret. GitOps sync no longer infers
+// deletion from a file's absence during a repo walk (see bytepunx/signet#44)
+// — this is now the only way to remove a secret, including ones that were
+// never git-attributed in the first place (e.g. pushed via `signet bundle
+// push`, which SyncBundle could never delete before this RPC existed).
+func (s *AdminServer) DeleteSecret(ctx context.Context, req *adminv1.DeleteSecretRequest) (*adminv1.DeleteSecretResponse, error) {
+	if err := s.requireToken(ctx); err != nil {
+		return nil, err
+	}
+	namespace := req.GetNamespace()
+	service := req.GetService()
+	secretName := req.GetSecretName()
+	if namespace == "" || service == "" || secretName == "" {
+		return nil, status.Error(codes.InvalidArgument, "namespace, service, and secret_name must not be empty")
+	}
+	if err := s.store.DeleteSecret(ctx, namespace, service, secretName); err != nil {
+		return nil, toGRPCError(err)
+	}
+	return &adminv1.DeleteSecretResponse{Message: fmt.Sprintf("secret %s/%s/%s deleted", namespace, service, secretName)}, nil
+}
+
+// DeleteConfig permanently removes a service's config document. See
+// DeleteSecret's doc comment — the same rationale applies.
+func (s *AdminServer) DeleteConfig(ctx context.Context, req *adminv1.DeleteConfigRequest) (*adminv1.DeleteConfigResponse, error) {
+	if err := s.requireToken(ctx); err != nil {
+		return nil, err
+	}
+	namespace := req.GetNamespace()
+	service := req.GetService()
+	if namespace == "" || service == "" {
+		return nil, status.Error(codes.InvalidArgument, "namespace and service must not be empty")
+	}
+	if err := s.store.DeleteServiceConfig(ctx, namespace, service); err != nil {
+		return nil, toGRPCError(err)
+	}
+	return &adminv1.DeleteConfigResponse{Message: fmt.Sprintf("config %s/%s deleted", namespace, service)}, nil
+}
+
 func toProtoState(s unseal.State) adminv1.StatusResponse_State {
 	switch s {
 	case unseal.StateSealed:

@@ -64,6 +64,11 @@ type fakeAdminStore struct {
 	rewrapErr    error
 	policies     []store.Policy
 	putPolicyErr error
+
+	deletedSecrets  [][3]string // namespace, service, secretName
+	deleteSecretErr error
+	deletedConfigs  [][2]string // namespace, service
+	deleteConfigErr error
 }
 
 func (f *fakeAdminStore) GetKeyCheckValue(_ context.Context) ([]byte, error) {
@@ -155,6 +160,22 @@ func (f *fakeAdminStore) DeletePolicy(_ context.Context, id string) error {
 		}
 	}
 	return store.ErrNotFound
+}
+
+func (f *fakeAdminStore) DeleteSecret(_ context.Context, namespace, service, name string) error {
+	if f.deleteSecretErr != nil {
+		return f.deleteSecretErr
+	}
+	f.deletedSecrets = append(f.deletedSecrets, [3]string{namespace, service, name})
+	return nil
+}
+
+func (f *fakeAdminStore) DeleteServiceConfig(_ context.Context, namespace, service string) error {
+	if f.deleteConfigErr != nil {
+		return f.deleteConfigErr
+	}
+	f.deletedConfigs = append(f.deletedConfigs, [2]string{namespace, service})
+	return nil
 }
 
 func (f *fakeAdminStore) CountSecretsUsingKEK(_ context.Context, id string) (int, error) {
@@ -799,4 +820,56 @@ func TestDeletePolicy_Success(t *testing.T) {
 	_, err := srv.DeletePolicy(bearerCtx("tok"), &adminv1.DeletePolicyRequest{Id: "p1"})
 	require.NoError(t, err)
 	assert.Empty(t, st.policies)
+}
+
+// --- DeleteSecret tests ---
+
+func TestDeleteSecret_RequiresNamespaceServiceSecretName(t *testing.T) {
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, &fakeAdminStore{}, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.DeleteSecret(bearerCtx("tok"), &adminv1.DeleteSecretRequest{Namespace: "ns", Service: "svc"})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestDeleteSecret_NotFound(t *testing.T) {
+	st := &fakeAdminStore{deleteSecretErr: store.ErrNotFound}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.DeleteSecret(bearerCtx("tok"), &adminv1.DeleteSecretRequest{Namespace: "ns", Service: "svc", SecretName: "sec"})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestDeleteSecret_Success(t *testing.T) {
+	st := &fakeAdminStore{}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.DeleteSecret(bearerCtx("tok"), &adminv1.DeleteSecretRequest{Namespace: "ns", Service: "svc", SecretName: "sec"})
+	require.NoError(t, err)
+	require.Len(t, st.deletedSecrets, 1)
+	assert.Equal(t, [3]string{"ns", "svc", "sec"}, st.deletedSecrets[0])
+}
+
+// --- DeleteConfig tests ---
+
+func TestDeleteConfig_RequiresNamespaceService(t *testing.T) {
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, &fakeAdminStore{}, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.DeleteConfig(bearerCtx("tok"), &adminv1.DeleteConfigRequest{Namespace: "ns"})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestDeleteConfig_NotFound(t *testing.T) {
+	st := &fakeAdminStore{deleteConfigErr: store.ErrNotFound}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.DeleteConfig(bearerCtx("tok"), &adminv1.DeleteConfigRequest{Namespace: "ns", Service: "svc"})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestDeleteConfig_Success(t *testing.T) {
+	st := &fakeAdminStore{}
+	srv := NewAdminServer(&fakeUnsealMgr{}, &fakeTokenChecker{}, st, &fakeKeyUnwrapper{key: adminTestKey})
+	_, err := srv.DeleteConfig(bearerCtx("tok"), &adminv1.DeleteConfigRequest{Namespace: "ns", Service: "svc"})
+	require.NoError(t, err)
+	require.Len(t, st.deletedConfigs, 1)
+	assert.Equal(t, [2]string{"ns", "svc"}, st.deletedConfigs[0])
 }

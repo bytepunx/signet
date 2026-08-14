@@ -875,6 +875,17 @@ a rotated-away KEK or predating the KEK tier (`kek_id` empty) is never treated a
 it is naturally rewritten onto the current epoch the next time it is synced — this is how the
 AAD/KEK migration (Section 5) converges without a separate migration job.
 
+**Deletion (bytepunx/signet#44):** `FullSync`/`SyncFromDir` — the full-repository-walk path
+used by `TriggerSync` and the reconciler's periodic pass — never deletes anything, even when a
+previously-synced secret or config is no longer found during the walk. It used to infer
+deletion from absence, but that made any transient walk issue (a misconfigured path, a partial
+checkout, a walk bug) indistinguishable from a genuine deletion, silently destroying data with
+no way to tell the two apart. Real deletions now come from exactly two places: the webhook's
+`SyncFromPush`, which deletes based on GitHub's own explicit deleted-files list for that push (a
+direct provenance signal, not an inference); and the `DeleteSecret`/`DeleteConfig` admin RPCs,
+which are the only way to remove anything written outside a webhook push — including secrets
+pushed via `signet bundle push`, which previously could never be deleted through any API at all.
+
 ### Sealed-State Behaviour
 
 - Webhook requests while sealed return HTTP 503 with a `Retry-After` header. GitHub will retry delivery automatically.

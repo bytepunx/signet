@@ -507,15 +507,15 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 	}
 
 	// Run the SOPS decrypt + store pass. repoID is "" — a pushed bundle has
-	// no registered git repository to attribute secrets to or diff deletions
-	// against (see SyncFromDir's doc comment).
+	// no registered git repository to attribute secrets to (see
+	// SyncFromDir's doc comment).
 	result, err := s.syncer.SyncFromDir(ctx, tmpDir, secretsPath, headSHA, "", actor)
 	if err != nil {
 		return status.Errorf(codes.Internal, "sync: %v", err)
 	}
 
 	// Run the plain YAML config pass if a config_path was provided.
-	configCount, _, configSkipped, configErr := s.syncer.SyncConfigFromDir(ctx, tmpDir, configPath, "", actor)
+	configCount, configSkipped, configErr := s.syncer.SyncConfigFromDir(ctx, tmpDir, configPath, "", actor)
 	if configErr != nil {
 		slog.Warn("bundle config sync error", "err", configErr)
 	}
