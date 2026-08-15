@@ -41,6 +41,18 @@ type SyncResult struct {
 	// treating it as equivalent to "nothing to do" is what let a whole
 	// service's config silently never sync (see bytepunx/signet#22).
 	Skipped []string
+	// Failed lists "<path>: <error>" for every secret file that matched the
+	// path-depth convention but could not be stored — almost always because
+	// storeSecret's DecryptFile call rejected content that wasn't real SOPS
+	// ciphertext (e.g. a caller submitting SyncBundle with a plaintext
+	// value). Previously this was only slog.Error'd and otherwise silently
+	// dropped: the RPC reported success with the secret simply never
+	// written, and nothing surfaced until a much later reconciliation pass
+	// re-hit the same error against a real deployment (see
+	// bytepunx/signet-clients#49). Callers (TriggerSync/SyncBundle RPCs)
+	// must fold this into their response's Errors field alongside
+	// skippedToErrors(Skipped).
+	Failed []string
 }
 
 // Syncer fetches a git repository, decrypts SOPS-encrypted secrets, and
@@ -112,6 +124,7 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 			}
 			if storeErr := s.storeSecret(ctx, ns, svc, name, data, identities, repo.ID, actor); storeErr != nil {
 				slog.Error("store secret", "path", f, "err", storeErr)
+				result.Failed = append(result.Failed, fmt.Sprintf("%s: %v", f, storeErr))
 				continue
 			}
 			result.Added++
@@ -297,6 +310,7 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, rep
 		}
 		if err := s.storeSecret(ctx, ns, svc, name, data, identities, repoID, actor); err != nil {
 			slog.Error("store secret", "path", rel, "err", err)
+			result.Failed = append(result.Failed, fmt.Sprintf("%s: %v", rel, err))
 			return nil
 		}
 		result.Added++
