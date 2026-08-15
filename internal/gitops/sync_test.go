@@ -280,6 +280,32 @@ func TestSyncFromDir_SkipsAndReportsPathDepthMismatch(t *testing.T) {
 	assert.Equal(t, "secrets/ns/svc/extra/deep.yaml", result.Skipped[0])
 }
 
+// TestSyncFromDir_ReportsStoreFailureInFailed regression-tests
+// bytepunx/signet-clients#49: a secret file that matches the required
+// <namespace>/<service>/<name>.yaml path shape but isn't real SOPS
+// ciphertext (e.g. a caller submitting SyncBundle with a plaintext value)
+// makes it past ParseSecretPath and into storeSecret, whose DecryptFile call
+// then fails. That failure used to be slog.Error'd and otherwise silently
+// dropped — TriggerSync/SyncBundle reported success with the secret simply
+// never written. Failed must report it instead.
+func TestSyncFromDir_ReportsStoreFailureInFailed(t *testing.T) {
+	dir := t.TempDir()
+	keys := &mockKeys{}
+	st, _ := newSyncableStore(t, keys)
+
+	plainPath := filepath.Join(dir, "secrets", "ns", "svc", "plain.yaml")
+	require.NoError(t, os.MkdirAll(filepath.Dir(plainPath), 0o755))
+	require.NoError(t, os.WriteFile(plainPath, []byte("value: not-encrypted\n"), 0o600))
+
+	syncer := NewSyncer(st, keys, nil, nil, "")
+	result, err := syncer.SyncFromDir(context.Background(), dir, "secrets/", "sha1", "repo-1", "test-actor")
+	require.NoError(t, err)
+	assert.Equal(t, 0, result.Added, "plaintext content must not be stored")
+	require.Len(t, result.Failed, 1, "the store failure must be reported, not silently dropped")
+	assert.Contains(t, result.Failed[0], "secrets/ns/svc/plain.yaml")
+	assert.Contains(t, result.Failed[0], "sops decrypt")
+}
+
 // TestSyncFromDir_BackfillsRepoIDOnUnchangedResync verifies a gap in repo_id
 // attribution: storeSecret's isUnchanged dedup optimization skips PutSecret
 // (and therefore repo_id attribution) entirely when a resync's plaintext

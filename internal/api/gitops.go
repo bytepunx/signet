@@ -410,7 +410,7 @@ func (s *GitOpsServer) TriggerSync(ctx context.Context, req *adminv1.TriggerSync
 		SyncSha:           result.SHA,
 		ConfigsSynced:     int32(result.ConfigsSynced),
 		ConfigsConflicted: int32(result.ConfigsConflicted),
-		Errors:            skippedToErrors(result.Skipped),
+		Errors:            append(skippedToErrors(result.Skipped), result.Failed...),
 	}, nil
 }
 
@@ -522,7 +522,7 @@ func (s *GitOpsServer) SyncBundle(stream adminv1.GitOpsService_SyncBundleServer)
 	}
 
 	result.Skipped = append(result.Skipped, configSkipped...)
-	errs := skippedToErrors(result.Skipped)
+	errs := append(skippedToErrors(result.Skipped), result.Failed...)
 	if configConflicted > 0 {
 		errs = append(errs, fmt.Sprintf(
 			"%d config(s) conflicted with a pending server-side patch and were not applied; resolve via TriggerSync with force=true or a follow-up push",
