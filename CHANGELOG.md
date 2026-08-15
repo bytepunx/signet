@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.3](https://github.com/bytepunx/signet/compare/v0.10.2...v0.10.3) (2026-08-15)
+
+
+### Bug Fixes
+
+* **gitops:** surface storeSecret failures in sync RPC responses ([#53](https://github.com/bytepunx/signet/issues/53)) ([0f195b1](https://github.com/bytepunx/signet/commit/0f195b15fdab07562835b79b21cbe4c91f17c31c))
+
 ## [0.10.2](https://github.com/bytepunx/signet/compare/v0.10.1...v0.10.2) (2026-08-14)
 
 
