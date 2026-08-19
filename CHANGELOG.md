@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.4](https://github.com/bytepunx/signet/compare/v0.10.3...v0.10.4) (2026-08-19)
+
+
+### Bug Fixes
+
+* **gitops:** stop reconciler from broadcasting false bundle-changed notifications on unchanged secrets ([#56](https://github.com/bytepunx/signet/issues/56)) ([6ef3b93](https://github.com/bytepunx/signet/commit/6ef3b93b348a66e3f5f705968caaf3927d901466))
+
 ## [0.10.3](https://github.com/bytepunx/signet/compare/v0.10.2...v0.10.3) (2026-08-15)
 
 
