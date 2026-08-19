@@ -2,7 +2,9 @@
 
 The `signet` binary is the operator interface to a running signetd instance.
 All commands communicate with the admin gRPC endpoint (default
-`http://localhost:8444`), which is only reachable via `kubectl port-forward`.
+`localhost:8444`, no `http://` scheme — see [`signet config`](#signet-config)),
+which is only reachable via `kubectl port-forward` (to the `deployment`, not
+the `Service` — see [`admin.clusterAccess`](installation.md#admin-clusteraccess)).
 
 ## Global flags
 
@@ -137,11 +139,11 @@ Supported keys:
 
 | Key | Description |
 |---|---|
-| `server` | Admin endpoint URL, e.g. `http://localhost:8444` |
+| `server` | Admin endpoint host:port (no scheme), e.g. `localhost:8444` |
 
 **Example:**
 ```bash
-signet config set server http://localhost:8444
+signet config set server localhost:8444
 ```
 
 ---
@@ -190,7 +192,7 @@ Flags:
 
 **Example:**
 ```bash
-TOKEN=$(kubectl create token signet-admin -n signet --duration=1h)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 signet unseal key --key-file master.key --token "$TOKEN"
 # Server unsealed.
 ```
@@ -825,11 +827,16 @@ push — other files still sync.
 ## Authentication
 
 Every admin command requires a valid Kubernetes ServiceAccount token bound to
-the `signet-admin` service account. Generate one with:
+the `signet-admin` service account, with an audience matching
+`signet.kubeAudiences` (default `signet`). Generate one with:
 
 ```bash
-kubectl create token signet-admin -n signet --duration=1h
+kubectl create token signet-admin -n signet --duration=1h --audience=signet
 ```
+
+Omitting `--audience` produces a token scoped to the Kubernetes API server's
+default audience, which signetd rejects with `invalid bearer token, token
+audiences [...] is invalid for the target audiences [...]`.
 
 Tokens are short-lived by design. For scripted automation, request a token
 from the Kubernetes API in the script rather than storing a long-lived token.

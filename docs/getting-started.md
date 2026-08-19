@@ -63,16 +63,19 @@ Download the `signet` CLI binary for your OS from the
 [latest release](https://github.com/bytepunx/signet/releases/latest) and put
 it on your `$PATH`.
 
-Open a port-forward to the admin endpoint (it is never exposed externally):
+Open a port-forward to the admin endpoint (it is never exposed externally).
+The admin port isn't on the `signet` Service by default (see
+[`admin.clusterAccess`](installation.md#admin-clusteraccess)), so forward to
+the Deployment instead of the Service:
 
 ```bash
-kubectl port-forward -n signet svc/signet 8444:8444 &
+kubectl port-forward -n signet deployment/signet 8444:8444 &
 ```
 
 Configure the CLI:
 
 ```bash
-signet config set server http://localhost:8444
+signet config set server localhost:8444
 signet status
 # Output: state=sealed
 ```
@@ -90,7 +93,7 @@ retrieved until you unseal it.
 unseals the server in one command:
 
 ```bash
-TOKEN=$(kubectl create token signet-admin -n signet --duration=1h)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 signet init --server localhost:8444 --token "$TOKEN"
 # Secret signet-master-key not found in namespace signet — generating new key.
 # Created Secret signet/signet-master-key.
@@ -139,7 +142,7 @@ This grants the `api` service account in the `payments` namespace the SVID
 signet policies control which workload SVIDs can read which secrets.
 
 ```bash
-TOKEN=$(kubectl create token signet-admin -n signet --duration=5m)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=5m --audience=signet)
 
 # Allow the payments/api workload to read any secret in the payments namespace.
 signet policy create \
@@ -158,7 +161,7 @@ abbreviated steps are:
 
 ```bash
 # Get the signet age public key
-TOKEN=$(kubectl create token signet-admin -n signet --duration=5m)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=5m --audience=signet)
 signet sops-key get --token "$TOKEN"
 # Public key:  age1abc123...
 

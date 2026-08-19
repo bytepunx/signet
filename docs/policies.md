@@ -79,7 +79,7 @@ Policies are needed only when a workload requires access **outside its own
 namespace/service**. They are managed via the admin gRPC API:
 
 ```bash
-TOKEN=$(kubectl create token signet-admin -n signet --duration=1h)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 ```
 
 ### Grant access to a shared secret

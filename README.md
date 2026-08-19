@@ -83,6 +83,18 @@ helm install signet oci://ghcr.io/bytepunx/charts/signet \
 New to signet? Start with **[Getting Started](docs/getting-started.md)** — a ~30 minute walkthrough
 from a bare cluster to a workload successfully retrieving its first secret.
 
+### CLI
+
+Install the `signet` operator CLI (Linux/macOS, amd64/arm64):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bytepunx/signet/main/install.sh | bash
+```
+
+This downloads the latest release binary to `/usr/local/bin/signet` and
+verifies its checksum. See [CLI Reference](docs/cli.md) for usage, or build
+from source with `make build` (see [Development](#development) below).
+
 ## Documentation
 
 | Document | Covers |
