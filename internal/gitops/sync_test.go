@@ -341,3 +341,48 @@ func TestSyncFromDir_BackfillsRepoIDOnUnchangedResync(t *testing.T) {
 	require.NotNil(t, sec)
 	assert.Equal(t, "repo-new", sec.RepoID, "repo_id must be updated even when the write itself was skipped as unchanged")
 }
+
+// fakeBus is a minimal notifier that just counts calls, so tests can assert
+// on whether a bundle-changed notification actually fired.
+type fakeBus struct {
+	notifyCount       int
+	notifyBundleCount int
+}
+
+func (b *fakeBus) Notify(_, _, _ string)     { b.notifyCount++ }
+func (b *fakeBus) NotifyService(_, _ string) {}
+func (b *fakeBus) NotifyBundle(_, _ string)  { b.notifyBundleCount++ }
+
+// TestSyncFromDir_NoNotifyOrAddedOnUnchangedResync is a regression test for
+// bytepunx/signet#55: re-syncing a secret whose plaintext hasn't changed
+// must not count it in SyncResult.Added, and must not fire a bundle-changed
+// notification. Before the fix, storeSecret's isUnchanged skip was
+// indistinguishable from a real write to its callers, so every periodic
+// reconciliation pass re-"added" and re-notified every unchanged secret,
+// causing watchers of WatchServiceBundle to restart in a permanent loop.
+func TestSyncFromDir_NoNotifyOrAddedOnUnchangedResync(t *testing.T) {
+	dir := t.TempDir()
+	keys := &mockKeys{}
+	st, pubKey := newSyncableStore(t, keys)
+	sopsEncrypt(t, dir, "secrets/ns/svc/stable.yaml", "value: stable\n", pubKey)
+
+	bus := &fakeBus{}
+	syncer := NewSyncer(st, keys, bus, nil, "")
+	ctx := context.Background()
+
+	result, err := syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "repo-1", "test-actor")
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.Added, "first sync of a new secret must be counted as added")
+	assert.Equal(t, 1, bus.notifyBundleCount, "first sync of a new secret must notify watchers")
+
+	// Re-encrypt the SAME plaintext (sops nonce differs, but the plaintext
+	// isUnchanged compares is identical) and sync again — this must be a
+	// true no-op from the caller's perspective, exactly as it would be on
+	// every periodic reconciliation tick against an unchanged repo.
+	sopsEncrypt(t, dir, "secrets/ns/svc/stable.yaml", "value: stable\n", pubKey)
+	result, err = syncer.SyncFromDir(ctx, dir, "secrets/", "sha1", "repo-1", "test-actor")
+	require.NoError(t, err)
+	assert.Equal(t, 0, result.Added, "resyncing unchanged content must not be counted as added")
+	assert.Equal(t, 1, bus.notifyBundleCount, "resyncing unchanged content must not fire another bundle-changed notification")
+	assert.Equal(t, 1, bus.notifyCount, "resyncing unchanged content must not fire another per-secret notification")
+}

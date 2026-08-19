@@ -27,7 +27,7 @@ database.
 
 - `sops` ≥ 3.8 installed ([releases](https://github.com/getsops/sops/releases))
 - signet running and unsealed
-- `signet` CLI configured (`signet config set server http://localhost:8444`)
+- `signet` CLI configured (`signet config set server localhost:8444`)
 - A git repository you control (this will hold your encrypted secrets)
 - An SSH deploy key with **read-only** access to the repository
 
@@ -38,7 +38,7 @@ database.
 ### 1.1 Generate the age key in signet
 
 ```bash
-TOKEN=$(kubectl create token signet-admin -n signet --duration=1h)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 signet sops-key get --token "$TOKEN"
 ```
 
@@ -205,7 +205,7 @@ Each environment has its **own age keypair**. After setting `SIGNET_ENVIRONMENT`
 rotate the key to generate an environment-scoped key:
 
 ```bash
-TOKEN=$(kubectl create token signet-admin -n signet --duration=1h)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 signet sops-key rotate --token "$TOKEN"
 # New public key:  age1xyz789...
 # Environment:     prod

@@ -80,7 +80,7 @@ signet:
 
 After install, generate shares and distribute them to key holders:
 ```bash
-TOKEN=$(kubectl create token signet-admin -n signet --duration=1h)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 signet unseal generate-shares --shares 5 --threshold 3 --token "$TOKEN"
 # Outputs 5 hex-encoded shares. Distribute each to a separate person.
 ```
@@ -140,7 +140,7 @@ subsequent restarts:
 
 ```bash
 # 1. Deploy signet without auto-unseal, then create the key Secret:
-TOKEN=$(kubectl create token signet-admin -n signet --duration=1h)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 signet init --server localhost:8444 --token "$TOKEN"
 
 # 2. Enable auto-unseal so future pod restarts unseal automatically:
@@ -154,7 +154,7 @@ If you created the Secret with `signet init` but prefer not to use auto-unseal,
 signetd will start sealed and you unseal manually on each restart:
 
 ```bash
-TOKEN=$(kubectl create token signet-admin -n signet --duration=1h)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 signet init --force --server localhost:8444 --token "$TOKEN"
 ```
 
@@ -246,7 +246,9 @@ the database and SPIRE agent socket is allowed; all other egress is blocked.
 
 Default `false`. The admin gRPC listener (port 8444) is loopback-only inside
 the pod by default; the only supported way to reach it is
-`kubectl port-forward svc/signet 8444:8444`. That's fine for a human
+`kubectl port-forward deployment/signet 8444:8444` (the admin port isn't on
+the Service unless `admin.clusterAccess` is enabled, so forwarding to
+`svc/signet` fails with "does not have a service port"). That's fine for a human
 operator, but automated in-cluster callers (a credential-provisioning Job, an
 operator, a controller) have no supported path in.
 

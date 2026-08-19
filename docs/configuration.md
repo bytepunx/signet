@@ -96,7 +96,7 @@ Pass `--config-path` when registering a repository. The flag is optional; omit
 it to enable secrets-only sync:
 
 ```bash
-TOKEN=$(kubectl create token signet-admin -n signet --duration=1h)
+TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 
 signet repo add \
   --name         my-repo \
