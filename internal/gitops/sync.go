@@ -18,9 +18,11 @@ import (
 	icrypto "github.com/bytepunx/signet/internal/crypto"
 	"github.com/bytepunx/signet/internal/store"
 	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	gogittransport "github.com/go-git/go-git/v5/plumbing/transport"
 	gogitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/go-git/go-git/v5/storage/memory"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v3"
 )
@@ -110,8 +112,12 @@ func (s *Syncer) SyncFromPush(ctx context.Context, repo *store.Repository, headS
 				slog.Error("read secret file", "path", f, "err", readErr)
 				continue
 			}
-			if storeErr := s.storeSecret(ctx, ns, svc, name, data, identities, repo.ID, actor); storeErr != nil {
+			wrote, storeErr := s.storeSecret(ctx, ns, svc, name, data, identities, repo.ID, actor)
+			if storeErr != nil {
 				slog.Error("store secret", "path", f, "err", storeErr)
+				continue
+			}
+			if !wrote {
 				continue
 			}
 			result.Added++
@@ -295,8 +301,12 @@ func (s *Syncer) SyncFromDir(ctx context.Context, dir, secretsPath, headSHA, rep
 			slog.Error("read secret file", "path", rel, "err", err)
 			return nil
 		}
-		if err := s.storeSecret(ctx, ns, svc, name, data, identities, repoID, actor); err != nil {
+		wrote, err := s.storeSecret(ctx, ns, svc, name, data, identities, repoID, actor)
+		if err != nil {
 			slog.Error("store secret", "path", rel, "err", err)
+			return nil
+		}
+		if !wrote {
 			return nil
 		}
 		result.Added++
@@ -385,10 +395,17 @@ func (s *Syncer) recordAudit(ctx context.Context, actor, action, namespace, serv
 // older/rotated-away KEK is never treated as unchanged, so it is naturally
 // rewritten onto the current epoch the next time it is synced, which is how
 // the AAD/KEK migration (see decryptSecret in internal/api) converges.
-func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name string, data []byte, identities []age.Identity, repoID, actor string) error {
+//
+// Returns wrote=true only when a real write to the store occurred, so
+// callers can tell an actual change apart from a no-op resync — required so
+// SyncResult.Added and bundle-changed notifications reflect real changes
+// only (see bytepunx/signet#55, where an unconditional count/notify here
+// caused every reconciliation pass to broadcast a false "bundle changed" to
+// every watching workload, even when nothing had changed).
+func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name string, data []byte, identities []age.Identity, repoID, actor string) (wrote bool, err error) {
 	plaintext, err := DecryptFile(data, identities)
 	if err != nil {
-		return fmt.Errorf("sops decrypt: %w", err)
+		return false, fmt.Errorf("sops decrypt: %w", err)
 	}
 
 	aad := icrypto.BindAAD(icrypto.AADSecret, namespace, service, name)
@@ -399,7 +416,7 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 	kekID, kek, err := activeKEK(ctx, s.store, s.keys)
 	if err != nil {
 		ZeroBytes(plaintext)
-		return fmt.Errorf("load active kek: %w", err)
+		return false, fmt.Errorf("load active kek: %w", err)
 	}
 	defer ZeroBytes(kek)
 
@@ -415,7 +432,7 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 				slog.Warn("update secret repo_id on unchanged resync", "namespace", namespace, "service", service, "name", name, "err", err)
 			}
 		}
-		return nil
+		return false, nil
 	}
 
 	// Encrypt the plaintext under a fresh per-secret DEK, bound to this
@@ -423,19 +440,19 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 	dek, err := icrypto.GenerateKey()
 	if err != nil {
 		ZeroBytes(plaintext)
-		return fmt.Errorf("generate dek: %w", err)
+		return false, fmt.Errorf("generate dek: %w", err)
 	}
 	defer ZeroBytes(dek)
 
 	ciphertext, err := icrypto.Encrypt(dek, plaintext, aad)
 	ZeroBytes(plaintext)
 	if err != nil {
-		return fmt.Errorf("encrypt secret: %w", err)
+		return false, fmt.Errorf("encrypt secret: %w", err)
 	}
 
 	encDEK, err := icrypto.WrapKey(kek, dek, aad)
 	if err != nil {
-		return fmt.Errorf("wrap dek: %w", err)
+		return false, fmt.Errorf("wrap dek: %w", err)
 	}
 
 	if err := s.store.PutSecret(ctx, &store.Secret{
@@ -447,10 +464,10 @@ func (s *Syncer) storeSecret(ctx context.Context, namespace, service, name strin
 		Ciphertext:   ciphertext,
 		RepoID:       repoID,
 	}); err != nil {
-		return err
+		return false, err
 	}
 	s.recordAudit(ctx, actor, "put_secret", namespace, service, name)
-	return nil
+	return true, nil
 }
 
 // isUnchanged reports whether the currently stored secret already holds
@@ -543,6 +560,32 @@ func (s *Syncer) cloneRepoAtHead(ctx context.Context, dir string, repo *store.Re
 		return "", fmt.Errorf("resolve HEAD: %w", err)
 	}
 	return ref.Hash().String(), nil
+}
+
+// ResolveHeadSHA returns the current HEAD commit SHA of repo's configured
+// branch on the remote, without cloning — a cheap ls-remote equivalent the
+// periodic reconciler uses to skip a full clone-and-walk FullSync when
+// nothing has changed since the last sync (see bytepunx/signet#55).
+func (s *Syncer) ResolveHeadSHA(ctx context.Context, repo *store.Repository) (string, error) {
+	auth, err := s.deployKeyAuth(repo)
+	if err != nil {
+		return "", err
+	}
+	remote := gogit.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{repo.RepoURL},
+	})
+	refs, err := remote.ListContext(ctx, &gogit.ListOptions{Auth: auth})
+	if err != nil {
+		return "", fmt.Errorf("list remote refs for %s: %w", repo.RepoURL, err)
+	}
+	branchRef := plumbing.NewBranchReferenceName(repo.Branch)
+	for _, ref := range refs {
+		if ref.Name() == branchRef {
+			return ref.Hash().String(), nil
+		}
+	}
+	return "", fmt.Errorf("branch %s not found on remote %s", repo.Branch, repo.RepoURL)
 }
 
 // deployKeyAuth decrypts the repo's SSH deploy key and returns go-git auth.

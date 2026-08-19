@@ -869,6 +869,14 @@ The `Reconciler` performs a `FullSync` of every registered repository at a confi
 
 The reconciler **only runs while the server is unsealed** — it cannot decrypt the stored age keys when sealed. It starts immediately after a successful unseal and is cancelled when the server is sealed.
 
+**Remote-unchanged short-circuit (bytepunx/signet#55):** before doing a full clone and walk,
+`reconcileAll` resolves the target branch's current HEAD SHA on the remote with a cheap
+ls-remote-equivalent (`Syncer.ResolveHeadSHA`, no clone) and compares it against the repository's
+`last_sync_sha`. When they match, the tick is skipped entirely — nothing to converge. This is a
+pure optimization (a `ResolveHeadSHA` failure just falls through to the unconditional `FullSync`,
+same as before this check existed); it does not change convergence semantics, only how much work
+a no-op tick does.
+
 **No-op dedup:** before re-encrypting and storing a secret, `storeSecret` compares the freshly
 SOPS-decrypted plaintext against the currently stored version. If it is identical *and* the
 stored row is already wrapped under the current active KEK (which implies it already has AAD
@@ -877,6 +885,14 @@ unbounded version growth from re-syncing unchanged secrets every reconciliation 
 a rotated-away KEK or predating the KEK tier (`kek_id` empty) is never treated as unchanged, so
 it is naturally rewritten onto the current epoch the next time it is synced — this is how the
 AAD/KEK migration (Section 5) converges without a separate migration job.
+
+`storeSecret` reports back to its caller (`SyncFromDir`/`SyncFromPush`) whether it actually wrote
+or hit this dedup skip. `SyncResult.Added` and the `WatchServiceBundle` bundle-changed
+notification (`Bus.NotifyBundle`) are only incremented/fired on a real write — previously they
+fired unconditionally on "no error", so every reconciliation tick re-"added" and re-notified
+every unchanged secret, which any consumer implementing the coordinated-restart pattern
+([docs/restart-lock.md](../docs/restart-lock.md)) would correctly interpret as a real change and
+restart for, every tick, forever (bytepunx/signet#55).
 
 **Deletion (bytepunx/signet#44):** `FullSync`/`SyncFromDir` — the full-repository-walk path
 used by `TriggerSync` and the reconciler's periodic pass — never deletes anything, even when a
