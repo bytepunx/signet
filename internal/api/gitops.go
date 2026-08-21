@@ -26,6 +26,7 @@ import (
 	"github.com/bytepunx/signet/internal/store"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // GitOpsServer implements adminv1.GitOpsServiceServer.
@@ -101,21 +102,40 @@ func (s *GitOpsServer) requireTokenIdentity(ctx context.Context) (identity strin
 }
 
 // authorizeGitOpsWrite authenticates a workload-reachable GitOpsService write
-// (SyncBundle, PatchServiceConfig — bytepunx/signet#23, #38) via whichever
-// credential the caller actually presented: an admin bearer token (checked
-// exactly like requireToken, granting the same unscoped access these RPCs
-// have always had via the admin listener), or — when no token is present at
-// all — the caller's own verified SPIFFE mTLS identity. A malformed or
-// invalid token fails immediately rather than falling back to the SPIFFE
-// path, so a caller that clearly attempted admin auth gets a clear error
-// instead of a confusing scope-mismatch one. actor is always non-empty on
-// success — the admin's Kubernetes identity or the caller's SPIFFE ID — for
-// attributing the resulting write in the audit log (bytepunx/signet#25).
-// scoped is true only for the SPIFFE path, meaning the caller must also pass
-// an explicit per-call authorization check (e.g. validateBundleScope, or a
-// checker.Allow "put" check) before anything is written. rpcName appears in
-// the error message when neither credential is present.
+// (SyncBundle, PatchServiceConfig — bytepunx/signet#23, #38) — see
+// authorizeGitOpsCall for the shared mechanics. rpcName appears in the error
+// message when neither credential is present.
 func (s *GitOpsServer) authorizeGitOpsWrite(ctx context.Context, rpcName string) (actor string, scoped bool, err error) {
+	return s.authorizeGitOpsCall(ctx, rpcName)
+}
+
+// authorizeGitOpsRead authenticates a workload-reachable GitOpsService read
+// (GetServiceConfig — bytepunx/signet#38, bytepunx/authstar-tower#2) — same
+// mechanics as authorizeGitOpsWrite, split into its own named function so a
+// read call site never reads as if it were authorizing a write, even though
+// the underlying credential check is identical; only the per-call
+// authorization permission ("get" vs "put") the caller checks afterward
+// differs.
+func (s *GitOpsServer) authorizeGitOpsRead(ctx context.Context, rpcName string) (actor string, scoped bool, err error) {
+	return s.authorizeGitOpsCall(ctx, rpcName)
+}
+
+// authorizeGitOpsCall authenticates a workload-reachable GitOpsService RPC
+// via whichever credential the caller actually presented: an admin bearer
+// token (checked exactly like requireToken, granting the same unscoped
+// access these RPCs have always had via the admin listener), or — when no
+// token is present at all — the caller's own verified SPIFFE mTLS identity.
+// A malformed or invalid token fails immediately rather than falling back to
+// the SPIFFE path, so a caller that clearly attempted admin auth gets a
+// clear error instead of a confusing scope-mismatch one. actor is always
+// non-empty on success — the admin's Kubernetes identity or the caller's
+// SPIFFE ID — for attributing the resulting write in the audit log
+// (bytepunx/signet#25). scoped is true only for the SPIFFE path, meaning the
+// caller must also pass an explicit per-call authorization check (e.g.
+// validateBundleScope, or a checker.Allow "put"/"get" check) before doing
+// anything. rpcName appears in the error message when neither credential is
+// present.
+func (s *GitOpsServer) authorizeGitOpsCall(ctx context.Context, rpcName string) (actor string, scoped bool, err error) {
 	if token, tokenErr := auth.TokenFromMetadata(ctx); tokenErr == nil {
 		identity, err := s.validator.Validate(ctx, token)
 		if err != nil {
@@ -606,6 +626,57 @@ func (s *GitOpsServer) PatchServiceConfig(ctx context.Context, req *adminv1.Patc
 	}
 
 	return &adminv1.PatchServiceConfigResponse{Version: int32(version)}, nil
+}
+
+// GetServiceConfig returns a service's current plain config document and
+// version — see this RPC's own doc comment in admin.proto for why this
+// exists (bytepunx/signet#38, bytepunx/authstar-tower#2): a dedicated
+// admin-side read, on the same bearer-token-or-SPIFFE-mTLS surface every
+// other GitOpsService RPC uses, rather than policy-granting a workload's
+// SPIFFE identity onto SecretsService.GetServiceConfig (the existing
+// workload-facing read, which stays exactly as it is — this is a distinct,
+// parallel path, not a replacement for it).
+func (s *GitOpsServer) GetServiceConfig(ctx context.Context, req *adminv1.GetServiceConfigRequest) (*adminv1.GetServiceConfigResponse, error) {
+	actor, scoped, err := s.authorizeGitOpsRead(ctx, "GetServiceConfig")
+	if err != nil {
+		return nil, err
+	}
+	if req.GetNamespace() == "" || req.GetService() == "" {
+		return nil, status.Error(codes.InvalidArgument, "namespace and service are required")
+	}
+	if scoped {
+		if err := s.checker.Allow(ctx, actor, "get", req.GetNamespace(), req.GetService(), ""); err != nil {
+			return nil, toGRPCError(err)
+		}
+	}
+
+	raw, version, err := s.store.GetServiceConfig(ctx, req.GetNamespace(), req.GetService())
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	var content any
+	if err := json.Unmarshal(raw, &content); err != nil {
+		return nil, status.Errorf(codes.Internal, "decode config: %v", err)
+	}
+	pbVal, err := structpb.NewValue(content)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "encode config: %v", err)
+	}
+
+	if s.audit != nil {
+		if auditErr := s.audit.Record(ctx, audit.Entry{
+			SPIFFEID:   actor,
+			Action:     "get_config",
+			Namespace:  req.GetNamespace(),
+			SecretName: req.GetService() + "/" + configAuditName,
+			Outcome:    "permitted",
+		}); auditErr != nil {
+			slog.Error("audit write failed for GetServiceConfig", "namespace", req.GetNamespace(), "service", req.GetService(), "err", auditErr)
+		}
+	}
+
+	return &adminv1.GetServiceConfigResponse{Content: pbVal, Version: int32(version)}, nil
 }
 
 // errPatchApplyFailed distinguishes a client-supplied-patch problem (bad

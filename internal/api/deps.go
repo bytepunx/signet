@@ -74,6 +74,10 @@ type gitopsStore interface {
 	// PatchServiceConfig atomically applies a patch to a stored config
 	// document — see store.Store.PatchServiceConfig (bytepunx/signet#38).
 	PatchServiceConfig(ctx context.Context, namespace, service string, apply func(current json.RawMessage) (json.RawMessage, error)) (version int, err error)
+	// GetServiceConfig returns a service's current config document and
+	// version — see store.Store.GetServiceConfig (bytepunx/signet#38's
+	// "worth a real answer" open question, answered by bytepunx/authstar-tower#2).
+	GetServiceConfig(ctx context.Context, namespace, service string) (content json.RawMessage, version int, err error)
 }
 
 // adminStore is the subset of *store.Store used by AdminServer for the
