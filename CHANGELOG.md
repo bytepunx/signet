@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/bytepunx/signet/compare/v0.10.4...v0.11.0) (2026-08-21)
+
+
+### Features
+
+* implement GitOpsService.GetServiceConfig ([8a718a7](https://github.com/bytepunx/signet/commit/8a718a7d247f9de7ea404743be68e1bf485edce2))
+
 ## [0.10.4](https://github.com/bytepunx/signet/compare/v0.10.3...v0.10.4) (2026-08-19)
 
 
