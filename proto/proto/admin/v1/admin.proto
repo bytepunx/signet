@@ -72,6 +72,23 @@ service GitOpsService {
   // RPC only mutates an existing document, it does not create one (use
   // SyncBundle/git sync to create the initial document).
   rpc PatchServiceConfig(PatchServiceConfigRequest) returns (PatchServiceConfigResponse);
+
+  // GetServiceConfig returns a service's current plain config document and
+  // its version, on the same bearer-token-or-SPIFFE-mTLS admin surface every
+  // other GitOpsService RPC uses (bytepunx/authstar-tower#2, bytepunx/signet#38's
+  // "worth a real answer either way" open question — this is that answer: a
+  // dedicated admin-side read RPC, rather than policy-granting a workload's
+  // SPIFFE identity cross-service access on SecretsService.GetServiceConfig,
+  // which would blur the "admin pushes, workload reads its own stuff"
+  // boundary those two services otherwise keep clean). Exists so a caller
+  // that needs to remove specific entries from a nested array (e.g. pruning
+  // stale key generations) can read current contents first, compute exact
+  // indices, then submit a PatchServiceConfig with "test" preconditions
+  // guarding against a concurrent change — PatchServiceConfig's own
+  // "add"+"/-" append trick has no read-free equivalent for targeted
+  // removal. Fails NotFound if no config document exists yet for
+  // namespace/service.
+  rpc GetServiceConfig(GetServiceConfigRequest) returns (GetServiceConfigResponse);
 }
 
 // --- AdminService messages ---
@@ -420,4 +437,27 @@ message PatchServiceConfigRequest {
 message PatchServiceConfigResponse {
   // version is the config document's version after this patch was applied.
   int32 version = 1;
+}
+
+// --- GetServiceConfig messages ---
+
+message GetServiceConfigRequest {
+  string namespace = 1;
+  string service   = 2;
+}
+
+message GetServiceConfigResponse {
+  // content is the full config document as stored, e.g. to compute exact
+  // array indices before submitting a targeted PatchServiceConfig. The race
+  // between this read and a follow-up patch is guarded by PatchServiceConfig
+  // itself, not by this field -- a "test" operation asserting the exact
+  // value at the specific path about to be removed (built from this same
+  // content) fails the whole patch if anything changed in between, rather
+  // than a document-level version check (RFC 6902 has no such concept; the
+  // store's version is per-document metadata, not part of the JSON content
+  // a "test" op could reference).
+  google.protobuf.Value content = 1;
+  // version is the config document's current version (informational --
+  // matches PatchServiceConfigResponse's own field of the same name/meaning).
+  int32 version = 2;
 }
