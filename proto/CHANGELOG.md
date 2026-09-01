@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/bytepunx/signet-proto/compare/v0.2.0...v0.3.0) (2026-08-21)
+
+
+### Features
+
+* add GitOpsService.GetServiceConfig RPC ([831ec89](https://github.com/bytepunx/signet-proto/commit/831ec8920cd4b4b593a3d5b6fc187b46bd4fbdf8))
+
 ## [0.2.0](https://github.com/bytepunx/signet-proto/compare/v0.1.0...v0.2.0) (2026-08-14)
 
 
