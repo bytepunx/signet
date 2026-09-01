@@ -198,9 +198,19 @@ func (s *GitOpsServer) validateBundleScope(ctx context.Context, dir, secretsPath
 }
 
 // GetSOPSPublicKey returns the currently active age public key for this
-// instance's environment.
+// instance's environment. Reachable via an admin bearer token or any
+// authenticated workload's own SPIFFE mTLS identity (bytepunx/signet#78) —
+// unlike GetServiceConfig/SyncBundle/PatchServiceConfig, the result is not
+// scoped per namespace/service by checker.Allow: the returned value is a
+// single global (or environment-scoped) public key, already committed in
+// plaintext to .sops.yaml in the git repository itself (see
+// design/draft.md Section 12), so there is no meaningful "read access to
+// what" to check against. Any workload that can reach signet's workload
+// listener at all may fetch it — this lets a service self-service
+// SOPS-encrypt or verify content bound to signet's current key without
+// needing an admin token.
 func (s *GitOpsServer) GetSOPSPublicKey(ctx context.Context, _ *adminv1.GetSOPSPublicKeyRequest) (*adminv1.GetSOPSPublicKeyResponse, error) {
-	if err := s.requireToken(ctx); err != nil {
+	if _, _, err := s.authorizeGitOpsRead(ctx, "GetSOPSPublicKey"); err != nil {
 		return nil, err
 	}
 	key, err := s.store.GetActiveSOPSKey(ctx, s.environment)

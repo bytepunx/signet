@@ -266,8 +266,8 @@ func TestRun_WorkloadListener_SyncBundleReachable(t *testing.T) {
 
 // TestRun_WorkloadListener_PatchServiceConfigReachable is
 // TestRun_WorkloadListener_SyncBundleReachable's counterpart for
-// bytepunx/signet#38's PatchServiceConfig RPC — the second (and, so far,
-// only other) method in workloadGitOpsScopeAllowedMethods.
+// bytepunx/signet#38's PatchServiceConfig RPC — one of the methods in
+// workloadGitOpsScopeAllowedMethods.
 func TestRun_WorkloadListener_PatchServiceConfigReachable(t *testing.T) {
 	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
 	cancel, _ := runBackground(srv)
@@ -286,12 +286,12 @@ func TestRun_WorkloadListener_PatchServiceConfigReachable(t *testing.T) {
 	}
 }
 
-// TestRun_WorkloadListener_OtherGitOpsMethodsRejected verifies every
-// GitOpsService RPC other than SyncBundle/PatchServiceConfig is rejected at
-// the workload listener with PermissionDenied — it never reaches the
-// handler at all, independent of whether an admin bearer token happens to
-// be attached.
-func TestRun_WorkloadListener_OtherGitOpsMethodsRejected(t *testing.T) {
+// TestRun_WorkloadListener_GetSOPSPublicKeyReachable is
+// TestRun_WorkloadListener_SyncBundleReachable's counterpart for
+// bytepunx/signet#78's SPIFFE-scoped GetSOPSPublicKey read — unlike
+// SyncBundle/PatchServiceConfig, this RPC has no per-namespace/service scope
+// check to also exercise; reachability alone is the whole story here.
+func TestRun_WorkloadListener_GetSOPSPublicKeyReachable(t *testing.T) {
 	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
 	cancel, _ := runBackground(srv)
 	defer cancel()
@@ -304,13 +304,36 @@ func TestRun_WorkloadListener_OtherGitOpsMethodsRejected(t *testing.T) {
 	defer conn.Close()
 
 	_, err = adminv1.NewGitOpsServiceClient(conn).GetSOPSPublicKey(context.Background(), &adminv1.GetSOPSPublicKeyRequest{})
-	if status.Code(err) != codes.PermissionDenied {
-		t.Errorf("GetSOPSPublicKey via workload listener: want PermissionDenied, got %v", err)
+	if status.Code(err) != codes.Unimplemented {
+		t.Errorf("want Unimplemented (proof GetSOPSPublicKey reached the handler), got %v", err)
 	}
+}
+
+// TestRun_WorkloadListener_OtherGitOpsMethodsRejected verifies every
+// GitOpsService RPC other than SyncBundle/PatchServiceConfig/
+// GetSOPSPublicKey is rejected at the workload listener with
+// PermissionDenied — it never reaches the handler at all, independent of
+// whether an admin bearer token happens to be attached.
+func TestRun_WorkloadListener_OtherGitOpsMethodsRejected(t *testing.T) {
+	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
+	cancel, _ := runBackground(srv)
+	defer cancel()
+	waitReady()
+
+	conn, err := grpc.NewClient(srv.WorkloadAddr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("dial workload: %v", err)
+	}
+	defer conn.Close()
 
 	_, err = adminv1.NewGitOpsServiceClient(conn).TriggerSync(context.Background(), &adminv1.TriggerSyncRequest{})
 	if status.Code(err) != codes.PermissionDenied {
 		t.Errorf("TriggerSync via workload listener: want PermissionDenied, got %v", err)
+	}
+
+	_, err = adminv1.NewGitOpsServiceClient(conn).RegisterRepository(context.Background(), &adminv1.RegisterRepositoryRequest{})
+	if status.Code(err) != codes.PermissionDenied {
+		t.Errorf("RegisterRepository via workload listener: want PermissionDenied, got %v", err)
 	}
 }
 

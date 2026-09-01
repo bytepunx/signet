@@ -1072,6 +1072,36 @@ bytepunx/signet#25) and notifies `WatchServiceConfig`/`WatchServiceBundle` subsc
 same way a sync-driven config write does — a caller watching a service's config sees a
 patch just as promptly as a git-sync'd change.
 
+### SPIFFE-scoped GetSOPSPublicKey (bytepunx/signet#78)
+
+**Problem**: several workload services (authstar's `keep`, `herald`, `tower`) needed an
+admin bearer token purely to fetch signet's active SOPS age public key so they could
+self-encrypt content bound to it — the only reason any of them held an admin token at all,
+since the actual bundle/config writes they perform are already covered by the self-service
+`SyncBundle`/`PatchServiceConfig` paths above. Handing a workload an admin token just to
+read one non-secret value is a disproportionate privilege grant: with it, that workload
+could call any admin RPC, not just this one read.
+
+**Decision**: `GetSOPSPublicKey` accepts the same dual-auth as `SyncBundle`/
+`PatchServiceConfig` (an admin bearer token, or the caller's own verified SPIFFE mTLS
+identity via `authorizeGitOpsRead`) — but, unlike those two, it performs **no**
+`checker.Allow` scoping afterward. The returned public key is a single global (or
+environment-scoped) value, not namespace/service-scoped data, and it's already committed in
+plaintext to `.sops.yaml` in the git repository itself (see "Why age" above) — so there is
+no meaningful "read access to what" to check, and gating it behind a policy grant would be
+stricter than the data's own sensitivity warrants. Any workload that can reach signet's
+workload listener at all may fetch it. `GetSOPSPublicKey` is registered on the workload
+mTLS listener alongside `SyncBundle`/`PatchServiceConfig` (see
+`workloadGitOpsScopeAllowedMethods`); every other `GitOpsService`/`AdminService` RPC remains
+admin-listener-only.
+
+This closes the last reason authstar's `keep`/`herald`/`tower` needed an admin token at all
+— each drops it entirely once its client library can dial the workload listener with its
+own SPIFFE identity for `GitOpsService` calls (see `bytepunx/signet-clients`), using
+`CreatePolicy`-granted `"put"` scope only for the specific cross-service writes each
+actually performs (`herald` → `tower`/`keep`/`portcullis`; `tower` → `portcullis`; `keep` is
+self-only and needs no policy grants at all).
+
 ### Reconciling PatchServiceConfig against git sync (bytepunx/signet#45)
 
 **Problem**: `PatchServiceConfig` never attributes `repo_id` and never writes back to git.
