@@ -89,6 +89,26 @@ service GitOpsService {
   // removal. Fails NotFound if no config document exists yet for
   // namespace/service.
   rpc GetServiceConfig(GetServiceConfigRequest) returns (GetServiceConfigResponse);
+
+  // PutServiceConfig creates or fully replaces a service's plain config
+  // document -- the git-free write PatchServiceConfig deliberately doesn't
+  // offer, since PatchServiceConfig only mutates an existing document.
+  // expected_version makes this optimistic-concurrency-guarded rather than
+  // a blind overwrite, deliberately with no unconditional-overwrite escape
+  // hatch: 0 means create-only (fails ALREADY_EXISTS if a document is
+  // already there), and any other value means replace-only-if-currently-at-
+  // exactly-that-version (fails ABORTED -- the same conflict code
+  // PatchServiceConfig already uses -- if the document changed since the
+  // caller last read it). Two intended callers: an admin UI's edit/save
+  // flow (GetServiceConfig to load content+version, then PutServiceConfig
+  // with that version as the precondition), and a Helm post-install/upgrade
+  // hook bootstrapping a workload's own initial config with
+  // expected_version=0, idempotently no-op-ing on re-runs instead of
+  // stomping config an operator has since changed. Composes for free with
+  // the existing git-sync 3-way merge (bytepunx/signet#45): this RPC never
+  // touches the synced_content baseline, only content/version, exactly like
+  // PatchServiceConfig already doesn't.
+  rpc PutServiceConfig(PutServiceConfigRequest) returns (PutServiceConfigResponse);
 }
 
 // --- AdminService messages ---
@@ -460,4 +480,28 @@ message GetServiceConfigResponse {
   // version is the config document's current version (informational --
   // matches PatchServiceConfigResponse's own field of the same name/meaning).
   int32 version = 2;
+}
+
+// --- PutServiceConfig messages ---
+
+message PutServiceConfigRequest {
+  string namespace = 1;
+  string service   = 2;
+  // content replaces the entire config document -- unlike
+  // PatchServiceConfigRequest.operations, this is not a diff.
+  google.protobuf.Value content = 3;
+  // expected_version guards this write with optimistic concurrency:
+  //   0        -- create-only; fails ALREADY_EXISTS if a document already exists.
+  //   non-zero -- replace-only-if-currently-at-exactly-this-version; fails
+  //               ABORTED if the document has changed since the caller last
+  //               read it (matches GetServiceConfigResponse.version /
+  //               PatchServiceConfigResponse.version). There is no way to
+  //               request an unconditional overwrite; every caller must
+  //               state what they expect the current state to be.
+  int32 expected_version = 4;
+}
+
+message PutServiceConfigResponse {
+  // version is the config document's version after this write.
+  int32 version = 1;
 }
