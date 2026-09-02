@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/bytepunx/signet-proto/compare/v0.3.0...v0.4.0) (2026-09-02)
+
+
+### Features
+
+* add GitOpsService.PutServiceConfig RPC ([eda091c](https://github.com/bytepunx/signet-proto/commit/eda091c0ad388b41f90a8beec0373e21a218d463))
+
 ## [0.3.0](https://github.com/bytepunx/signet-proto/compare/v0.2.0...v0.3.0) (2026-08-21)
 
 
