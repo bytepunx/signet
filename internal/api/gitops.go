@@ -638,6 +638,79 @@ func (s *GitOpsServer) PatchServiceConfig(ctx context.Context, req *adminv1.Patc
 	return &adminv1.PatchServiceConfigResponse{Version: int32(version)}, nil
 }
 
+// PutServiceConfig creates or fully replaces a service's plain config
+// document without requiring git at all (bytepunx/signet#80) — the
+// git-free write PatchServiceConfig deliberately doesn't offer, since
+// PatchServiceConfig only mutates an existing document. Guarded by
+// optimistic concurrency, not a blind overwrite: expected_version=0 means
+// create-only (AlreadyExists if a document is already there), any other
+// value means replace-only-if-currently-at-exactly-that-version (Aborted
+// on conflict, the same code PatchServiceConfig's own conflicts already
+// use). There is deliberately no unconditional-overwrite mode — see
+// store.Store.PutServiceConfigIfVersion's doc comment for why.
+//
+// Reachable the same two ways as SyncBundle/PatchServiceConfig: an admin
+// bearer token (full access), or a workload's own SPIFFE mTLS identity,
+// scoped via checker.Allow with the "put" permission — a workload writing
+// its own namespace/service needs no policy row, anything broader needs an
+// explicit policy grant. Intended callers: an admin UI's edit/save flow
+// (GetServiceConfig to load content+version, then this with that version as
+// the precondition), and a Helm post-install/upgrade hook bootstrapping a
+// workload's own initial config with expected_version=0 — idempotent across
+// re-runs instead of stomping config an operator has since changed.
+func (s *GitOpsServer) PutServiceConfig(ctx context.Context, req *adminv1.PutServiceConfigRequest) (*adminv1.PutServiceConfigResponse, error) {
+	actor, scoped, err := s.authorizeGitOpsWrite(ctx, "PutServiceConfig")
+	if err != nil {
+		return nil, err
+	}
+	if req.GetNamespace() == "" || req.GetService() == "" {
+		return nil, status.Error(codes.InvalidArgument, "namespace and service are required")
+	}
+	if req.GetContent() == nil {
+		return nil, status.Error(codes.InvalidArgument, "content is required")
+	}
+	if req.GetExpectedVersion() < 0 {
+		return nil, status.Error(codes.InvalidArgument, "expected_version must not be negative")
+	}
+	if scoped {
+		if err := s.checker.Allow(ctx, actor, "put", req.GetNamespace(), req.GetService(), ""); err != nil {
+			return nil, toGRPCError(err)
+		}
+	}
+
+	content, err := req.GetContent().MarshalJSON()
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "encode content: %v", err)
+	}
+
+	version, err := s.store.PutServiceConfigIfVersion(ctx, req.GetNamespace(), req.GetService(), content, int(req.GetExpectedVersion()))
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
+	if s.audit != nil {
+		// Distinct action from git-sync's "put_config" (see
+		// gitops.Syncer.recordAudit) — this is an ad hoc, git-free write,
+		// not one tracked through a repository, and an operator
+		// investigating an incident should be able to tell the two apart.
+		if auditErr := s.audit.Record(ctx, audit.Entry{
+			SPIFFEID:   actor,
+			Action:     "put_config_direct",
+			Namespace:  req.GetNamespace(),
+			SecretName: req.GetService() + "/" + configAuditName,
+			Outcome:    "permitted",
+		}); auditErr != nil {
+			slog.Error("audit write failed for PutServiceConfig", "namespace", req.GetNamespace(), "service", req.GetService(), "err", auditErr)
+		}
+	}
+	if s.bus != nil {
+		s.bus.NotifyService(req.GetNamespace(), req.GetService())
+		s.bus.NotifyBundle(req.GetNamespace(), req.GetService())
+	}
+
+	return &adminv1.PutServiceConfigResponse{Version: int32(version)}, nil
+}
+
 // GetServiceConfig returns a service's current plain config document and
 // version — see this RPC's own doc comment in admin.proto for why this
 // exists (bytepunx/signet#38, bytepunx/authstar-tower#2): a dedicated

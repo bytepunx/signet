@@ -214,6 +214,94 @@ func (s *Store) SyncServiceConfig(
 	return version, false, nil
 }
 
+// PutServiceConfigIfVersion creates or fully replaces (namespace, service)'s
+// config document, guarded by optimistic concurrency rather than a blind
+// overwrite (see GitOpsServer.PutServiceConfig's doc comment for the
+// RPC-level contract this backs, bytepunx/signet#80):
+//
+//   - expectedVersion == 0: the document must not already exist. Returns
+//     ErrAlreadyExists if it does.
+//   - expectedVersion != 0: the document must already exist at exactly that
+//     version. Returns ErrNotFound if no document exists at all, or
+//     ErrConflict if it exists but at a different version — the caller
+//     should re-fetch via GetServiceConfig and retry with the fresh
+//     version, not just resubmit the same expectedVersion.
+//
+// Unlike PutServiceConfig (the git-sync write path), this never sets or
+// touches repo_id or synced_content — those columns track git provenance,
+// and this method is deliberately git-free. A row created here has both
+// NULL; if the same (namespace, service) later gets a registered git
+// source, bytepunx/signet#45's 3-way merge protects this row's content
+// exactly like it already protects PatchServiceConfig's writes, since
+// neither this method nor PatchServiceConfig ever advances synced_content.
+func (s *Store) PutServiceConfigIfVersion(ctx context.Context, namespace, service string, content json.RawMessage, expectedVersion int) (version int, err error) {
+	if namespace == "" || service == "" {
+		return 0, fmt.Errorf("%w: namespace and service must not be empty", ErrInvalidInput)
+	}
+	if len(content) == 0 {
+		return 0, fmt.Errorf("%w: content must not be empty", ErrInvalidInput)
+	}
+	if expectedVersion < 0 {
+		return 0, fmt.Errorf("%w: expected_version must not be negative", ErrInvalidInput)
+	}
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("put service config if version: begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck // no-op if already committed
+
+	var currentVersion int
+	err = tx.QueryRow(ctx,
+		`SELECT version FROM configs WHERE namespace = $1 AND service = $2`,
+		namespace, service,
+	).Scan(&currentVersion)
+
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		if expectedVersion != 0 {
+			return 0, ErrNotFound
+		}
+		if err := tx.QueryRow(ctx,
+			`INSERT INTO configs (namespace, service, content, version)
+			 VALUES ($1, $2, $3, 1) RETURNING version`,
+			namespace, service, content,
+		).Scan(&version); err != nil {
+			return 0, wrapConflictError("put service config if version: insert", err)
+		}
+	case err != nil:
+		return 0, wrapConflictError("put service config if version: read current", err)
+	default:
+		if expectedVersion == 0 {
+			return 0, ErrAlreadyExists
+		}
+		if currentVersion != expectedVersion {
+			return 0, ErrConflict
+		}
+		if err := tx.QueryRow(ctx,
+			`UPDATE configs SET content = $3, version = version + 1, updated_at = now()
+			 WHERE namespace = $1 AND service = $2 AND version = $4
+			 RETURNING version`,
+			namespace, service, content, expectedVersion,
+		).Scan(&version); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				// Lost a race between the read above and this write — a
+				// concurrent writer changed the version in between. Under
+				// CockroachDB's serializable isolation this should surface
+				// as a 40001 at commit instead, but the explicit
+				// "AND version = $4" is defense in depth either way.
+				return 0, ErrConflict
+			}
+			return 0, wrapConflictError("put service config if version: update", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, wrapConflictError("put service config if version: commit", err)
+	}
+	return version, nil
+}
+
 // wrapConflictError maps a CockroachDB serialization failure (SQLSTATE
 // 40001, raised on transaction commit when it can't be placed consistently
 // relative to a concurrent transaction on the same data) to ErrConflict;

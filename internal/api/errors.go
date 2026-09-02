@@ -25,6 +25,13 @@ func toGRPCError(err error) error {
 		return status.Error(codes.PermissionDenied, err.Error())
 	case errors.Is(err, store.ErrNotFound):
 		return status.Error(codes.NotFound, "not found")
+	case errors.Is(err, store.ErrAlreadyExists):
+		// Pre-existing gap surfaced while adding PutServiceConfig
+		// (bytepunx/signet#80): store.ErrAlreadyExists (e.g. RegisterRepository's
+		// duplicate-name case) previously fell through to the default case
+		// below as an "unmapped internal error", returning codes.Internal
+		// for what is actually a well-understood, expected condition.
+		return status.Error(codes.AlreadyExists, err.Error())
 	case errors.Is(err, store.ErrInvalidInput):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, store.ErrConflict):

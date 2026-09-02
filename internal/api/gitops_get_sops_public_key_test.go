@@ -47,6 +47,9 @@ func (f *fakeSOPSKeyStore) PatchServiceConfig(context.Context, string, string, f
 func (f *fakeSOPSKeyStore) GetServiceConfig(context.Context, string, string) (json.RawMessage, int, error) {
 	return nil, 0, store.ErrNotFound
 }
+func (f *fakeSOPSKeyStore) PutServiceConfigIfVersion(context.Context, string, string, json.RawMessage, int) (int, error) {
+	return 0, nil
+}
 
 // TestGetSOPSPublicKey_BearerTokenSuccess is the admin-token happy path.
 func TestGetSOPSPublicKey_BearerTokenSuccess(t *testing.T) {

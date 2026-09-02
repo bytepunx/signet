@@ -34,9 +34,11 @@ plugins:
     out: gen
     opt:
       - paths=source_relative
-# Pinned to the BSR module's main track for now. Once signet-proto cuts its
-# first tagged release, pin this to that label instead
-# (buf.build/bytepunx/signet-proto:v0.1.0) so schema upgrades become an
-# explicit, reviewable one-line bump rather than always tracking HEAD.
+# Pinned to a tagged signet-proto release so schema upgrades are an
+# explicit, reviewable one-line bump rather than always tracking HEAD — the
+# same determinism problem this repo's own client libraries (see
+# bytepunx/signet-clients#64) hit before their buf.gen.yaml files were
+# pinned the same way. Bump deliberately when a newer signet-proto release
+# is ready to adopt, alongside a `buf generate` + review of the diff.
 inputs:
-  - module: buf.build/bytepunx/signet-proto
+  - module: buf.build/bytepunx/signet-proto:v0.4.0

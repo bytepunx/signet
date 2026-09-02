@@ -223,25 +223,29 @@ func newWithCloser(
 		}),
 	)
 	signetv1.RegisterSecretsServiceServer(workloadSrv, secrets)
-	// GitOpsService.SyncBundle, PatchServiceConfig, and GetSOPSPublicKey are
-	// also reachable here, authenticated by the caller's own SPIFFE mTLS
-	// identity rather than an admin bearer token (bytepunx/signet#23, #38,
-	// #78) — e.g. a service self-service-provisioning a secret for another
-	// service to pick up on its next bundle fetch, atomically patching one
-	// field of a shared config document instead of a full-document replace,
-	// or fetching signet's active SOPS age public key to self-encrypt
-	// content without needing an admin token. Registering the whole
+	// GitOpsService.SyncBundle, PatchServiceConfig, PutServiceConfig, and
+	// GetSOPSPublicKey are also reachable here, authenticated by the
+	// caller's own SPIFFE mTLS identity rather than an admin bearer token
+	// (bytepunx/signet#23, #38, #78, #80) — e.g. a service
+	// self-service-provisioning a secret for another service to pick up on
+	// its next bundle fetch, atomically patching one field of a shared
+	// config document instead of a full-document replace, creating or
+	// replacing its own config document without any git repo involved at
+	// all (e.g. a Helm post-install hook bootstrapping initial config), or
+	// fetching signet's active SOPS age public key to self-encrypt content
+	// without needing an admin token. Registering the whole
 	// GitOpsServiceServer technically wires every other GitOps/admin RPC
 	// onto this listener too, but
 	// workloadGitOpsScopeInterceptor/workloadGitOpsScopeStreamInterceptor
 	// below reject all of them outright, independent of (not a substitute
 	// for) each RPC's own auth check — only the methods in
 	// workloadGitOpsScopeAllowedMethods are meant to be reachable without an
-	// admin bearer token. SyncBundle and PatchServiceConfig each additionally
-	// enforce their own namespace/service scope on top of that (see
-	// GitOpsServer.SyncBundle/validateBundleScope and
-	// GitOpsServer.PatchServiceConfig); GetSOPSPublicKey does not — it
-	// returns a single global (or environment-scoped) value with no
+	// admin bearer token. SyncBundle, PatchServiceConfig, and
+	// PutServiceConfig each additionally enforce their own namespace/service
+	// scope on top of that (see GitOpsServer.SyncBundle/validateBundleScope,
+	// GitOpsServer.PatchServiceConfig, and GitOpsServer.PutServiceConfig);
+	// GetSOPSPublicKey does not — it returns a single global (or
+	// environment-scoped) value with no
 	// per-namespace/service target to scope against, so any authenticated
 	// workload identity is sufficient (see GetSOPSPublicKey's own doc
 	// comment).
@@ -445,16 +449,18 @@ func recoveryStreamInterceptor(srv any, ss grpc.ServerStream, _ *grpc.StreamServ
 // comment in newWithCloser. Every other admin RPC still requires the admin
 // bearer token, but this interceptor enforces that independently at the
 // transport boundary rather than relying solely on each handler's own auth
-// check. SyncBundle and PatchServiceConfig are each scoped per-call to the
-// caller's own namespace/service (via validateBundleScope and
-// checker.Allow's "put" permission respectively, bytepunx/signet#23, #38);
-// GetSOPSPublicKey is not namespace/service-scoped at all — it returns a
-// single global value any authenticated workload identity may read
-// (bytepunx/signet#78, see GetSOPSPublicKey's own doc comment for why).
+// check. SyncBundle, PatchServiceConfig, and PutServiceConfig are each
+// scoped per-call to the caller's own namespace/service (via
+// validateBundleScope and checker.Allow's "put" permission respectively,
+// bytepunx/signet#23, #38, #80); GetSOPSPublicKey is not
+// namespace/service-scoped at all — it returns a single global value any
+// authenticated workload identity may read (bytepunx/signet#78, see
+// GetSOPSPublicKey's own doc comment for why).
 var workloadGitOpsScopeAllowedMethods = map[string]bool{
 	adminv1.GitOpsService_SyncBundle_FullMethodName:         true,
 	adminv1.GitOpsService_PatchServiceConfig_FullMethodName: true,
 	adminv1.GitOpsService_GetSOPSPublicKey_FullMethodName:   true,
+	adminv1.GitOpsService_PutServiceConfig_FullMethodName:   true,
 }
 
 // workloadGitOpsScopeInterceptor rejects any unary AdminService/GitOpsService

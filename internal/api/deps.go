@@ -78,6 +78,10 @@ type gitopsStore interface {
 	// version — see store.Store.GetServiceConfig (bytepunx/signet#38's
 	// "worth a real answer" open question, answered by bytepunx/authstar-tower#2).
 	GetServiceConfig(ctx context.Context, namespace, service string) (content json.RawMessage, version int, err error)
+	// PutServiceConfigIfVersion creates or fully replaces a config document,
+	// guarded by optimistic concurrency — see store.Store.PutServiceConfigIfVersion
+	// (bytepunx/signet#80).
+	PutServiceConfigIfVersion(ctx context.Context, namespace, service string, content json.RawMessage, expectedVersion int) (version int, err error)
 }
 
 // adminStore is the subset of *store.Store used by AdminServer for the
