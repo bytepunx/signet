@@ -1102,6 +1102,57 @@ own SPIFFE identity for `GitOpsService` calls (see `bytepunx/signet-clients`), u
 actually performs (`herald` → `tower`/`keep`/`portcullis`; `tower` → `portcullis`; `keep` is
 self-only and needs no policy grants at all).
 
+### PutServiceConfig — git-free config create/replace (bytepunx/signet#80)
+
+**Problem:** `PatchServiceConfig` (Section 12's "Atomic config patching") is the only
+git-free config write, and it deliberately only mutates an *existing* document — there was
+no way to create a service's *first* config document without going through git sync,
+the webhook, or `signet bundle push`. Two consumers need exactly that: the admin web UI
+(an operator edit/save flow) and Helm-deployed workloads (authstar) that need to bootstrap
+their own initial config on `helm install`, with no registered git repo involved at all.
+
+**Decision:** `GitOpsService.PutServiceConfig(namespace, service, content,
+expected_version)` creates or fully replaces a config document, guarded by optimistic
+concurrency rather than a blind overwrite — and deliberately with **no
+unconditional-overwrite mode**:
+
+- `expected_version = 0` — create-only. Fails `AlreadyExists` if a document already exists.
+- `expected_version ≠ 0` — replace-only-if-currently-at-exactly-that-version. Fails
+  `NotFound` if no document exists at all, or `Aborted` (the same conflict code
+  `PatchServiceConfig` already uses) if it exists but at a different version.
+
+This is the same failure class `PatchServiceConfig` and the 3-way git-merge (`#45`) already
+exist to close — a blind full-document overwrite silently destroying a concurrent change —
+so this RPC never offers the easier, unguarded path. Two intended flows:
+
+- **Admin UI:** `GetServiceConfig` to load `(content, version)` → edit → `PutServiceConfig`
+  with that version as `expected_version`. A conflict means someone else wrote in between;
+  the UI re-fetches and lets the operator reconcile, rather than silently clobbering.
+- **Helm hook (authstar):** a post-install/upgrade Job, running under the workload's own
+  SPIRE identity, calls `PutServiceConfig(..., expected_version: 0)`. First install
+  creates the config; a re-run (upgrade, hook retry) harmlessly no-ops against
+  `AlreadyExists` instead of resetting config an operator has since changed via the UI.
+
+Auth is identical to `SyncBundle`/`PatchServiceConfig`'s (`authorizeGitOpsWrite`): an admin
+bearer token, or the caller's own SPIFFE identity scoped via `checker.Allow`'s `"put"`
+permission — a workload writing its own namespace/service needs no policy row, anything
+broader needs an explicit grant. Registered on the workload mTLS listener alongside
+`SyncBundle`/`PatchServiceConfig`/`GetSOPSPublicKey` (`workloadGitOpsScopeAllowedMethods`).
+
+**Composes for free with the git-sync 3-way merge:** `PutServiceConfigIfVersion` (the store
+method backing this RPC) only ever touches `content`/`version`, never `synced_content` —
+the same discipline `PatchServiceConfig` already follows. A service with no git config
+source registered (the common Helm-deployed case) simply never has `synced_content`
+populated, so this RPC is the only writer with no merge complexity in play. A service that
+later *does* get a git source registered is automatically protected by `#45`'s existing
+merge logic, with zero additional work — a row this RPC created is treated exactly like a
+`PatchServiceConfig`-modified row on the first sync: there's no baseline to fast-forward
+from, so the sync goes through `merge` rather than a blind first-write insert.
+
+**Audit:** a distinct action, `put_config_direct`, not the `put_config` git-sync writes
+already use — so an operator can filter "was this config change tracked in git, or an ad
+hoc API write" in the audit log.
+
 ### Reconciling PatchServiceConfig against git sync (bytepunx/signet#45)
 
 **Problem**: `PatchServiceConfig` never attributes `repo_id` and never writes back to git.

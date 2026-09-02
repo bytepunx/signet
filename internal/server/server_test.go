@@ -309,11 +309,34 @@ func TestRun_WorkloadListener_GetSOPSPublicKeyReachable(t *testing.T) {
 	}
 }
 
+// TestRun_WorkloadListener_PutServiceConfigReachable is
+// TestRun_WorkloadListener_SyncBundleReachable's counterpart for
+// bytepunx/signet#80's SPIFFE-scoped PutServiceConfig write — the
+// git-free config create/replace used by, e.g., a Helm post-install hook
+// bootstrapping a workload's own initial config.
+func TestRun_WorkloadListener_PutServiceConfigReachable(t *testing.T) {
+	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
+	cancel, _ := runBackground(srv)
+	defer cancel()
+	waitReady()
+
+	conn, err := grpc.NewClient(srv.WorkloadAddr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("dial workload: %v", err)
+	}
+	defer conn.Close()
+
+	_, err = adminv1.NewGitOpsServiceClient(conn).PutServiceConfig(context.Background(), &adminv1.PutServiceConfigRequest{})
+	if status.Code(err) != codes.Unimplemented {
+		t.Errorf("want Unimplemented (proof PutServiceConfig reached the handler), got %v", err)
+	}
+}
+
 // TestRun_WorkloadListener_OtherGitOpsMethodsRejected verifies every
 // GitOpsService RPC other than SyncBundle/PatchServiceConfig/
-// GetSOPSPublicKey is rejected at the workload listener with
-// PermissionDenied — it never reaches the handler at all, independent of
-// whether an admin bearer token happens to be attached.
+// GetSOPSPublicKey/PutServiceConfig is rejected at the workload listener
+// with PermissionDenied — it never reaches the handler at all, independent
+// of whether an admin bearer token happens to be attached.
 func TestRun_WorkloadListener_OtherGitOpsMethodsRejected(t *testing.T) {
 	srv := newTestServer(t, nil, nil, nil, &fakeMgr{})
 	cancel, _ := runBackground(srv)

@@ -46,10 +46,14 @@ func (f *fakePatchStore) PatchServiceConfig(ctx context.Context, namespace, serv
 	return f.patchFn(ctx, namespace, service, apply)
 }
 
-// GetServiceConfig isn't under test in this file (see gitops_get_config_test.go) --
-// a no-op stub, same as every other non-PatchServiceConfig method above.
+// GetServiceConfig and PutServiceConfigIfVersion aren't under test in this
+// file (see gitops_get_config_test.go and gitops_put_config_test.go) --
+// no-op stubs, same as every other non-PatchServiceConfig method above.
 func (f *fakePatchStore) GetServiceConfig(context.Context, string, string) (json.RawMessage, int, error) {
 	return nil, 0, store.ErrNotFound
+}
+func (f *fakePatchStore) PutServiceConfigIfVersion(context.Context, string, string, json.RawMessage, int) (int, error) {
+	return 0, nil
 }
 
 func addOp(path string, value any) *adminv1.JsonPatchOperation {

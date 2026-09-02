@@ -47,6 +47,9 @@ func (f *fakeGetConfigStore) GetServiceConfig(ctx context.Context, namespace, se
 	f.called = true
 	return f.getFn(ctx, namespace, service)
 }
+func (f *fakeGetConfigStore) PutServiceConfigIfVersion(context.Context, string, string, json.RawMessage, int) (int, error) {
+	return 0, nil
+}
 
 func TestGetServiceConfig_RequiresNamespaceAndService(t *testing.T) {
 	fs := &fakeGetConfigStore{}
