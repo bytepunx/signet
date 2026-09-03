@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.0](https://github.com/bytepunx/signet/compare/v0.10.4...v0.11.0) (2026-09-02)
+
+
+### Features
+
+* add GitOpsService.PutServiceConfig RPC ([c55896e](https://github.com/bytepunx/signet/commit/c55896ec8cf45dcbe23546f57173ccca2abb28cf)), closes [#80](https://github.com/bytepunx/signet/issues/80)
+* implement GitOpsService.GetServiceConfig ([8a718a7](https://github.com/bytepunx/signet/commit/8a718a7d247f9de7ea404743be68e1bf485edce2))
+
 ## [0.10.4](https://github.com/bytepunx/signet/compare/v0.10.3...v0.10.4) (2026-08-19)
 
 
