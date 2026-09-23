@@ -1,0 +1,50 @@
+[project]
+name = "signet-client"
+version = "0.5.0"
+description = "Python client for signet, generated from bytepunx/signet-proto"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "grpcio>=1.66",
+    "protobuf>=5.27",
+    # Used to validate/parse CA bundles for DialAdmin with a clear error
+    # message instead of a raw grpc/OpenSSL failure at handshake time; also
+    # provides the AES-256-GCM primitive encrypt_for_secret uses to match
+    # sops' leaf/MAC encryption scheme.
+    "cryptography>=42",
+    # PyO3 bindings to the Rust `rage` crate (age encryption), used by
+    # encrypt_for_secret to wrap the SOPS data key to an age recipient. No
+    # PyPI package implements the actual SOPS envelope format (the old
+    # `sops` package is dead/PGP-only), so encrypt_for_secret hand-rolls
+    # that narrow slice on top of this. >=1.3.0 for armored-output support.
+    "pyrage>=1.3.0",
+    # YAML serialization for encrypt_for_secret's SOPS document output.
+    # ruamel.yaml (rather than PyYAML) is used for its literal-block-scalar
+    # support (LiteralScalarString), needed to emit the age-armored
+    # `enc: |` block the way sops itself does.
+    "ruamel.yaml>=0.18",
+]
+
+[project.optional-dependencies]
+dev = ["grpcio-tools>=1.66", "pytest>=8.0"]
+# Only needed for dial_workload's SPIFFE mTLS support (see README's SPIFFE
+# section). Everything else (dial_admin, watch_bundle, acquire_lock) has no
+# dependency on this extra and works against any grpc.Channel the caller
+# supplies.
+workload = ["spiffe>=0.3.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# buf generate lays output out mirroring the proto package path:
+# src/signet/v1/*_pb2.py(i), src/admin/v1/*_pb2.py(i). No __init__.py files
+# are generated or needed — these are PEP 420 implicit namespace packages.
+# src/signet_client is the hand-written wrapper layer (this package's actual
+# source), a regular (non-namespace) package.
+packages = ["src/signet", "src/admin", "src/signet_client"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
