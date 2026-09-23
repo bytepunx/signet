@@ -1,0 +1,39 @@
+{
+  "name": "@bytepunx/signet-client",
+  "version": "0.9.0",
+  "description": "TypeScript/Node client for signet, generated from bytepunx/signet-proto",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bytepunx/signet-clients.git",
+    "directory": "typescript"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p examples/echo/tsconfig.json && tsc -p examples/gitops-workload/tsconfig.json",
+    "test": "node --test dist/**/*.test.js"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.0.0",
+    "@grpc/grpc-js": "^1.10.0",
+    "age-encryption": "^0.3.0",
+    "spiffe": "^0.5.1",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@peculiar/webcrypto": "^1.7.0",
+    "@peculiar/x509": "^1.14.0"
+  }
+}
