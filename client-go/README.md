@@ -1,0 +1,141 @@
+# signet (Go client)
+
+Go client library for [signet](https://github.com/bytepunx/signet), generated from
+[bytepunx/signet-proto](https://github.com/bytepunx/signet-proto) and pinned
+independently of the server's own release cycle (see `buf.gen.yaml`).
+
+```
+go get github.com/bytepunx/signet-clients/go
+```
+
+Go modules need no separate publish step — pushing a `go/vX.Y.Z` tag (which release-please
+does automatically) already makes that version resolvable via `go get`.
+[`publish-go.yml`](../.github/workflows/publish-go.yml) additionally pings the module proxy
+so it's indexed on [pkg.go.dev](https://pkg.go.dev/github.com/bytepunx/signet-clients/go)
+immediately rather than on first request.
+
+## Usage
+
+### Workload access (SecretsService, SPIFFE mTLS)
+
+```go
+conn, closer, err := signet.DialWorkload(ctx, "signet.internal:8443",
+    "unix:///run/spire/sockets/agent.sock", "example.org")
+if err != nil {
+    log.Fatal(err)
+}
+defer conn.Close()
+defer closer()
+
+client := signet.SecretsClient(conn)
+resp, err := client.GetSecret(ctx, &signetv1.GetSecretRequest{
+    Namespace: "default",
+    Service:   "example",
+    Name:      "api-key",
+})
+```
+
+`DialWorkload` retries automatically, no opt-in required, if it loses the race between a
+freshly-created pod's SPIFFE identity registration and this call: SPIRE's
+controller-manager registers a new pod's identity reactively (off the pod's own creation
+event), and that registration takes a few seconds to propagate to the node-local SPIRE
+agent this dials. A Job's very first `DialWorkload` call is the sharpest case, since it
+has no prior pod that might already have won this race for the same ServiceAccount. On
+"no identity issued" (and only that failure — anything else is returned immediately), it
+retries up to 5 times total (the initial attempt plus 4 retries), backing off 1s, 2s, 4s,
+8s between them (~15s worst case) — the exact schedule verified working in a real
+downstream consumer that hit this race. See
+[bytepunx/signet-clients#33](https://github.com/bytepunx/signet-clients/issues/33).
+
+### Operator access (AdminService/GitOpsService, bearer token)
+
+```go
+conn, err := signet.DialAdmin("localhost:8444", token, nil, false, false)
+if err != nil {
+    log.Fatal(err)
+}
+defer conn.Close()
+
+admin := signet.AdminClient(conn)
+status, err := admin.Status(ctx, &adminv1.StatusRequest{})
+```
+
+`DialAdmin` picks transport security from `addr`: loopback addresses (the documented
+`kubectl port-forward` workflow) default to plaintext, everything else upgrades to TLS
+automatically. The last two parameters override that heuristic in opposite directions —
+`forceTLS` requests TLS even for a loopback address, and `plaintext` forces insecure
+transport even for a non-loopback address, bypassing the heuristic entirely. `plaintext`
+exists for dialing a real in-cluster admin listener by its cluster-DNS name (a
+non-loopback address) once signet exposes one
+([bytepunx/signet#19](https://github.com/bytepunx/signet/issues/19)): that listener is
+intentionally still plaintext-behind-bearer-token, not TLS-terminated, and without
+`plaintext` the loopback heuristic would pick TLS and the handshake would fail
+immediately. Per-RPC bearer-token authentication is unaffected either way. `forceTLS` and
+`plaintext` are mutually exclusive with each other, and `plaintext` is mutually exclusive
+with a non-empty `caPEM`; `DialAdmin` returns an error if either combination is
+requested. See
+[bytepunx/signet-clients#32](https://github.com/bytepunx/signet-clients/issues/32).
+
+See `examples/getsecret` for a complete runnable example.
+
+### Coordinated restarts (no process host, no environment injection)
+
+`WatchBundle`/`AcquireLock`/`WaitForRestart` let a service pull its own configuration
+directly and in-memory, and safely coordinate a fleet-wide serialized restart when it
+changes — without [kickr](https://github.com/bytepunx/kickr) (a process-host base image
+that injects the bundle into a child process's environment) and without ever writing
+secrets to the OS environment, where they'd be readable via `/proc/<pid>/environ` by
+anything sharing the pod's PID namespace.
+
+This library deliberately does **not**:
+- spawn or supervise a child process — it's embedded directly in the process that's
+  configuring itself from the bundle;
+- write the bundle to environment variables, files, or anywhere outside memory;
+- refetch the bundle after the lock is acquired — since there's no replacement process to
+  hand it to, the *next* process instance (started fresh by Kubernetes after this one
+  exits) fetches it during its own normal startup.
+
+```go
+client := signet.SecretsClient(conn)
+
+// Fetch once at startup, configure the app in memory.
+bundle, err := client.GetServiceBundle(ctx, &signetv1.GetServiceBundleRequest{
+    Namespace: "default", Service: "example",
+})
+
+// ... serve traffic ...
+
+// Block until signet reports a change AND this replica holds the restart
+// lock (at most one replica restarts at a time, fleet-wide).
+lock, err := signet.WaitForRestart(ctx, client, "default", "example",
+    30*time.Second /* lock TTL — must cover your graceful shutdown */,
+    10*time.Second /* debounce — absorb rapid successive changes */)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Do your own graceful shutdown: drain in-flight requests, close resources.
+
+lock.Release() // release the lock for the next waiting replica
+os.Exit(0)      // Kubernetes restarts the pod; the new process fetches fresh config
+```
+
+`Lock.Lost()` reports if the lock is lost unexpectedly (stream error, missed heartbeats)
+before you call `Release` — treat that as "another replica may now restart concurrently."
+
+See `examples/restart-on-change` for a complete runnable example, and
+[signet's restart-lock docs](https://github.com/bytepunx/signet/blob/main/docs/restart-lock.md)
+for the underlying protocol.
+
+See also `examples/echo`, a container-oriented, env-var-configured smoke-test fixture (used by
+the [signet-smoke-test](https://github.com/bytepunx/signet-smoke-test) harness) that combines
+both of the above — it is **test-only** and deliberately prints secrets to stdout.
+
+## Regenerating stubs
+
+```
+buf generate
+```
+
+Pulls `signet/v1` and `admin/v1` from `buf.build/bytepunx/signet-proto` and regenerates
+`gen/`. Edit the module reference in `buf.gen.yaml` to pin a different schema version.
