@@ -5,3 +5,6 @@ __pycache__/
 .venv/
 build/
 dist/
+# Generated stubs are not committed yet; buf.gen.yaml is verified in CI instead.
+src/signet/
+src/admin/

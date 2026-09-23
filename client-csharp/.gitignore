@@ -1,0 +1,6 @@
+# Generated stubs are not committed yet; buf.gen.yaml is verified in CI instead.
+gen/
+# Every project under this folder (library, examples, tests) has its own bin/obj
+# (bytepunx/signet-clients#67).
+**/bin/
+**/obj/

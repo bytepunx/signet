@@ -1,0 +1,5 @@
+# Generated stubs are not committed yet; buf.gen.yaml is verified in CI instead.
+src/gen/
+target/
+# Library crate: consumers resolve their own dependency tree.
+Cargo.lock
