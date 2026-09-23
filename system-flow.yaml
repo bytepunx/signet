@@ -8,12 +8,27 @@ template:
   repo: "https://github.com/bytepunx/system-flow-template"
   ref: "main"
   version: "1.0.18"
-  applied: 2026-09-23T23:51:48Z
+  applied: 2026-09-23T23:52:23Z
 layout:
   design: design
   docs: docs
   wip: wip
 projects:
+  - name: server
+    path: server
+    kind: go
+  - name: proto
+    path: proto
+    kind: buf
+  - name: admin
+    path: admin
+    kind: sveltekit
+  - name: client-csharp
+    path: client-csharp
+    kind: csharp
+  - name: client-erlang
+    path: client-erlang
+    kind: erlang
   - name: client-go
     path: client-go
     kind: go
@@ -26,9 +41,6 @@ projects:
   - name: client-typescript
     path: client-typescript
     kind: node
-  - name: server
-    path: server
-    kind: go
 dashboard:
   image: ghcr.io/bytepunx/flaiover
   tag: latest
