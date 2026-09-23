@@ -1,0 +1,36 @@
+version: 1
+name: "signet"
+key: "s"
+description: "SPIFFE-based configuration and secrets distribution for Kubernetes"
+owner: "alex"
+repo: "https://github.com/bytepunx/signet"
+template:
+  repo: "https://github.com/bytepunx/system-flow-template"
+  ref: "main"
+  version: "1.0.18"
+  applied: 2026-09-23T23:51:48Z
+layout:
+  design: design
+  docs: docs
+  wip: wip
+projects:
+  - name: client-go
+    path: client-go
+    kind: go
+  - name: client-python
+    path: client-python
+    kind: python
+  - name: client-rust
+    path: client-rust
+    kind: rust
+  - name: client-typescript
+    path: client-typescript
+    kind: node
+  - name: server
+    path: server
+    kind: go
+dashboard:
+  image: ghcr.io/bytepunx/flaiover
+  tag: latest
+  port: 4242
+  bind: 0.0.0.0 # 127.0.0.1 to keep the dashboard on this host only

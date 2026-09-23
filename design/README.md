@@ -1,0 +1,11 @@
+# design
+
+Internal documentation for signet. Outward-facing documentation lives in `docs/`.
+
+| Folder | Purpose | Lifecycle |
+|--------|---------|-----------|
+| `adrs/` | Architecture Decision Records, one decision at one point in time per file | Immutable once accepted, superseded by newer ADRs |
+| `system/` | The living design of the system as it is right now | Edited whenever a conversation resolves new details, direction, standards, or decisions |
+| `tech/` | Every active technology: version, where used, why | Edited whenever a dependency changes |
+
+Markdown only, YAML front matter on every file, Mermaid for diagrams. When an ADR changes a decision, update `system/` and `tech/` in the same change.
