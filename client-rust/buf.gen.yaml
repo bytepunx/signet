@@ -1,0 +1,22 @@
+version: v2
+plugins:
+  # prost generates message types; tonic generates the async gRPC client/server code.
+  # Plugin versions pinned to what src/gen was last generated and verified
+  # against (bytepunx/signet-clients#64) — an unpinned `remote:` reference
+  # floats on whatever the BSR currently serves as latest, so a plugin
+  # release with a different generated-code shape could silently break every
+  # future `buf generate` here. Bump deliberately, review the diff.
+  - remote: buf.build/community/neoeinstein-prost:v0.5.0
+    out: src/gen
+  - remote: buf.build/community/neoeinstein-tonic:v0.5.0
+    out: src/gen
+# Pinned independently of signet's own buf.gen.yaml and the other language
+# clients in this repo, to a tagged signet-proto release
+# (bytepunx/signet-clients#64, bumped to v0.4.0 by #67's automation for
+# GitOpsService.PutServiceConfig). An unpinned
+# module reference floats on signet-proto's latest commit, so every
+# `buf generate` here silently picked up upstream schema changes —
+# including ones not yet released/tested. Bump deliberately when a newer
+# signet-proto release is ready to adopt.
+inputs:
+  - module: buf.build/bytepunx/signet-proto:v0.4.0
