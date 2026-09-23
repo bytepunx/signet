@@ -1,0 +1,507 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "google/protobuf/struct.proto";
+
+// AdminService handles operator lifecycle operations: unsealing, sealing, and status.
+service AdminService {
+  rpc UnsealKey(UnsealKeyRequest)     returns (UnsealKeyResponse);
+  rpc UnsealShare(UnsealShareRequest) returns (UnsealShareResponse);
+  rpc Seal(SealRequest)               returns (SealResponse);
+  rpc Status(StatusRequest)           returns (StatusResponse);
+
+  // Key-encryption-key (KEK) lifecycle. Rotating the KEK re-wraps every
+  // secret's DEK without re-encrypting any secret's ciphertext blob.
+  rpc RotateKEK(RotateKEKRequest) returns (RotateKEKResponse);
+  rpc ListKEKs(ListKEKsRequest)   returns (ListKEKsResponse);
+  rpc PruneKEK(PruneKEKRequest)   returns (PruneKEKResponse);
+
+  // RotateMasterKey re-wraps every KEK (and the key-check value) under a new
+  // master key supplied by the operator, then adopts it as the active master
+  // key. It does not touch secrets or their DEKs. The caller is responsible
+  // for redistributing the new key material to keyholders (Shamir) or
+  // updating the Kubernetes Secret (cluster-native auto-unseal) afterward.
+  rpc RotateMasterKey(RotateMasterKeyRequest) returns (RotateMasterKeyResponse);
+
+  // Access policy management. Most workloads never need an explicit policy —
+  // see the convention-first model in docs/policies.md: a caller whose SPIFFE
+  // ID encodes ns/<namespace>/sa/<service> matching a secret's own
+  // namespace/service is granted access automatically. These RPCs are only
+  // for cross-namespace/cross-service or wildcard grants.
+  rpc CreatePolicy(CreatePolicyRequest) returns (CreatePolicyResponse);
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+  rpc DeletePolicy(DeletePolicyRequest) returns (DeletePolicyResponse);
+
+  // Explicit secret/config deletion. GitOps sync no longer infers deletion
+  // from a file's absence during a walk (see bytepunx/signet#44) — these are
+  // now the only way to remove a secret or config document.
+  rpc DeleteSecret(DeleteSecretRequest) returns (DeleteSecretResponse);
+  rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
+}
+
+// GitOpsService manages SOPS key lifecycle and GitHub repository sync configuration.
+service GitOpsService {
+  // SOPS age key management.
+  rpc GetSOPSPublicKey(GetSOPSPublicKeyRequest)   returns (GetSOPSPublicKeyResponse);
+  rpc RotateSOPSKey(RotateSOPSKeyRequest)         returns (RotateSOPSKeyResponse);
+  rpc ListSOPSKeys(ListSOPSKeysRequest)           returns (ListSOPSKeysResponse);
+  rpc PruneSOPSKey(PruneSOPSKeyRequest)           returns (PruneSOPSKeyResponse);
+
+  // GitHub repository registration and sync.
+  rpc RegisterRepository(RegisterRepositoryRequest) returns (RegisterRepositoryResponse);
+  rpc ListRepositories(ListRepositoriesRequest)     returns (ListRepositoriesResponse);
+  rpc RemoveRepository(RemoveRepositoryRequest)     returns (RemoveRepositoryResponse);
+  rpc TriggerSync(TriggerSyncRequest)               returns (TriggerSyncResponse);
+
+  // Local bundle sync: push a tar.gz of a local git working tree directly to
+  // signet without requiring a remote repository. The first chunk must be a
+  // SyncBundleHeader; subsequent chunks carry the raw archive bytes.
+  // buf:lint:ignore RPC_REQUEST_STANDARD_NAME
+  rpc SyncBundle(stream SyncBundleChunk) returns (SyncBundleResponse);
+
+  // PatchServiceConfig atomically applies a JSON Patch (RFC 6902) to a
+  // service's existing plain config document, without the caller reading,
+  // modifying, and re-pushing the whole document — SyncBundle's config path
+  // is a full-document replace, which silently drops every other field/entry
+  // a partial push doesn't mention. The patch is applied server-side inside
+  // a single transaction (read current content, apply, write back), so two
+  // concurrent PatchServiceConfig calls against the same namespace/service
+  // never lose either update, unlike a client-side read-modify-write. Fails
+  // NotFound if no config document exists yet for namespace/service — this
+  // RPC only mutates an existing document, it does not create one (use
+  // SyncBundle/git sync to create the initial document).
+  rpc PatchServiceConfig(PatchServiceConfigRequest) returns (PatchServiceConfigResponse);
+
+  // GetServiceConfig returns a service's current plain config document and
+  // its version, on the same bearer-token-or-SPIFFE-mTLS admin surface every
+  // other GitOpsService RPC uses (bytepunx/authstar-tower#2, bytepunx/signet#38's
+  // "worth a real answer either way" open question — this is that answer: a
+  // dedicated admin-side read RPC, rather than policy-granting a workload's
+  // SPIFFE identity cross-service access on SecretsService.GetServiceConfig,
+  // which would blur the "admin pushes, workload reads its own stuff"
+  // boundary those two services otherwise keep clean). Exists so a caller
+  // that needs to remove specific entries from a nested array (e.g. pruning
+  // stale key generations) can read current contents first, compute exact
+  // indices, then submit a PatchServiceConfig with "test" preconditions
+  // guarding against a concurrent change — PatchServiceConfig's own
+  // "add"+"/-" append trick has no read-free equivalent for targeted
+  // removal. Fails NotFound if no config document exists yet for
+  // namespace/service.
+  rpc GetServiceConfig(GetServiceConfigRequest) returns (GetServiceConfigResponse);
+
+  // PutServiceConfig creates or fully replaces a service's plain config
+  // document -- the git-free write PatchServiceConfig deliberately doesn't
+  // offer, since PatchServiceConfig only mutates an existing document.
+  // expected_version makes this optimistic-concurrency-guarded rather than
+  // a blind overwrite, deliberately with no unconditional-overwrite escape
+  // hatch: 0 means create-only (fails ALREADY_EXISTS if a document is
+  // already there), and any other value means replace-only-if-currently-at-
+  // exactly-that-version (fails ABORTED -- the same conflict code
+  // PatchServiceConfig already uses -- if the document changed since the
+  // caller last read it). Two intended callers: an admin UI's edit/save
+  // flow (GetServiceConfig to load content+version, then PutServiceConfig
+  // with that version as the precondition), and a Helm post-install/upgrade
+  // hook bootstrapping a workload's own initial config with
+  // expected_version=0, idempotently no-op-ing on re-runs instead of
+  // stomping config an operator has since changed. Composes for free with
+  // the existing git-sync 3-way merge (bytepunx/signet#45): this RPC never
+  // touches the synced_content baseline, only content/version, exactly like
+  // PatchServiceConfig already doesn't.
+  rpc PutServiceConfig(PutServiceConfigRequest) returns (PutServiceConfigResponse);
+}
+
+// --- AdminService messages ---
+
+message UnsealKeyRequest {
+  bytes key = 1;
+}
+
+message UnsealKeyResponse {
+  bool   unsealed        = 1;
+  int32  shares_received = 2;
+  int32  shares_required = 3;
+  string message         = 4;
+}
+
+message UnsealShareRequest {
+  bytes share = 1;
+}
+
+message UnsealShareResponse {
+  bool   unsealed        = 1;
+  int32  shares_received = 2;
+  int32  shares_required = 3;
+  string message         = 4;
+}
+
+message SealRequest {}
+
+message SealResponse {
+  string message = 1;
+}
+
+message StatusRequest {}
+
+message StatusResponse {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_SEALED      = 1;
+    STATE_UNSEALING   = 2;
+    STATE_UNSEALED    = 3;
+  }
+  State  state           = 1;
+  int32  shares_received = 2;
+  int32  shares_required = 3;
+  string version         = 4;
+}
+
+message RotateKEKRequest {}
+
+message RotateKEKResponse {
+  string new_kek_id  = 1;
+  // old_kek_id is retained (deactivated, not deleted) so DEKs wrapped before
+  // rotation completes remain decryptable until PruneKEK is called.
+  string old_kek_id  = 2;
+  // secrets_rewrapped is the number of DEKs successfully re-wrapped under
+  // the new KEK during this call.
+  int32  secrets_rewrapped = 3;
+}
+
+message ListKEKsRequest {}
+
+message KEKInfo {
+  string id             = 1;
+  bool   is_active      = 2;
+  string created_at     = 3;
+  string deactivated_at = 4; // empty if still active
+}
+
+message ListKEKsResponse {
+  repeated KEKInfo keks = 1;
+}
+
+message PruneKEKRequest {
+  string id = 1;
+}
+
+message PruneKEKResponse {
+  string message = 1;
+}
+
+message RotateMasterKeyRequest {
+  // new_key must be exactly 32 bytes.
+  bytes new_key = 1;
+}
+
+message RotateMasterKeyResponse {
+  string message      = 1;
+  int32  keks_rewrapped = 2;
+}
+
+// --- Policy messages ---
+
+message CreatePolicyRequest {
+  // spiffe_id is a glob matched against the caller's SPIFFE ID. '*' matches
+  // any single path segment (does not cross '/'); e.g.
+  // "spiffe://cluster.local/ns/*/sa/echo" matches the "echo" service account
+  // in any namespace. To grant access to every workload in the trust domain,
+  // use "spiffe://cluster.local/ns/*/sa/*" — a bare "**" is NOT supported
+  // (this is Go's path.Match, not a shell/gitignore-style glob engine).
+  string spiffe_id = 1;
+  // namespace is the target secret's namespace, or "*" for any namespace.
+  string namespace = 2;
+  // service is the target secret's service. Combined with secret_name into
+  // a "namespace/service/secret_name" pattern evaluated the same way.
+  string service = 3;
+  // secret_name is a glob for the secret name within namespace/service.
+  // Defaults to "*" (every secret in that namespace/service) if empty.
+  string secret_name = 4;
+  // permissions granted, e.g. ["read"]. "*" grants every permission.
+  // Defaults to ["read"] if empty.
+  repeated string permissions = 5;
+}
+
+message CreatePolicyResponse {
+  string id = 1;
+}
+
+message ListPoliciesRequest {}
+
+message PolicyInfo {
+  string id                  = 1;
+  string spiffe_id           = 2;
+  string namespace           = 3;
+  // pattern is the full "namespace/service/secret_name"-shaped glob as
+  // stored — service and secret_name are not tracked as separate fields.
+  string pattern              = 4;
+  repeated string permissions = 5;
+  string created_at           = 6;
+}
+
+message ListPoliciesResponse {
+  repeated PolicyInfo policies = 1;
+}
+
+message DeletePolicyRequest {
+  string id = 1;
+}
+
+message DeletePolicyResponse {
+  string message = 1;
+}
+
+message DeleteSecretRequest {
+  string namespace   = 1;
+  string service     = 2;
+  string secret_name = 3;
+}
+
+message DeleteSecretResponse {
+  string message = 1;
+}
+
+message DeleteConfigRequest {
+  string namespace = 1;
+  string service   = 2;
+}
+
+message DeleteConfigResponse {
+  string message = 1;
+}
+
+// --- GitOpsService messages ---
+
+message GetSOPSPublicKeyRequest {}
+
+message GetSOPSPublicKeyResponse {
+  // age public key in bech32 format (age1...). Add to .sops.yaml as an age recipient.
+  string public_key  = 1;
+  string fingerprint = 2;
+  string created_at  = 3;
+  // environment this key is scoped to; empty = global (usable by any environment).
+  string environment = 4;
+}
+
+message RotateSOPSKeyRequest {}
+
+message RotateSOPSKeyResponse {
+  string new_public_key  = 1;
+  string new_fingerprint = 2;
+  // old_public_key is retained for decryption until pruned.
+  string old_public_key  = 3;
+  // environment the new key is scoped to; empty = global.
+  string new_environment = 4;
+}
+
+message ListSOPSKeysRequest {}
+
+message SOPSKeyInfo {
+  string public_key     = 1;
+  string fingerprint    = 2;
+  bool   is_active      = 3;
+  string created_at     = 4;
+  string deactivated_at = 5; // empty if still active
+  // environment this key is scoped to; empty = global.
+  string environment    = 6;
+}
+
+message ListSOPSKeysResponse {
+  repeated SOPSKeyInfo keys = 1;
+}
+
+message PruneSOPSKeyRequest {
+  string public_key = 1;
+}
+
+message PruneSOPSKeyResponse {
+  string message = 1;
+}
+
+message RegisterRepositoryRequest {
+  string name         = 1; // human alias, e.g. "infra-secrets"
+  string repo_url     = 2; // https://github.com/org/repo
+  string branch       = 3; // e.g. "main"
+  string secrets_path = 4; // path within repo, e.g. "secrets/"
+  // PEM-encoded SSH private key for read-only deploy access.
+  bytes  deploy_key   = 5;
+  // config_path is the directory prefix within the repo that holds plain YAML
+  // config files, e.g. "config/". Leave empty to disable config sync.
+  string config_path  = 6;
+}
+
+message RegisterRepositoryResponse {
+  string id              = 1;
+  // webhook_url is the endpoint to configure in GitHub (Settings → Webhooks).
+  string webhook_url     = 2;
+  // webhook_secret is the shared HMAC secret to configure in GitHub.
+  // Shown only on registration; not retrievable afterwards.
+  string webhook_secret  = 3;
+}
+
+message ListRepositoriesRequest {}
+
+message RepositoryInfo {
+  string id             = 1;
+  string name           = 2;
+  string repo_url       = 3;
+  string branch         = 4;
+  string secrets_path   = 5;
+  string last_sync_sha  = 6;
+  string last_sync_at   = 7;
+  string config_path    = 8;
+}
+
+message ListRepositoriesResponse {
+  repeated RepositoryInfo repositories = 1;
+}
+
+message RemoveRepositoryRequest {
+  string id = 1;
+}
+
+message RemoveRepositoryResponse {
+  string message = 1;
+}
+
+message TriggerSyncRequest {
+  string id = 1; // repository id
+  // force resolves any config sync conflict (see PatchServiceConfig and
+  // bytepunx/signet#45) by taking git's version, discarding whatever local
+  // PatchServiceConfig changes hadn't yet been reflected in git. Without
+  // force, a conflicted config is left untouched and keeps being reported
+  // in configs_conflicted on every sync until explicitly resolved.
+  bool force = 2;
+}
+
+message TriggerSyncResponse {
+  int32  secrets_added      = 1;
+  int32  secrets_updated    = 2;
+  int32  secrets_deleted    = 3;
+  string sync_sha           = 4;
+  repeated string errors    = 5;
+  int32  configs_synced     = 6;
+  // configs_conflicted counts configs where a JSON path changed on both the
+  // git side and the live (PatchServiceConfig-derived) side since the last
+  // sync — signet refuses to silently pick a winner for these. Re-run with
+  // force=true to take git's version, or resolve the divergence out of band.
+  int32  configs_conflicted = 7;
+}
+
+// --- SyncBundle messages ---
+
+// SyncBundleChunk is a single streaming message for the SyncBundle RPC.
+// The first message must contain a SyncBundleHeader; all subsequent messages
+// must contain raw tar.gz archive bytes.
+message SyncBundleChunk {
+  oneof payload {
+    SyncBundleHeader header = 1;
+    bytes            data   = 2;
+  }
+}
+
+// SyncBundleHeader carries metadata sent as the first SyncBundleChunk.
+message SyncBundleHeader {
+  // secrets_path is the directory prefix within the repo that holds secrets,
+  // e.g. "secrets/". Defaults to "secrets/" if empty.
+  string secrets_path = 1;
+  // head_sha is the HEAD commit SHA of the local repo, used for audit logging.
+  // May be empty for non-git sources.
+  string head_sha = 2;
+  // config_path is the directory prefix for plain YAML config files, e.g. "config/".
+  // Leave empty to skip config sync.
+  string config_path = 3;
+}
+
+message SyncBundleResponse {
+  int32  secrets_added   = 1;
+  int32  secrets_updated = 2;
+  int32  secrets_deleted = 3;
+  string sync_sha        = 4;
+  repeated string errors = 5;
+  int32  configs_synced  = 6;
+}
+
+// --- PatchServiceConfig messages ---
+
+// JsonPatchOperation is one operation of an RFC 6902 JSON Patch document.
+message JsonPatchOperation {
+  // op is one of "add", "remove", "replace", "move", "copy", "test" per
+  // RFC 6902 §4. Unrecognised values are rejected.
+  string op = 1;
+  // path is an RFC 6901 JSON Pointer into the config document, e.g.
+  // "/tenants/acme/sessionKeyGenerations/-" — a path segment of "-" as the
+  // final component of an "add" path appends to the end of an array, which
+  // is how a single new entry is added to an existing list without reading
+  // it first.
+  string path = 2;
+  // from is required for "move"/"copy" operations (the source JSON Pointer);
+  // unused otherwise.
+  string from = 3;
+  // value is required for "add"/"replace"/"test" operations; unused for
+  // "remove"/"move"/"copy".
+  google.protobuf.Value value = 4;
+}
+
+message PatchServiceConfigRequest {
+  string namespace = 1;
+  string service   = 2;
+  // operations are applied in order as a single RFC 6902 JSON Patch document
+  // against the current stored config; the whole patch either fully applies
+  // or the call fails with no partial effect (if any operation fails, e.g. a
+  // "test" precondition or an out-of-bounds path, none of the operations are
+  // committed).
+  repeated JsonPatchOperation operations = 3;
+}
+
+message PatchServiceConfigResponse {
+  // version is the config document's version after this patch was applied.
+  int32 version = 1;
+}
+
+// --- GetServiceConfig messages ---
+
+message GetServiceConfigRequest {
+  string namespace = 1;
+  string service   = 2;
+}
+
+message GetServiceConfigResponse {
+  // content is the full config document as stored, e.g. to compute exact
+  // array indices before submitting a targeted PatchServiceConfig. The race
+  // between this read and a follow-up patch is guarded by PatchServiceConfig
+  // itself, not by this field -- a "test" operation asserting the exact
+  // value at the specific path about to be removed (built from this same
+  // content) fails the whole patch if anything changed in between, rather
+  // than a document-level version check (RFC 6902 has no such concept; the
+  // store's version is per-document metadata, not part of the JSON content
+  // a "test" op could reference).
+  google.protobuf.Value content = 1;
+  // version is the config document's current version (informational --
+  // matches PatchServiceConfigResponse's own field of the same name/meaning).
+  int32 version = 2;
+}
+
+// --- PutServiceConfig messages ---
+
+message PutServiceConfigRequest {
+  string namespace = 1;
+  string service   = 2;
+  // content replaces the entire config document -- unlike
+  // PatchServiceConfigRequest.operations, this is not a diff.
+  google.protobuf.Value content = 3;
+  // expected_version guards this write with optimistic concurrency:
+  //   0        -- create-only; fails ALREADY_EXISTS if a document already exists.
+  //   non-zero -- replace-only-if-currently-at-exactly-this-version; fails
+  //               ABORTED if the document has changed since the caller last
+  //               read it (matches GetServiceConfigResponse.version /
+  //               PatchServiceConfigResponse.version). There is no way to
+  //               request an unconditional overwrite; every caller must
+  //               state what they expect the current state to be.
+  int32 expected_version = 4;
+}
+
+message PutServiceConfigResponse {
+  // version is the config document's version after this write.
+  int32 version = 1;
+}
