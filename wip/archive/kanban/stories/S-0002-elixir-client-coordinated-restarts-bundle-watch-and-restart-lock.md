@@ -3,11 +3,11 @@ id: S-0002
 type: story
 nature: feature
 title: "Elixir client: coordinated restarts (bundle watch and restart lock)"
-status: review
+status: done
 parent: E-0001
 owner: alex
 created: 2026-10-27T19:05:08Z
-updated: 2026-10-27T22:15:37Z
+updated: 2026-10-27T22:25:06Z
 transitions:
   - to: ready
     at: 2026-10-27T19:37:38Z
@@ -18,6 +18,9 @@ transitions:
   - to: review
     at: 2026-10-27T22:15:37Z
     by: agent-S-0002
+  - to: done
+    at: 2026-10-27T22:25:06Z
+    by: alex
 tags: []
 topics: [elixir, client, restart-lock]
 touches: [client-elixir/lib/signet/restart.ex, client-elixir/test/restart_test.exs, client-elixir/lib/signet/restart/streams.ex, client-elixir/test/support/fake_restart_streams.ex, client-elixir/lib/signet/restart/watcher.ex, client-elixir/test/signet/restart/watcher_test.exs, client-elixir/lib/signet/restart/lock.ex, client-elixir/test/signet/restart/lock_test.exs, client-elixir/test/signet/restart_test.exs, design/issues/I-0003-scripts-test-client-elixir-sh-stalls-in-docker-build-when-the-registry-is-unreachable-although-the-toolchain-image-exists-locally.md, design/issues/summary.md, client-elixir/CHANGELOG.md, client-elixir/README.md, client-elixir/examples/restart_on_change.exs, client-elixir/lib/signet.ex, docs/users/elixir-client.md]
