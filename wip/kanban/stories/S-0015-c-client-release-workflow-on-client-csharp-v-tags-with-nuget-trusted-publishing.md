@@ -7,12 +7,15 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:54:19Z
+updated: 2026-10-27T22:59:11Z
 transitions: []
 tags: [client-csharp]
 topics: [release, github]
 touches: [".github/workflows/release-client-csharp.yml", client-csharp/SignetClient.csproj, client-csharp/README.md]
 after: [S-0007]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 2h
   delivery: 2026-10-30T16:22:00Z
