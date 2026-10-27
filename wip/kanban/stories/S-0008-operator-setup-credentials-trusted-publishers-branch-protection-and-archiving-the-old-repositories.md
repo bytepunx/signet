@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:48:44Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: []
 topics: [release, github]
@@ -15,10 +15,10 @@ touches: [docs/operators/release.md, scripts/README.md, scripts/set-release-secr
 after: [S-0005, S-0007]
 forecast:
   duration: 2h
-  delivery: 2026-10-28T09:09:00Z
+  delivery: 2026-10-30T09:22:00Z
   basis: "Its own forecast of 2h; 3rd in the pull order with an in-progress limit of 2, behind S-0006 and S-0007."
   by: flai
-  at: 2026-10-27T22:48:44Z
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0008 Operator setup: credentials, trusted publishers, branch protection, and archiving the old repositories
 

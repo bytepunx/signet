@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:53:15Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: [client-csharp]
 topics: [release, github]
@@ -15,10 +15,10 @@ touches: [".github/workflows/release-client-csharp.yml", client-csharp/SignetCli
 after: [S-0007]
 forecast:
   duration: 2h
-  delivery: 2026-10-28T12:42:00Z
-  basis: "Three tasks in two layers; flai's 12m is the median of three done stories scaled by size 6, too small for a workflow with release-note building and a Docker pack check."
-  by: planner-S-0015
-  at: 2026-10-27T22:53:15Z
+  delivery: 2026-10-30T16:22:00Z
+  basis: "Its own forecast of 2h; 11th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009, S-0010, S-0020, S-0011, S-0012, S-0013 and S-0014."
+  by: flai
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0015 C# client: release workflow on client-csharp/v* tags with NuGet trusted publishing
 

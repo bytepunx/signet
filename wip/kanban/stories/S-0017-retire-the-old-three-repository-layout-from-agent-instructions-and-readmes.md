@@ -7,16 +7,17 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:53:35Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: [server]
 topics: [docs]
 touches: [server/CLAUDE.md, admin/CLAUDE.md, server/README.md, admin/README.md, docs/contributors/index.md, design/system/overview.md, server/githooks/pre-commit, server/Makefile, README.md, proto/README.md, client-csharp/README.md, client-elixir/README.md, client-erlang/README.md, client-go/README.md, client-python/README.md, client-rust/README.md, client-typescript/README.md, server/design/draft.md, server/CHECKLIST.md]
 forecast:
   duration: 1h30m
-  basis: "flai forecast gave 20m from a median 116 s per unit of size over 3 done stories; raised to 1h30m because seven tasks across ten components need each build and test command verified for the contributors guide, and the grep sweep reads many hits."
-  by: planner-S-0017
-  at: 2026-10-27T22:53:35Z
+  delivery: 2026-10-30T14:43:00Z
+  basis: "Its own forecast of 1h30m; 13th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009, S-0010, S-0020, S-0011, S-0012, S-0013, S-0014, S-0015 and S-0016."
+  by: flai
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0017 Retire the old three-repository layout from agent instructions and READMEs
 

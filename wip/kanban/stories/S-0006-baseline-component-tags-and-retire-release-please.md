@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:48:44Z
+updated: 2026-10-27T22:54:19Z
 transitions:
   - to: ready
     at: 2026-10-27T22:23:53Z
@@ -18,10 +18,10 @@ touches: [server/.github/workflows/ci.yml, server/.github/workflows/publish.yml,
 after: [S-0005]
 forecast:
   duration: 1h
-  delivery: 2026-10-28T00:07:00Z
+  delivery: 2026-10-28T06:13:00Z
   basis: "Its own forecast of 1h; 1st in the pull order with an in-progress limit of 2, with nothing ahead of it."
   by: flai
-  at: 2026-10-27T22:48:44Z
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0006 Baseline component tags and retire release-please
 

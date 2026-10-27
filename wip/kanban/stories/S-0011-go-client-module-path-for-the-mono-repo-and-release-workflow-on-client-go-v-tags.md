@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:52:28Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: [client-go]
 topics: [release, github]
@@ -15,9 +15,10 @@ touches: [".github/workflows/release-client-go.yml", client-go/go.mod, client-go
 after: [S-0007]
 forecast:
   duration: 2h
-  basis: "Adjusted up from flai's 22m: three tasks, one regenerates stubs with buf, and the release workflow cannot be run before a real tag, so it gets a careful read rather than a run."
-  by: planner-S-0011
-  at: 2026-10-27T22:52:28Z
+  delivery: 2026-10-30T12:22:00Z
+  basis: "Its own forecast of 2h; 7th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009, S-0010 and S-0020."
+  by: flai
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0011 Go client: module path for the mono-repo and release workflow on client-go/v* tags
 

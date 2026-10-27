@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:53:37Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: [client-elixir]
 topics: [release, github]
@@ -15,10 +15,10 @@ touches: [".github/workflows/release-client-elixir.yml", client-elixir/mix.exs, 
 after: [S-0007]
 forecast:
   duration: 2h
-  delivery: 2026-10-28T12:55:00Z
-  basis: "Adjusted from flai's 14m: four tasks, one Docker script that needs a local dry run, and a workflow that cannot run until the operator's HEX_API_KEY exists; 12th in the pull order."
-  by: planner-S-0016
-  at: 2026-10-27T22:53:37Z
+  delivery: 2026-10-30T16:44:00Z
+  basis: "Its own forecast of 2h; 12th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009, S-0010, S-0020, S-0011, S-0012, S-0013, S-0014 and S-0015."
+  by: flai
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0016 Elixir client: release workflow on client-elixir/v* tags publishing to hex.pm
 

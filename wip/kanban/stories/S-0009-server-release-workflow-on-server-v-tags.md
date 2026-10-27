@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:48:44Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: [server]
 topics: [release, github]
@@ -15,10 +15,10 @@ touches: [".github/workflows/release-server.yml", ".github/workflows/publish-ser
 after: [S-0007]
 forecast:
   duration: 3h
-  delivery: 2026-10-28T10:26:00Z
+  delivery: 2026-10-30T16:41:00Z
   basis: "Its own forecast of 3h; 4th in the pull order with an in-progress limit of 2, behind S-0006, S-0007 and S-0008."
   by: flai
-  at: 2026-10-27T22:48:44Z
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0009 Server release workflow on server/v* tags
 

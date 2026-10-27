@@ -7,17 +7,17 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:52:16Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: [admin]
 topics: [admin]
 touches: [admin/README.md, admin/CLAUDE.md, system-flow.yaml, design/system/overview.md, design/system/admin.md]
 forecast:
   duration: 45m
-  delivery: 2026-10-28T12:12:00Z
-  basis: "flai forecast gave 8m (median 116 s per size unit, size 4); raised to 45m because the story writes a design note, edits the manifest, and deletes a folder, and waits on the operator's decision."
-  by: planner-S-0018
-  at: 2026-10-27T22:52:16Z
+  delivery: 2026-10-30T09:36:00Z
+  basis: "Its own forecast of 45m; 14th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009, S-0010, S-0020, S-0011, S-0012, S-0013, S-0014, S-0015, S-0016 and S-0017."
+  by: flai
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0018 Decide the admin sub-project's place in the mono-repo
 

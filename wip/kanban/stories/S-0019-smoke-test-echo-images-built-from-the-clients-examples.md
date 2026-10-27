@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:53:28Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: []
 topics: [ci, github]
@@ -15,9 +15,10 @@ touches: [".github/workflows/smoke-images.yml", scripts/build-echo-images.sh, sc
 after: [S-0020]
 forecast:
   duration: 2h
-  basis: "Four tasks in three layers: a Docker build script for five images (about 45 minutes with a local build of each), the workflow, smoke.sh, and a new operator guide. Raised from flai's computed 6m, which rests on 3 done stories of size 3 and ignores that five images are built to check one script."
-  by: planner-S-0019
-  at: 2026-10-27T22:53:28Z
+  delivery: 2026-10-31T09:29:00Z
+  basis: "Its own forecast of 2h; 15th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009, S-0010, S-0020, S-0011, S-0012, S-0013, S-0014, S-0015, S-0016, S-0017 and S-0018."
+  by: flai
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0019 Smoke-test echo images built from the clients' examples
 

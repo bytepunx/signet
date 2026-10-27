@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:53:16Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: [client-python]
 topics: [release, github]
@@ -15,10 +15,10 @@ touches: [".github/workflows/release-client-python.yml", client-python/pyproject
 after: [S-0007]
 forecast:
   duration: 2h
-  delivery: 2026-10-28T12:02:00Z
-  basis: "Four tasks, two small and one a workflow that needs a local Docker build to check; adjusted from flai's 14m, which assumed a size 7 story with no history of workflows."
-  by: planner-S-0012
-  at: 2026-10-27T22:53:16Z
+  delivery: 2026-10-30T14:22:00Z
+  basis: "Its own forecast of 2h; 8th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009, S-0010, S-0020 and S-0011."
+  by: flai
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0012 Python client: release workflow on client-python/v* tags with PyPI trusted publishing
 

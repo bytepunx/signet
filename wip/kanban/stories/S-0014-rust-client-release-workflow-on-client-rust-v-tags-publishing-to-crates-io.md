@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:52:52Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: [client-rust]
 topics: [release, github]
@@ -15,10 +15,10 @@ touches: [".github/workflows/release-client-rust.yml", client-rust/Cargo.toml, c
 after: [S-0007]
 forecast:
   duration: 2h
-  delivery: 2026-10-28T12:30:00Z
-  basis: "flai gave 12m from the median of 3 done stories; adjusted to 2h for four tasks: one workflow file with care over tag, version, and notes handling, two small edits, and a real run on GitHub that can need a retry."
-  by: planner-S-0014
-  at: 2026-10-27T22:52:52Z
+  delivery: 2026-10-30T14:44:00Z
+  basis: "Its own forecast of 2h; 10th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009, S-0010, S-0020, S-0011, S-0012 and S-0013."
+  by: flai
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0014 Rust client: release workflow on client-rust/v* tags publishing to crates.io
 

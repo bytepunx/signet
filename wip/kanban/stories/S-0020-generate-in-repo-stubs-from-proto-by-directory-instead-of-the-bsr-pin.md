@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:48:36Z
-updated: 2026-10-27T22:48:44Z
+updated: 2026-10-27T22:54:19Z
 transitions: []
 tags: [server, proto]
 topics: [proto]
@@ -36,10 +36,10 @@ usage:
           cost: 4.004
 forecast:
   duration: 3h
-  delivery: 2026-10-28T12:40:00Z
+  delivery: 2026-10-30T18:52:00Z
   basis: "Its own forecast of 3h; 6th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009 and S-0010."
   by: flai
-  at: 2026-10-27T22:48:44Z
+  at: 2026-10-27T22:54:19Z
 ---
 # S-0020 Generate in-repo stubs from proto/ by directory instead of the BSR pin
 
