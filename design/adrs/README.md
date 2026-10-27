@@ -6,3 +6,4 @@ Record a new one with `flai adr new "<title>"`, or from the dashboard's ADRs pag
 
 | ADR | Title | Status |
 |-----|-------|--------|
+| [0001](0001-the-mono-repo-releases-from-flai-tags-per-component-with-github-actions.md) | The mono-repo releases from flai tags per component with GitHub Actions publishing | proposed |
