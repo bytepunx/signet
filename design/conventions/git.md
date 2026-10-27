@@ -1,6 +1,6 @@
 ---
 title: Git
-updated: 2026-10-18
+updated: 2026-10-27
 audience: agent
 order: 70
 status: active
@@ -55,3 +55,7 @@ How history is made in this repository.
 <!-- system-flow:end-of-baseline -->
 
 ## Project additions
+
+- Release tags are `<component>/vX.Y.Z`, where `<component>` is the component's `name` in `system-flow.yaml` (`server`, `proto`, `client-go`, and so on). `flai release --pending` is the only thing that creates them; never tag by hand. Each component's import commit carries a baseline tag at the version its old repository last released. See [ADR-0001](../adrs/0001-the-mono-repo-releases-from-flai-tags-per-component-with-github-actions.md) and [design/system/release.md](../system/release.md).
+- Workflows live at the repository root under `.github/workflows/`: `ci.yml` runs a path-filtered job per component on pull requests; `release-<component>.yml` runs on `push` of `<component>/v*` tags and publishes that component; `publish-<component>-main.yml` is the name for a main-branch publish step a component needs between releases. Nothing under a component folder's own `.github/` runs.
+- No commit bumps a version file or a `CHANGELOG.md`. Release workflows derive the version from the tag, and a component's changelog is its GitHub Release.
