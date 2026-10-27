@@ -3,12 +3,15 @@ id: S-0020
 type: story
 nature: improvement
 title: Generate in-repo stubs from proto/ by directory instead of the BSR pin
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:48:36Z
-updated: 2026-10-27T23:00:34Z
-transitions: []
+updated: 2026-10-27T23:01:46Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:00:58Z
+    by: alex
 tags: [server, proto]
 topics: [proto]
 touches: [server/buf.gen.yaml, client-go/buf.gen.yaml, client-go/README.md, client-python/buf.gen.yaml, client-python/README.md, client-python/examples/echo/Dockerfile, client-python/examples/echo/Dockerfile.dockerignore, client-typescript/buf.gen.yaml, client-typescript/README.md, client-rust/buf.gen.yaml, client-rust/README.md, client-rust/examples/echo/Dockerfile, client-csharp/buf.gen.yaml, client-csharp/README.md, client-csharp/examples/echo/Dockerfile, client-csharp/examples/echo/Dockerfile.dockerignore, client-elixir/buf.gen.yaml, client-elixir/README.md, scripts/test-client-elixir.sh, design/tech/buf.md]
@@ -39,10 +42,10 @@ usage:
           cost: 4.004
 forecast:
   duration: 3h
-  delivery: 2026-10-30T18:52:00Z
-  basis: "Its own forecast of 3h; 6th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009 and S-0010."
+  delivery: 2026-10-29T13:53:00Z
+  basis: "Its own forecast of 3h; 4th in the pull order with an in-progress limit of 2, behind S-0007, S-0008, S-0009 and S-0010."
   by: flai
-  at: 2026-10-27T22:54:19Z
+  at: 2026-10-27T23:01:46Z
 ---
 # S-0020 Generate in-repo stubs from proto/ by directory instead of the BSR pin
 

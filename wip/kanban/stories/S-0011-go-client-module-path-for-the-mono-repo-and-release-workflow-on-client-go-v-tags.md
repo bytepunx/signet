@@ -3,22 +3,25 @@ id: S-0011
 type: story
 nature: feature
 title: "Go client: module path for the mono-repo and release workflow on client-go/v* tags"
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:54:19Z
-transitions: []
+updated: 2026-10-27T23:01:46Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:01:00Z
+    by: alex
 tags: [client-go]
 topics: [release, github]
 touches: [".github/workflows/release-client-go.yml", client-go/go.mod, client-go/client.go, client-go/restart.go, client-go/restart_test.go, client-go/sops_encrypt.go, client-go/examples/echo/main.go, client-go/examples/getsecret/main.go, client-go/examples/gitops-workload/main.go, client-go/examples/restart-on-change/main.go, client-go/README.md, client-go/buf.gen.yaml, client-go/gen/admin/v1/admin.pb.go, client-go/gen/admin/v1/admin_grpc.pb.go, client-go/gen/signet/v1/secrets.pb.go, client-go/gen/signet/v1/secrets_grpc.pb.go]
 after: [S-0007]
 forecast:
   duration: 2h
-  delivery: 2026-10-30T12:22:00Z
-  basis: "Its own forecast of 2h; 7th in the pull order with an in-progress limit of 2, behind S-0006, S-0007, S-0008, S-0009, S-0010 and S-0020."
+  delivery: 2026-10-29T10:40:00Z
+  basis: "Its own forecast of 2h; 5th in the pull order with an in-progress limit of 2, behind S-0007, S-0008, S-0009, S-0010 and S-0020."
   by: flai
-  at: 2026-10-27T22:54:19Z
+  at: 2026-10-27T23:01:46Z
 ---
 # S-0011 Go client: module path for the mono-repo and release workflow on client-go/v* tags
 
