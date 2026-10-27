@@ -39,6 +39,23 @@ usage:
       cache_read: 3155207
       cache_write: 109675
       cost: 1.2577
+  strategic:
+    - kind: planner
+      seconds: 179
+      estimated: true
+      models:
+        - model: claude-haiku-5-5
+          input: 30
+          output: 94
+          cache_read: 810527
+          cache_write: 87952
+          cost: 0
+        - model: claude-sonnet-5-5
+          input: 200
+          output: 31268
+          cache_read: 7958441
+          cache_write: 404381
+          cost: 4.004
 ---
 # E-0002 Release process for the mono-repo with GitHub CI
 

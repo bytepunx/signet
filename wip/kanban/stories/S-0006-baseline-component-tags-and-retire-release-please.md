@@ -7,14 +7,21 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:23:53Z
+updated: 2026-10-27T22:26:18Z
 transitions:
   - to: ready
     at: 2026-10-27T22:23:53Z
     by: alex
 tags: [server]
 topics: [release]
-touches: [server/.github/workflows/ci.yml, server/.github/workflows/publish.yml, server/.github/workflows/release-please.yml, server/.github/workflows/release.yml, server/.github/FUNDING.yml, server/release-please-config.json, server/.release-please-manifest.json, proto/.github/workflows/ci.yml, proto/.github/workflows/publish.yml, proto/.github/workflows/release-please.yml, proto/.github/workflows/release.yml, proto/release-please-config.json, proto/.release-please-manifest.json, client-erlang/README.md, system-flow.yaml, client-elixir/README.md]
+touches: [server/.github/workflows/ci.yml, server/.github/workflows/publish.yml, server/.github/workflows/release-please.yml, server/.github/workflows/release.yml, server/.github/FUNDING.yml, server/release-please-config.json, server/.release-please-manifest.json, proto/.github/workflows/ci.yml, proto/.github/workflows/publish.yml, proto/.github/workflows/release-please.yml, proto/.github/workflows/release.yml, proto/release-please-config.json, proto/.release-please-manifest.json, client-erlang/README.md, system-flow.yaml, client-elixir/README.md, client-elixir/buf.gen.yaml, docs/operators/release.md]
+after: [S-0005]
+forecast:
+  duration: 1h
+  delivery: 2026-10-27T23:25:00Z
+  basis: "flai forecast: no history of done stories, so planning.default_duration of 1h; kept because the work is four small tasks, three of them file deletions, and delivery assumes S-0005 is accepted first"
+  by: planner-S-0006
+  at: 2026-10-27T22:26:18Z
 ---
 # S-0006 Baseline component tags and retire release-please
 
@@ -29,7 +36,30 @@ flai continues each component's version numbering from where the old repositorie
 - [ ] `client-erlang/` is gone, `system-flow.yaml` no longer lists it, and the Elixir client README keeps the note on why Buf's registry cannot generate BEAM stubs
 
 ## Tasks
+- T-0022 Delete the dead server/.github folder and the server's release-please files
+- T-0023 Delete the dead proto/.github folder and the proto module's release-please files
+- T-0026 Remove client-erlang as a component and keep its toolchain note in the Elixir client
+- T-0033 Write the baseline tag commands for the operator in the release runbook
 
 ## Notes
 
 Pushing tags is the operator's action (safety.md); the story prepares the exact commands in the narrative and the runbook. The old root `v*` tags stay as history of the server. Publishing this story releases a patch of `server` and `proto` (deleted files only), which is the first exercise of the new workflows once they exist.
+
+### Planning
+
+Touches, by source:
+
+- Declared (16, all kept): the deleted files under `server/` and `proto/`, `client-erlang/README.md`, `system-flow.yaml`, and `client-elixir/README.md`.
+- Co-change: `flai touches suggest` listed only `proto/CHANGELOG.md`, which release-please rewrote on each release. Not added: the story deletes release-please and leaves the changelogs as history.
+- Design: `client-elixir/buf.gen.yaml` added, since its comment links to `../client-erlang/README.md`, which the story deletes. `docs/operators/release.md` added, since the story prepares the tag commands in the runbook S-0005 writes.
+- Layout: no folder touch is kept. Every touch names a file.
+
+`after: S-0005`, because the runbook file exists on main only when S-0005 is accepted. The other stories of E-0002 that touch `client-elixir/README.md` (S-0016) or `proto/README.md` (S-0010) are not named: they come after this one by the pull order.
+
+Tasks: T-0022 (server), T-0023 (proto), T-0026 (client-erlang), and T-0033 (tag commands) share no path, so they form one layer and run together.
+
+Criteria 1 and 2 depend on the operator pushing the tags. The agent cannot meet them in its worktree and leaves them unticked, with the commands in the runbook.
+
+Forecast: flai gives 1h from the project default (no history of done stories), size 20. Kept: the tasks are small, and the largest, T-0033, reads commit hashes and writes one runbook section.
+
+Cost of delay: not set. The operator's inputs are missing on this story and on E-0002; the plan's thread asks for them.
