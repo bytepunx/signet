@@ -1,7 +1,7 @@
 ---
 id: ADR-0001
 title: The mono-repo releases from flai tags per component with GitHub Actions publishing
-status: proposed
+status: accepted
 date: 2026-10-27
 supersedes: []
 superseded_by: []
