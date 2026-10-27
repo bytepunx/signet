@@ -7,12 +7,15 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:54:19Z
+updated: 2026-10-27T23:00:15Z
 transitions: []
 tags: []
 topics: [ci, github]
 touches: [".github/workflows/smoke-images.yml", scripts/build-echo-images.sh, scripts/smoke.sh, scripts/README.md, docs/operators/smoke-tests.md, docs/operators/index.md]
 after: [S-0020]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 2h
   delivery: 2026-10-31T09:29:00Z
