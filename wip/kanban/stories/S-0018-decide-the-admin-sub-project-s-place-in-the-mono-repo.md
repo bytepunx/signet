@@ -7,11 +7,14 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:54:19Z
+updated: 2026-10-27T22:59:54Z
 transitions: []
 tags: [admin]
 topics: [admin]
 touches: [admin/README.md, admin/CLAUDE.md, system-flow.yaml, design/system/overview.md, design/system/admin.md]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 45m
   delivery: 2026-10-30T09:36:00Z
