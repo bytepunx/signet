@@ -5,7 +5,7 @@ with SOPS and making it available to a workload through signet.
 
 ## Overview
 
-```
+```text
 operator                signet                  workload
 ────────                ──────                  ────────
 generate age key  ──→  stored (encrypted)
@@ -43,7 +43,8 @@ signet sops-key get --token "$TOKEN"
 ```
 
 Output:
-```
+
+```text
 Public key:  age1abc123def456...
 Fingerprint: a1b2c3d4e5f6a1b2
 Environment: prod
@@ -69,7 +70,8 @@ signet sops-key update-config \
 ```
 
 Output:
-```
+
+```text
 Updated .sops.yaml
   environment: prod
   path_regex:  ^secrets/prod/
@@ -140,7 +142,8 @@ signet repo add \
 ```
 
 Example output with `gh` CLI:
-```
+
+```text
 Repository registered.
   ID:             550e8400-e29b-41d4-a716-446655440000
   Webhook URL:    https://signet.example.com/webhook/github/550e8400-...
@@ -155,7 +158,8 @@ Setting up webhook automatically for myorg/my-secrets...
 ```
 
 Example output when `gh` is absent and `GITHUB_TOKEN` is set:
-```
+
+```text
 Setting up webhook automatically for myorg/my-secrets...
   Checking for gh CLI... not found.
   gh CLI not available, GITHUB_TOKEN is set in environment, calling GitHub's REST API...
@@ -182,6 +186,7 @@ signet prints the webhook URL and secret, then you configure it in GitHub:
 6. **Active:** checked → **Add webhook**
 
 Save the webhook secret. Delete the deploy key from disk:
+
 ```bash
 rm signet_deploy_key
 ```
@@ -213,7 +218,7 @@ signet sops-key rotate --token "$TOKEN"
 
 Use **separate subdirectories in the same repository** for each environment:
 
-```
+```text
 secrets/
 ├── prod/
 │   └── payments/api/stripe-key.yaml
@@ -287,25 +292,27 @@ signet repo add \
 The path within the repository determines how signet identifies the secret.
 With environment separation the path includes the environment prefix:
 
-```
+```text
 secrets/<env>/<namespace>/<service>/<name>.yaml
 ```
 
 Without environment separation (`SIGNET_ENVIRONMENT` unset):
 
-```
+```text
 secrets/<namespace>/<service>/<name>.yaml
 ```
 
 Examples (environment-separated):
-```
+
+```text
 secrets/prod/payments/api/stripe-key.yaml    → namespace=payments, service=api, name=stripe-key
 secrets/prod/infra/redis/password.yaml       → namespace=infra,    service=redis, name=password
 secrets/staging/payments/api/stripe-key.yaml → namespace=payments, service=api, name=stripe-key
 ```
 
 Examples (single-environment):
-```
+
+```text
 secrets/payments/api/stripe-key.yaml   → namespace=payments, service=api, name=stripe-key
 secrets/infra/redis/password.yaml      → namespace=infra,    service=redis, name=password
 secrets/platform/auth/signing-key.yaml → namespace=platform, service=auth,  name=signing-key
@@ -349,7 +356,7 @@ the pushed SHA, decrypts the changed file, and stores the secret.
 
 A realistic set of secrets for a payments service:
 
-```
+```text
 secrets/
 └── payments/
     └── api/
@@ -359,6 +366,7 @@ secrets/
 ```
 
 Each file:
+
 ```yaml
 # stripe-key.yaml (after encryption)
 stripe-key: ENC[AES256_GCM,data:abc...,tag:xyz...,type:str]
@@ -425,7 +433,8 @@ signet sops-key rotate --token "$TOKEN"
 ```
 
 Output:
-```
+
+```text
 New public key:  age1xyz789...
 New fingerprint: f6e5d4c3b2a1f6e5
 Environment:     prod
