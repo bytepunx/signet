@@ -7,12 +7,15 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:48:36Z
-updated: 2026-10-27T22:54:19Z
+updated: 2026-10-27T23:00:34Z
 transitions: []
 tags: [server, proto]
 topics: [proto]
 touches: [server/buf.gen.yaml, client-go/buf.gen.yaml, client-go/README.md, client-python/buf.gen.yaml, client-python/README.md, client-python/examples/echo/Dockerfile, client-python/examples/echo/Dockerfile.dockerignore, client-typescript/buf.gen.yaml, client-typescript/README.md, client-rust/buf.gen.yaml, client-rust/README.md, client-rust/examples/echo/Dockerfile, client-csharp/buf.gen.yaml, client-csharp/README.md, client-csharp/examples/echo/Dockerfile, client-csharp/examples/echo/Dockerfile.dockerignore, client-elixir/buf.gen.yaml, client-elixir/README.md, scripts/test-client-elixir.sh, design/tech/buf.md]
 after: [S-0005, S-0007, S-0011]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 usage:
   source: sum
   seconds: 0
