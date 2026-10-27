@@ -28,3 +28,6 @@ coverage.*
 # Ignored here and not only in a user's global excludes, which the dashboard
 # container may not have.
 .claude/settings.local.json
+
+# scripts/buf-generate.sh buf cache
+.cache/
