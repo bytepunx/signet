@@ -7,11 +7,14 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:54:19Z
+updated: 2026-10-27T22:59:41Z
 transitions: []
 tags: [server]
 topics: [docs]
 touches: [server/CLAUDE.md, admin/CLAUDE.md, server/README.md, admin/README.md, docs/contributors/index.md, design/system/overview.md, server/githooks/pre-commit, server/Makefile, README.md, proto/README.md, client-csharp/README.md, client-elixir/README.md, client-erlang/README.md, client-go/README.md, client-python/README.md, client-rust/README.md, client-typescript/README.md, server/design/draft.md, server/CHECKLIST.md]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 1h30m
   delivery: 2026-10-30T14:43:00Z
