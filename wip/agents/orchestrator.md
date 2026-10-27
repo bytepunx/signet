@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 0.4815
-accrued_seconds: 97
-tasks_completed: 3
-last_run: 2026-10-27T22:25:35Z
+accrued_cost: 1.0030
+accrued_seconds: 1112
+tasks_completed: 7
+last_run: 2026-10-27T22:42:35Z
 ---
 
 # Orchestrator activity
@@ -32,6 +32,34 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Items: none
 - Seconds: 10
 - Cost: 0.1066 USD, estimated
+
+### 2026-10-27T22:31:47Z
+
+- Summary: I'm holding and have taken no action. The manifest has no orchestration permissions, so every permission is off. Since my last report, flai added forecasts to S-0008, S-0009 and S-0020, and the curator updated its notes.
+- Items: none
+- Seconds: 372
+- Cost: 0.3210 USD, estimated
+
+### 2026-10-27T22:32:12Z
+
+- Summary: Read system-flow.yaml: no orchestration.permissions block, so every permission is off. Took no action on S-0005 and S-0004 (review), TH-0002 to TH-0006, or promotion/planning. Waiting for the operator to enable permissions.
+- Items: none
+- Seconds: 22
+- Cost: 0.0824 USD, estimated
+
+### 2026-10-27T22:42:18Z
+
+- Summary: I've taken no action on the board. `system-flow.yaml` has no `orchestration` block, so every permission is off. I checked it again after the first wait and it's still absent.
+- Items: none
+- Seconds: 606
+- Cost: 0.0466 USD, estimated
+
+### 2026-10-27T22:42:35Z
+
+- Summary: Read system-flow.yaml: no orchestration.permissions set, so every permission is off. Took no action on S-0004/S-0005 (review), the planner threads TH-0002/3/4/5/6, or the draft S-0021. Holding for events.
+- Items: none
+- Seconds: 15
+- Cost: 0.0715 USD, estimated
 
 ## Refusals
 
