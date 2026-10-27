@@ -3,16 +3,22 @@ id: S-0010
 type: story
 nature: feature
 title: "Proto publish workflow: BSR push from main and label on proto/v* tags"
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T19:48:21Z
-transitions: []
+updated: 2026-10-27T22:58:06Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:54:48Z
+    by: alex
 tags: [proto]
 topics: [release, github]
 touches: [".github/workflows/release-proto.yml", ".github/workflows/publish-proto-main.yml", proto/README.md, proto/buf.yaml]
 after: [S-0007]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 ---
 # S-0010 Proto publish workflow: BSR push from main and label on proto/v* tags
 
