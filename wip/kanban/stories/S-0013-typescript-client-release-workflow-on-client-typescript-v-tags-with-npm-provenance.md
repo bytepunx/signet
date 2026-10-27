@@ -7,12 +7,15 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T19:48:21Z
+updated: 2026-10-27T22:58:42Z
 transitions: []
 tags: [client-typescript]
 topics: [release, github]
 touches: [".github/workflows/release-client-typescript.yml", client-typescript/package.json, client-typescript/package-lock.json, client-typescript/README.md]
 after: [S-0007]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 ---
 # S-0013 TypeScript client: release workflow on client-typescript/v* tags with npm provenance
 
