@@ -41,7 +41,22 @@ pass both to `Signet.Workload.disconnect/2` afterwards.
 A loopback address, as with `kubectl port-forward`, is plaintext; any other address is
 TLS. `ca_pem:`, `force_tls:`, and `plaintext:` adjust that, as the README describes.
 
+## Coordinated restarts
+
+```elixir
+{:ok, lock} = Signet.Restart.wait_for_restart(channel, "default", "example", 30_000, 10_000)
+# graceful shutdown: drain in-flight requests, close resources
+:ok = Signet.Restart.release(lock)
+System.stop(0)
+```
+
+A service fetches its bundle at startup, serves traffic, and blocks on `wait_for_restart/6`
+until signet reports a change for its namespace and service and this replica holds the
+restart lock, so at most one replica restarts at a time. It then does its own graceful
+shutdown, releases the lock for the next replica, and exits; Kubernetes starts a fresh
+process that fetches the new bundle. The two durations are milliseconds: the lock TTL,
+which must cover the shutdown, and the debounce that absorbs rapid successive changes.
+
 ## Not yet available
 
-Coordinated restarts (bundle watch and restart lock) and client-side SOPS encryption are
-planned; the Go client has them today.
+Client-side SOPS encryption is planned; the Go client has it today.

@@ -131,11 +131,76 @@ and an empty token, is an error before any connection is opened. See
 The bearer token is attached as a channel header, so every RPC on the channel carries
 `authorization: Bearer <token>` over plaintext and TLS alike.
 
-### Coordinated restarts and SOPS encryption
+### Coordinated restarts
 
-Not yet ported. The Go client's `WatchBundle`, `AcquireLock`, `WaitForRestart`, and
-`EncryptForSecret` are tracked as separate stories under the Elixir client epic in this
-repository's `wip/`.
+`Signet.Restart` lets a service pull its own configuration directly, in memory, and
+coordinate a fleet-wide serialized restart when it changes, as the Go client's
+`WatchBundle`, `AcquireLock`, and `WaitForRestart` do: no process host, and no secrets
+written to the OS environment.
+
+```elixir
+{:ok, channel, source} =
+  Signet.Workload.connect("signet.internal:8443",
+    "unix:///run/spire/sockets/agent.sock", "example.org")
+
+# Fetch once at startup, configure the app in memory ... serve traffic ...
+
+# Block until signet reports a change AND this replica holds the restart lock
+# (at most one replica restarts at a time, fleet-wide).
+# Lock TTL 30s: must cover your graceful shutdown. Debounce 10s: absorbs rapid
+# successive changes.
+{:ok, lock} = Signet.Restart.wait_for_restart(channel, "default", "example", 30_000, 10_000)
+
+# Do your own graceful shutdown: drain in-flight requests, close resources.
+
+:ok = Signet.Restart.release(lock) # the next waiting replica acquires
+Signet.Workload.disconnect(channel, source)
+System.stop(0) # Kubernetes restarts the pod; the new process fetches fresh config
+```
+
+The three operations map one to one onto the Go client's:
+
+- `Signet.Restart.watch_bundle/4` is `WatchBundle`: a `Signet.Restart.Watcher` process
+  follows `WatchServiceBundle` for the namespace and service, reopening the stream with
+  exponential backoff, 1s doubling to 30s and reset by any event received, when it ends or
+  fails. Where Go hands back a channel of capacity one, the watcher sends its owner one
+  `{:bundle_changed, watcher}` message per burst of changes: the next is sent only once the
+  owner has acknowledged the last with `Signet.Restart.next_change/2` (receive then
+  acknowledge, like `<-changes`) or `Signet.Restart.acknowledge/1` from a `GenServer`'s
+  `handle_info/2`. The message says at least one change happened, never how many.
+- `Signet.Restart.acquire_lock/5` is `AcquireLock`: it opens the bidirectional
+  `AcquireRestartLock` stream, enters the queue, and blocks until `ACQUIRED`. The lock is a
+  `Signet.Restart.Lock` process that heartbeats every TTL/4 (signet's convention: four
+  consecutive missed heartbeats exhaust the TTL) and exposes `Signet.Restart.token/1` and
+  `Signet.Restart.expires_at/1`, moved by each acknowledged heartbeat. The TTL must cover
+  the whole time from acquiring to releasing; signet has no server-side default.
+  `Signet.Restart.release/1` half-closes the stream, which hands the lock to the next
+  waiting replica, and is idempotent. If the stream fails, the server closes it, or a
+  heartbeat cannot be sent before you release, the owner gets one
+  `{:lock_lost, lock, reason}` message, Go's `Lock.Lost()`: treat it as "another replica
+  may now restart concurrently"; there is nothing to undo.
+- `Signet.Restart.wait_for_restart/6` is `WaitForRestart`: it waits for the next change,
+  keeps waiting while further changes arrive within the debounce, stops the watcher, and
+  acquires the lock. It does not fetch the updated bundle: the next process instance fetches
+  it during its own startup.
+
+Durations are milliseconds, as Elixir timeouts are; the wire carries the TTL in whole
+seconds, at least one.
+
+The two streams sit behind the `Signet.Restart.Streams` behaviour, so the watcher and
+the lock are tested against `Signet.FakeRestartStreams`, a scripted fake whose lock
+stream the test feeds after the fact: coalescing, the backoff schedule, queueing,
+heartbeat timing, expiry updates, loss, and idempotent release are all covered without a
+network or a signet server.
+
+See `examples/restart_on_change.exs` for a complete runnable example, and
+[signet's restart-lock docs](https://github.com/bytepunx/signet/blob/main/docs/restart-lock.md)
+for the underlying protocol.
+
+### SOPS encryption
+
+Not yet ported. The Go client's `EncryptForSecret` is tracked as a separate story under
+the Elixir client epic in this repository's `wip/`.
 
 ## Dependencies
 
