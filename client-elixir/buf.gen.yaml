@@ -1,7 +1,7 @@
 version: v2
 plugins:
   # Buf's schema registry hosts no remote plugin for Elixir or Erlang (see
-  # ../client-erlang/README.md), so this runs protoc-gen-elixir, the escript
+  # README.md, "Regenerating stubs"), so this runs protoc-gen-elixir, the escript
   # the `protobuf` hex package ships, installed into the Docker image
   # scripts/test-client-elixir.sh builds. Its version is pinned there and in
   # mix.exs together; `plugins=grpc` adds the GRPC.Service and GRPC.Stub

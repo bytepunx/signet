@@ -29,9 +29,6 @@ projects:
   - name: client-elixir
     path: client-elixir
     kind: elixir
-  - name: client-erlang
-    path: client-erlang
-    kind: erlang
   - name: client-go
     path: client-go
     kind: go

@@ -40,9 +40,15 @@ scripts/test-client-elixir.sh buf generate
 scripts/test-client-elixir.sh buf generate --template buf.gen.spiffe.yaml
 ```
 
-Buf's schema registry hosts no remote plugin for Elixir or Erlang (see
-[`../client-erlang/README.md`](../client-erlang/README.md)), so `buf.gen.yaml` names
-`protoc-gen-elixir`, the escript the `protobuf` hex package ships, as a local plugin. The
+Buf's schema registry hosts no remote plugin for Elixir or Erlang, so the BEAM clients
+cannot be wired up as the Go, Python, Rust, TypeScript, and C# clients are (a `remote:`
+plugin in `buf.gen.yaml`). `buf.gen.yaml` names `protoc-gen-elixir`, the escript the
+`protobuf` hex package ships, as a local plugin, run inside the Docker toolchain image. An
+Erlang client would take the same shape, with
+[`gpb`](https://github.com/tomas-abrahamsson/gpb)'s `protoc-gen-gpb` for messages and
+either [`grpcbox`](https://github.com/tsloughter/grpcbox) or this client's `grpc` package
+(whose stubs are plain modules an Erlang application can call) for the service layer; none
+is scaffolded. The
 first template pulls `signet/v1` and `admin/v1` from `buf.build/bytepunx/signet-proto`
 into `lib/gen/`; the second generates the SPIRE Workload API client from the vendored
 `proto/spiffe/workload/workload.proto` under the `Spiffe.Workload` namespace. Edit the
