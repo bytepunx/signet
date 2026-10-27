@@ -6,7 +6,7 @@ title: scripts/test-client-elixir.sh rebuilds the toolchain image on every run a
 status: backlog
 owner: alex
 created: 2026-10-27T22:31:00Z
-updated: 2026-10-27T22:31:00Z
+updated: 2026-10-27T22:52:01Z
 transitions: []
 tags: []
 agent:
@@ -14,12 +14,14 @@ agent:
   model: claude-sonnet-5-5
   config:
     effort: high
-draft: true
 cost_of_delay:
   inputs:
     time_lost_per_cycle: 15m
     by: flai
     at: 2026-10-27T22:31:00Z
+finalized:
+  by: alex
+  at: 2026-10-27T22:52:01Z
 ---
 # S-0021 scripts/test-client-elixir.sh rebuilds the toolchain image on every run and fails when the registry stalls
 
