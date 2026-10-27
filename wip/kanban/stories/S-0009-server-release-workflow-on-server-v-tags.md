@@ -3,16 +3,22 @@ id: S-0009
 type: story
 nature: feature
 title: "Server release workflow on server/v* tags"
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:54:19Z
-transitions: []
+updated: 2026-10-27T22:57:49Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:54:46Z
+    by: alex
 tags: [server]
 topics: [release, github]
 touches: [".github/workflows/release-server.yml", ".github/workflows/publish-server-main.yml", server/go.mod, server/buf.gen.yaml, server/gen, server/Makefile, server/deploy/helm/signet/Chart.yaml, server/docs/installation.md, server/README.md, install.sh]
 after: [S-0007]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 3h
   delivery: 2026-10-30T16:41:00Z

@@ -1,13 +1,14 @@
 ---
 title: Active streams
-updated: 2026-10-27T22:57:15Z
+updated: 2026-10-27T22:57:49Z
 ---
 
 # Active streams
 
 | Stream | Title | Status | Last agent | Updated |
 |--------|-------|--------|------------|---------|
-| [S-0006](S-0006.md) | Baseline component tags and retire release-please | in-progress | agent-S-0006 | 2026-10-27T22:57:06Z |
+| [S-0006](S-0006.md) | Baseline component tags and retire release-please | review | agent-S-0006 | 2026-10-27T22:57:06Z |
+| [S-0007](S-0007.md) | Root CI workflow that builds and tests every component on pull requests | in-progress | agent-S-0007 | 2026-10-27T22:57:35Z |
 
 ## Strategic agents
 
