@@ -9,6 +9,7 @@
 #      newer than the Go it was built with
 #   3. make build
 #   4. stub drift: regenerate server/gen and fail on any difference
+#   5. Helm chart lint and render checks (scripts/check-server-chart.sh)
 #
 #   scripts/test-server.sh
 set -eu
@@ -27,24 +28,27 @@ go_run() {
     "$@"
 }
 
-echo "test-server.sh: [1/4] go test -race"
+echo "test-server.sh: [1/5] go test -race"
 go_run "${go_image}" go test -race -count=1 ./...
 
-echo "test-server.sh: [2/4] golangci-lint ${lint_version}"
+echo "test-server.sh: [2/5] golangci-lint ${lint_version}"
 go_run "${go_image}" sh -c "
   [ \"\$(golangci-lint version --format short 2>/dev/null)\" = \"${lint_version#v}\" ] ||
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@${lint_version}
   golangci-lint run ./..."
 
-echo "test-server.sh: [3/4] make build"
+echo "test-server.sh: [3/5] make build"
 go_run "${go_image}" make build
 
-echo "test-server.sh: [4/4] stub drift"
+echo "test-server.sh: [4/5] stub drift"
 scripts/buf-generate.sh server
 if ! git diff --quiet -- server/gen; then
   git diff -- server/gen
   echo "test-server.sh: server/gen is out of sync with its schema; run scripts/buf-generate.sh server and commit the result" >&2
   exit 1
 fi
+
+echo "test-server.sh: [5/5] Helm chart checks"
+scripts/check-server-chart.sh
 
 echo "test-server.sh: passed"
