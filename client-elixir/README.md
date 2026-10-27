@@ -199,8 +199,31 @@ for the underlying protocol.
 
 ### SOPS encryption
 
-Not yet ported. The Go client's `EncryptForSecret` is tracked as a separate story under
-the Elixir client epic in this repository's `wip/`.
+```elixir
+{:ok, %{public_key: public_key}} =
+  Admin.V1.GitOpsService.Stub.get_sops_public_key(channel, %Admin.V1.GetSOPSPublicKeyRequest{})
+
+{:ok, yaml} = Signet.SopsEncrypt.encrypt_for_secret(public_key, "s3cr3t")
+```
+
+`Signet.SopsEncrypt.encrypt_for_secret/2` is the Go client's `EncryptForSecret`: it
+produces the SOPS-encrypted YAML document a workload submits as a secret file's content
+through `GitOpsService.SyncBundle`. `SyncBundle` stores content as-is and never encrypts
+on the server's behalf, so a plaintext value sent through it fails to decrypt and is never
+stored; this call is the way to produce a value signet persists. The document has a single
+top-level `value` leaf, encrypted with AES-256-GCM under a fresh data key, and that data
+key wrapped to one age recipient, signet's own public key from `GetSOPSPublicKey`. It is
+the same shape `signet secret set` writes. The public key is validated before anything is
+encrypted; an empty or malformed one is `{:error, reason}`.
+
+age is implemented on OTP `:crypto` (X25519, HKDF-SHA256, ChaCha20-Poly1305), since no
+age package exists on hex; see
+[`../design/tech/age-elixir.md`](../design/tech/age-elixir.md). The behaviour tests check
+the document's shape and decrypt it with the test suite's own age decryptor;
+`make integration` (`scripts/integration-client-elixir.sh`) runs
+`tests/integration/sops_encrypt_test.exs` in the same Docker toolchain image with the real
+`sops` binary installed and has it decrypt the document, and refuse to with the wrong
+identity.
 
 ## Dependencies
 

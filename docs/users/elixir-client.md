@@ -57,6 +57,17 @@ shutdown, releases the lock for the next replica, and exits; Kubernetes starts a
 process that fetches the new bundle. The two durations are milliseconds: the lock TTL,
 which must cover the shutdown, and the debounce that absorbs rapid successive changes.
 
-## Not yet available
+## Encrypting a secret for SyncBundle
 
-Client-side SOPS encryption is planned; the Go client has it today.
+```elixir
+{:ok, %{public_key: public_key}} =
+  Admin.V1.GitOpsService.Stub.get_sops_public_key(channel, %Admin.V1.GetSOPSPublicKeyRequest{})
+
+{:ok, yaml} = Signet.SopsEncrypt.encrypt_for_secret(public_key, "s3cr3t")
+```
+
+`SyncBundle` stores a secret file's content exactly as submitted and never encrypts it for
+you, so a plaintext value is never persisted. `encrypt_for_secret/2` turns a value into the
+SOPS document signet expects: one `value` leaf, encrypted to signet's own age public key,
+which `GetSOPSPublicKey` returns on the workload channel. Put the result in the bundle as
+the secret's file content.
