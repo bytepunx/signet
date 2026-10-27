@@ -78,6 +78,27 @@ published from this repository, archive `signet-clients`, `signet-proto`, and
 `signet-admin` on GitHub with a README pointing here, so release-please there can open no
 more pull requests.
 
+### Push the baseline tags
+
+Run once, from a checkout of `main` with push rights, before the first `flai release
+--pending`. Each tag is annotated, sits on the commit that imported the component, and
+names the old repository's tag it continues.
+
+```bash
+git tag -a server/v0.11.0 db3b802 -m "Baseline: continues signet v0.11.0"
+git tag -a proto/v0.4.0 681c311 -m "Baseline: continues signet-proto v0.4.0"
+git tag -a client-go/v0.7.0 4db67f1 -m "Baseline: continues signet-clients go v0.7.0"
+git tag -a client-python/v0.5.0 ebd3306 -m "Baseline: continues signet-clients python v0.5.0"
+git tag -a client-rust/v0.6.0 206245b -m "Baseline: continues signet-clients rust v0.6.0"
+git tag -a client-typescript/v0.9.0 3e0dac7 -m "Baseline: continues signet-clients typescript v0.9.0"
+git tag -a client-csharp/v0.6.0 4d9e937 -m "Baseline: continues signet-clients csharp v0.6.0"
+git push origin server/v0.11.0 proto/v0.4.0 client-go/v0.7.0 client-python/v0.5.0 \
+  client-rust/v0.6.0 client-typescript/v0.9.0 client-csharp/v0.6.0
+flai release --pending --dry-run   # only client-elixir may plan from 0.0.0
+```
+
+The old root `v*` tags stay as the server's history. These tags start no workflow.
+
 ## If a release workflow fails
 
 The tag is already pushed and is the version. Fix the workflow on `main`, then re-run the
