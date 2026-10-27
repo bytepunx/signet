@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:31:00Z
+updated: 2026-10-27T22:48:44Z
 transitions: []
 tags: []
 topics: [ci, github]
@@ -15,10 +15,10 @@ touches: [".github/workflows/ci.yml", scripts/test.sh, scripts/test-server.sh, s
 after: [S-0005]
 forecast:
   duration: 6h
-  delivery: 2026-10-28T04:32:00Z
+  delivery: 2026-10-28T06:34:00Z
   basis: "Its own forecast of 6h; 2nd in the pull order with an in-progress limit of 2, behind S-0006."
   by: flai
-  at: 2026-10-27T22:31:00Z
+  at: 2026-10-27T22:48:44Z
 ---
 # S-0007 Root CI workflow that builds and tests every component on pull requests
 
