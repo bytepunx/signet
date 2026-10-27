@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T20:39:09Z
+updated: 2026-10-27T20:41:13Z
 transitions:
   - to: ready
     at: 2026-10-27T19:47:51Z
@@ -16,7 +16,7 @@ tags: [server]
 topics: [ci]
 touches: [server/docs/secrets-workflow.md, design/system/overview.md]
 agent:
-  harness: rmhclod
+  harness: claude-code
   model: claude-sonnet-5
 ---
 # S-0004 Make the system-flow check green on main
