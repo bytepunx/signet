@@ -94,7 +94,9 @@ defmodule Signet.AdminTest do
       # Port 1 (tcpmux) is never served on a developer or CI loopback; the
       # retries are turned off so the refusal surfaces at once.
       assert {:error, _reason} =
-               Admin.connect("127.0.0.1:1", "token", adapter_opts: [retry: 0, await_timeout: 1_000])
+               Admin.connect("127.0.0.1:1", "token",
+                 adapter_opts: [retry: 0, await_timeout: 1_000]
+               )
     end
   end
 end

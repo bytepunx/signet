@@ -12,7 +12,8 @@ defmodule SignetClient.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: "Elixir client for signet: SPIFFE mTLS workload access and bearer-token admin access",
+      description:
+        "Elixir client for signet: SPIFFE mTLS workload access and bearer-token admin access",
       package: package(),
       docs: [main: "readme", extras: ["README.md"], source_ref: "elixir-v#{@version}"]
     ]

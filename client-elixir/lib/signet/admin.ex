@@ -174,7 +174,9 @@ defmodule Signet.Admin do
       {:error, _} ->
         [
           server_name_indication: String.to_charlist(host),
-          customize_hostname_check: [match_fun: :public_key.pkix_verify_hostname_match_fun(:https)]
+          customize_hostname_check: [
+            match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+          ]
         ]
     end
   end
