@@ -31,3 +31,7 @@ It is shown, never silent:
 - One `warn` per connection in flai serve's log, `connection allowed unsigned`.
 
 A release of flai with the published dashboard image needs no allowance and shows none of these.
+
+| Guide | What it covers |
+|-------|----------------|
+| [release.md](release.md) | Publishing a release, what each component's release produces, and the credentials and trusted publishers the workflows need |
