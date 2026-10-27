@@ -7,12 +7,15 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:54:19Z
+updated: 2026-10-27T22:58:55Z
 transitions: []
 tags: [client-rust]
 topics: [release, github]
 touches: [".github/workflows/release-client-rust.yml", client-rust/Cargo.toml, client-rust/README.md]
 after: [S-0007]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 2h
   delivery: 2026-10-30T14:44:00Z
