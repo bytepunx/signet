@@ -3,10 +3,10 @@ id: E-0001
 type: epic
 nature: feature
 title: Elixir client for signet
-status: review
+status: done
 owner: alex
 created: 2026-10-27T19:04:34Z
-updated: 2026-10-27T22:16:43Z
+updated: 2026-10-27T22:31:00Z
 transitions:
   - to: ready
     at: 2026-10-27T19:06:57Z
@@ -17,6 +17,9 @@ transitions:
   - to: review
     at: 2026-10-27T22:16:43Z
     by: agent-S-0003
+  - to: done
+    at: 2026-10-27T22:31:00Z
+    by: alex
 tags: []
 topics: [elixir, client, spiffe]
 touches: [client-elixir]
@@ -55,3 +58,4 @@ The Erlang client folder (`client-erlang/`) records why Buf's remote plugins can
 - 2026-10-27T19:06:57Z: moved to ready: follows S-0001, which moved to ready
 - 2026-10-27T19:06:59Z: moved to in-progress: follows S-0001, which moved to in-progress
 - 2026-10-27T22:16:43Z: moved to review: follows S-0003, which moved to review
+- 2026-10-27T22:31:00Z: moved to done: follows S-0003, which moved to done

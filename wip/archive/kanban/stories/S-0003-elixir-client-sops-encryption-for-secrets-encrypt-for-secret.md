@@ -3,11 +3,11 @@ id: S-0003
 type: story
 nature: feature
 title: "Elixir client: SOPS encryption for secrets (encrypt_for_secret)"
-status: review
+status: done
 parent: E-0001
 owner: alex
 created: 2026-10-27T19:05:08Z
-updated: 2026-10-27T22:16:43Z
+updated: 2026-10-27T22:31:00Z
 transitions:
   - to: ready
     at: 2026-10-27T19:37:40Z
@@ -18,6 +18,9 @@ transitions:
   - to: review
     at: 2026-10-27T22:16:43Z
     by: agent-S-0003
+  - to: done
+    at: 2026-10-27T22:31:00Z
+    by: alex
 tags: []
 topics: [elixir, client, sops, age]
 touches: [client-elixir/lib/signet/sops_encrypt.ex, client-elixir/test/sops_encrypt_test.exs, client-elixir/lib/signet/age.ex, client-elixir/lib/signet/age/bech32.ex, client-elixir/test/signet/age_test.exs, client-elixir/test/support/age_test_support.ex, client-elixir/test/signet/sops_encrypt_test.exs, design/issues/I-0002-scripts-test-client-elixir-sh-rebuilds-the-toolchain-image-on-every-run-and-fails-when-the-registry-stalls.md, design/issues/summary.md, client-elixir/CHANGELOG.md, client-elixir/README.md, design/tech/README.md, design/tech/age-elixir.md, design/tech/sops.md, docs/users/elixir-client.md, client-elixir/Dockerfile, client-elixir/test/test_helper.exs, client-elixir/tests/integration/sops_encrypt_test.exs, scripts/README.md, scripts/integration-client-elixir.sh, scripts/integration.sh]
