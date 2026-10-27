@@ -3,16 +3,22 @@ id: S-0008
 type: story
 nature: improvement
 title: "Operator setup: credentials, trusted publishers, branch protection, and archiving the old repositories"
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:54:19Z
-transitions: []
+updated: 2026-10-27T22:57:15Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:54:41Z
+    by: alex
 tags: []
 topics: [release, github]
 touches: [docs/operators/release.md, scripts/README.md, scripts/set-release-secrets.sh, scripts/protect-main.sh, scripts/archive-old-repos.sh]
 after: [S-0005, S-0007]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 2h
   delivery: 2026-10-30T09:22:00Z
