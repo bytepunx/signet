@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:26:56Z
+updated: 2026-10-27T22:31:00Z
 transitions: []
 tags: [server]
 topics: [release, github]
@@ -15,10 +15,10 @@ touches: [".github/workflows/release-server.yml", ".github/workflows/publish-ser
 after: [S-0007]
 forecast:
   duration: 3h
-  delivery: 2026-10-28T02:25:00Z
-  basis: "flai forecast gave the 1h default for size 18 with no history; raised to 3h for six tasks: a 58-file module rename with regeneration, two workflows, install.sh, docs, and an end-to-end test-tag run."
-  by: planner-S-0009
-  at: 2026-10-27T22:26:56Z
+  delivery: 2026-10-28T07:32:00Z
+  basis: "Its own forecast of 3h; 4th in the pull order with an in-progress limit of 2, behind S-0006, S-0007 and S-0008."
+  by: flai
+  at: 2026-10-27T22:31:00Z
 ---
 # S-0009 Server release workflow on server/v* tags
 

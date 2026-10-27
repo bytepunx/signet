@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:27:49Z
+updated: 2026-10-27T22:31:00Z
 transitions: []
 tags: []
 topics: [ci, github]
@@ -15,10 +15,10 @@ touches: [".github/workflows/ci.yml", scripts/test.sh, scripts/test-server.sh, s
 after: [S-0005]
 forecast:
   duration: 6h
-  delivery: 2026-10-28T05:30:00Z
-  basis: "Default of 1h had no history behind it; eight Docker test scripts at 30 to 40 minutes each plus the workflow and runbook, starting after S-0006."
-  by: planner-S-0007
-  at: 2026-10-27T22:27:49Z
+  delivery: 2026-10-28T04:32:00Z
+  basis: "Its own forecast of 6h; 2nd in the pull order with an in-progress limit of 2, behind S-0006."
+  by: flai
+  at: 2026-10-27T22:31:00Z
 ---
 # S-0007 Root CI workflow that builds and tests every component on pull requests
 

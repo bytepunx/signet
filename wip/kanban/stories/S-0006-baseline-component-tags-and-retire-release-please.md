@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:26:18Z
+updated: 2026-10-27T22:31:00Z
 transitions:
   - to: ready
     at: 2026-10-27T22:23:53Z
@@ -18,10 +18,10 @@ touches: [server/.github/workflows/ci.yml, server/.github/workflows/publish.yml,
 after: [S-0005]
 forecast:
   duration: 1h
-  delivery: 2026-10-27T23:25:00Z
-  basis: "flai forecast: no history of done stories, so planning.default_duration of 1h; kept because the work is four small tasks, three of them file deletions, and delivery assumes S-0005 is accepted first"
-  by: planner-S-0006
-  at: 2026-10-27T22:26:18Z
+  delivery: 2026-10-27T23:32:00Z
+  basis: "Its own forecast of 1h; 1st in the pull order with an in-progress limit of 2, with nothing ahead of it."
+  by: flai
+  at: 2026-10-27T22:31:00Z
 ---
 # S-0006 Baseline component tags and retire release-please
 

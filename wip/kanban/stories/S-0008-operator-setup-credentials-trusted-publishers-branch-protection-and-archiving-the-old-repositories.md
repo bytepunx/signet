@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:25:56Z
+updated: 2026-10-27T22:31:00Z
 transitions: []
 tags: []
 topics: [release, github]
@@ -15,10 +15,10 @@ touches: [docs/operators/release.md, scripts/README.md, scripts/set-release-secr
 after: [S-0005, S-0007]
 forecast:
   duration: 2h
-  delivery: 2026-10-28T01:30:00Z
-  basis: "flai forecast gave the 1h default (no history); four tasks (three small scripts, one runbook section) plus the review, so 2h. Delivery is the agent's work only and assumes S-0005 and S-0007 are accepted first; the operator's own steps are not agent time."
-  by: planner-S-0008
-  at: 2026-10-27T22:25:56Z
+  delivery: 2026-10-28T06:32:00Z
+  basis: "Its own forecast of 2h; 3rd in the pull order with an in-progress limit of 2, behind S-0006 and S-0007."
+  by: flai
+  at: 2026-10-27T22:31:00Z
 ---
 # S-0008 Operator setup: credentials, trusted publishers, branch protection, and archiving the old repositories
 
