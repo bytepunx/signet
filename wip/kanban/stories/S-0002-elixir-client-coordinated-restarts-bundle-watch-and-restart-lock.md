@@ -3,15 +3,20 @@ id: S-0002
 type: story
 nature: feature
 title: "Elixir client: coordinated restarts (bundle watch and restart lock)"
-status: backlog
+status: ready
 parent: E-0001
 owner: alex
 created: 2026-10-27T19:05:08Z
-updated: 2026-10-27T19:05:08Z
-transitions: []
+updated: 2026-10-27T21:28:03Z
+transitions:
+  - to: ready
+    at: 2026-10-27T19:37:38Z
+    by: alex
 tags: []
 topics: [elixir, client, restart-lock]
 touches: [client-elixir/lib/signet/restart.ex, client-elixir/test/restart_test.exs]
+agent:
+  harness: claude-code
 ---
 # S-0002 Elixir client: coordinated restarts (bundle watch and restart lock)
 
