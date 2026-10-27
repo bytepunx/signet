@@ -3,12 +3,15 @@ id: S-0006
 type: story
 nature: improvement
 title: Baseline component tags and retire release-please
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T19:48:20Z
-transitions: []
+updated: 2026-10-27T22:23:53Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:23:53Z
+    by: alex
 tags: [server]
 topics: [release]
 touches: [server/.github/workflows/ci.yml, server/.github/workflows/publish.yml, server/.github/workflows/release-please.yml, server/.github/workflows/release.yml, server/.github/FUNDING.yml, server/release-please-config.json, server/.release-please-manifest.json, proto/.github/workflows/ci.yml, proto/.github/workflows/publish.yml, proto/.github/workflows/release-please.yml, proto/.github/workflows/release.yml, proto/release-please-config.json, proto/.release-please-manifest.json, client-erlang/README.md, system-flow.yaml, client-elixir/README.md]

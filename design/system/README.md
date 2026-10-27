@@ -1,6 +1,6 @@
 ---
 title: System design index
-updated: 2026-09-23
+updated: 2026-10-27
 status: active
 ---
 

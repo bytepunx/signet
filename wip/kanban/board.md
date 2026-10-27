@@ -23,9 +23,6 @@ order:
   - S-0018
   - S-0019
 placed:
-  S-0006:
-    by: arobson
-    at: 2026-10-27T19:47:51Z
   S-0007:
     by: arobson
     at: 2026-10-27T19:47:51Z

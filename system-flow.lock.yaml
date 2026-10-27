@@ -1,56 +1,97 @@
-# Written by flai. Hashes of what the template rendered, used by flai upgrade (ADR-0015).
+# Written by flai. What the template rendered, and with which variables, used by flai upgrade (ADR-0015).
 template:
   repo: "https://github.com/bytepunx/system-flow-template"
-  ref: "main"
-  version: "1.0.18"
-  applied: 2026-09-23T23:52:23Z
+  ref: "v1.0.117"
+  version: "1.0.117"
+  applied: 2026-10-27T22:23:13Z
 files:
+  ".claude/agents/analyzer.md": 82e7e8840a44350ec76d9c5e243a6c4ebe466e391693d742a44a63f0bbc8ffa0
+  ".claude/agents/curator.md": 2b998c447a339f1a229bb215bd55d85fda26ed523bced5958c13d16b7fc49ee9
+  ".claude/agents/explorer.md": 8ff626f3818768b6e10c6f55fc720ece2ab662e71d7223c11a4c7005af6b70e3
+  ".claude/agents/orchestrator.md": 165e8abb49eacddd2738cc64ba26e77ef7876d7db52bf42060464f301c88b11e
+  ".claude/agents/planner.md": b4e89d74ef2b3b5a2ef4a2865841a89244b2c49bb1d7dd7471eaccfbb9537b17
+  ".claude/agents/verifier.md": 2eaf5ae12a4cca7fd889366576a82106ca697aabd04bbf9c5bd09d0c0bb06ef5
+  ".claude/settings.json": 133f91a84991c10ddf7d55b90098740c31041f125ec8c8408840e8abe1ca6abd
   ".editorconfig": 09685bc21d9ae40f75e66f19040ba14822a267216f5f87013246642c9b7b9c90
   ".gitattributes": d2f6bf1e76fa8f91884b63edda8942c4b814d322145c350ea7537511142a2a47
-  ".github/pull_request_template.md": ffc89dd0e0f9673064dcd8b6fdaff0e31b8d79fdac9aac74f31257cad2a6bad9
+  ".github/pull_request_template.md": e8b7aa8ba1d6642c6e83ff5ed8f607547b0a82cc763765007288de4ef77b34be
   ".github/workflows/system-flow-check.yml": 7da4e66c0a667c612b6d1078669b598b4aa75cd41883646e177285ed43968d51
   ".gitignore": 1e7b356af2b2b59fbc77e520d33ba19a52578a54f0e3cffa563729203ca60a7f
   ".markdownlint.yaml": e6dcb35b1a55a7d48928ef87a6557d09ef324d4d67282b826b4fdbcad9cc9abe
   ".mcp.json": 11465e1bde2331a69378b7adc04b3c7d35e9e1be592ed199ab30f970e9fc2af8
-  "CLAUDE.md": fd64cb10c134b275a4bd9668ddb412c0dc8d28e8b3ddbdc25e8fd5a966beebc9
-  "Makefile": eb18abbfd72073fee144acc3e020ceabb789329d7f1ed22f035081c3cf651c19
+  "CLAUDE.md": 6fd02b105e05610b3b5c29f4ada61fbbabee926b1b326486ff6971df1cc8b12e
+  "Makefile": 9c8a26c0485f2d3ba320d1564b4668ecb5127ca0d91163bc1db4067d3fd798f7
   "README.md": 91c11e0a1b0a210338e4d8fc1c62abc218a2107154f16fa306dc82e0851b16ef
-  "design/README.md": 7fd7bd4818a7e15c04204b0dd8048ad3d134938349c8078bb9bb625ab5b0d30c
+  "design/README.md": 3e050ba16f80ffa9cff41bee6bbe65e4ad70e85f4026d7a0731a074bb64227fa
   "design/adrs/0000-template.md": cb6bc81cfacfd6b9300ef5e81e2823860e3bd642da7c1b3ed9fc22188090711a
-  "design/adrs/README.md": 74cb3f32d0b99283ab66dcb8af6dfaaec4cddf643e43b0d1a24eefb96bedaead
-  "design/conventions/README.md": e2d0e41999ef1591b66c8877208aa7a9f10b203587cbffc5822a973ef708fb1c
-  "design/conventions/code-quality.md": 80796b1ee33db01784c49095a29a8d039509c20aa22333eb8adad4dc3f246779
-  "design/conventions/communication.md": 2ca837b8c5489c8280559cb55971c049b16b57d87bfd55bd4400fa4bae83afcd
-  "design/conventions/continuous-improvement.md": 3690ef69eb7ff0b14a91599448db6d9b5c8212eddf62f6907768787ede62b204
-  "design/conventions/decisions.md": dbcfca1062187961e3b92e82b8720a149f166473a070de0f2cbd1da0a35e80e7
-  "design/conventions/documentation.md": 6dd1771395f034681a5f0082aa8d27117819eaa3c723e493d78ff499794157f9
-  "design/conventions/git.md": 95cce7bf0adda868ccc268c8f8db9096edc55f98914fb03f411a2766db1c5f9e
-  "design/conventions/logging.md": b3058a7df3102714c80b2be7c065d7fdcd6b8f67a5de7204c6431306b93c15cb
-  "design/conventions/safety.md": 66661b413d33e19e4f8dbd4056acfdf46c022eacaf90032aa79a773a39cf1572
-  "design/conventions/session-start.md": 842e94663cf16379025139d57751b916ac11d5acf7ca3a99f90cef4021451781
-  "design/conventions/telemetry.md": c4ba6fdc725bd5ad054ae04c904d45c76ca6f4833524f6e97588444ee629fb8b
-  "design/conventions/tooling.md": e5b43b3ffaf62d96faa20fabf12c593370d4b1023293f0c450cfb7ec6d790a6d
-  "design/conventions/work-management.md": 222a17b404e5c7cc87f9751387e344630b989eb88995bb27609e5634bff4cec0
+  "design/adrs/README.md": 248b010a6d6722eee0d2f5797bc0776d43735b5d746b6ec8c4605e011c3961cc
+  "design/analysis/README.md": 9417ca8cf36704f87e2a9cb1733b9c4d994e34ceb550baeb23b833e006722657
+  "design/components/README.md": 7ae68b8af75cc5afbf3b7507c86d924b63b505c5f81e24cb06404d90f30804a6
+  "design/conventions/README.md": 33b6af1e9a6b328a98d30696fac809b30d79fc28e964fec1d812532b2668a132
+  "design/conventions/code-quality.md": e9d0b8937965f0247871348db38cc59900edffe470412b89c5d99d19b7dc52b9
+  "design/conventions/communication.md": 764f3be8b5a366b0e03744d64189d8c12bd889ebff744215aaefce2722798aa7
+  "design/conventions/continuous-improvement.md": 5e2c0bc5edecdb6e5d554d871dab01b94b81f088eddb6b3dc970c64c999e3704
+  "design/conventions/decisions.md": a71810e42a6dd0ecb0f8abb4182fcdf5e80a1d3fbaba370003d37f2a9ca08703
+  "design/conventions/delegation.md": 250a7c853192234885bc62ac128d3e702d162d18421a00262a063c34fe050386
+  "design/conventions/design-system.md": 3dacdf5f4a5d3751d3433ab701ddee90ecdf04d025e7f043acd7094604c1b782
+  "design/conventions/documentation.md": 585ba1d04f2d53454ecea309acec1eff35d011a06d0cf87d399e031ef47c5623
+  "design/conventions/git.md": a86f23dc708f6c6155e78858936dcea07ea3c54d18383030259b1eadd6aed211
+  "design/conventions/logging.md": c85e45882865a68630332d893aabd8d0dc5e8487468fa3ea553d90e0327db485
+  "design/conventions/safety.md": 658ec4372d658cecae5c99cf90942115a9dc950c33fa0b5667c8029e0353a01a
+  "design/conventions/session-start.md": 6623315fe6e834cdf5b1b92cffaa0b647975ef8d3195392c3c60c2925657a06c
+  "design/conventions/strategic-agents.md": 1b09bc84978af4f19c945a649d9efedd05bbe1cf76088d556a5b7677f5dc6264
+  "design/conventions/telemetry.md": 98cf19a61b22afe77abcbb4475000b5f8926e0dbbf86d5961333c889d819163a
+  "design/conventions/tooling.md": a07e12e4196e9a1feac4c7ad16747bbe49831955a59dc5b3bd63347455f80406
+  "design/conventions/work-management.md": de4e1343a974c1a2b988ed440b5d8698cc3b199385e9c3d80a76beb40d812cfa
+  "design/digest/README.md": 5ea56000fcd17b6394fc2f1eb710c01faf770052f1216ac376a4a5c778132a65
+  "design/experiments/README.md": 23c61034187a99cd5c8aaaed0afbf097dc83078fa19865a1c52f2a2ebf0fb8a7
+  "design/experiments/template.md": c429a6dded676fdf80294ac8b39e382a0eb11bfad4bf61295fe85fe7f39e7bb1
   "design/issues/README.md": 312bbd920041f757e7063a90308c3c4f2150de41689eb5009ff09f47001d99ee
-  "design/issues/summary.md": 0e050ee521540d0b605055441d13c898fb62ab18e17ee59386768512f03e3269
-  "design/system/README.md": bdfeae89c76073d903665bbbbb6b84775e20e7d6d0e5d234e4420b0cc102aaf9
-  "design/system/overview.md": fd663b08026a942698d780669c943d564a376d73e35bd0c2bdb08ec3bd4ffc26
-  "design/tech/README.md": 0e20d7eeb05207b8a371617db24329354b832be61a875151aeafe7721cf0ab25
+  "design/issues/summary.md": 72d45577360a064693f317dff66c03847294feb473f4818e0ea41a424cab62b2
+  "design/system/README.md": 1e60082f6c1e8e483ffc511538c4f2ea01c7146570830e85911dbc348a207b75
+  "design/system/overview.md": 09e6567a22efed3e5e0b4feef84f41851303ae8dcdb014df948d5eb9a936e638
+  "design/tech/README.md": 1947dea874d72234fc2c940233a0b80c6a7219bd13c0d7b3dfa027f65fa1eca9
   "docs/README.md": fd284f21c0dbe4627b490c286f74fcdc1f67acb249d0e4eda49686db7e201aa2
-  "docs/contributors/index.md": b2c2cdec51d49348373b498182b2d52b70347bb7cc9512d6d0fc96a2a57be97b
-  "docs/operators/index.md": 0dd25b76fce4e2602278a3bbedced8c2808313ff48937822a608161cca4b4d4a
-  "docs/users/index.md": cfe385f790ffdf98971fc1e575b4982d150cc823860eb9f7fbb5f1ea9b4ffef9
-  "scripts/README.md": 991ee3cf8572b9255e3a9dd08496ec12870116f6a81c16f2f2ba6fc905864f4f
-  "scripts/check.sh": 9523df1e1e1b87bb8455a50e2d746c9999ed17c471f07bca184afc369732f492
+  "docs/contributors/index.md": 606455e8e90dd4e972efe7b2bfd9b01e35362977db55de5e5b07c35db2c18b89
+  "docs/operators/index.md": 50929b5da89014ea925ba4239ad66cc7aaefadadebe7b73e5caa36e6aa243f94
+  "docs/users/index.md": 64af4d073d782dc29461c2c52cf234e9f8980a3da03b5f7f6e15bcb967ae5c19
+  "scripts/README.md": 5ab778f9418fe81d46213923a584c9eb4fd5f5ebd5531d2f985d8e0557f7c2c9
+  "scripts/check.sh": b7051ee8c618e7cb3da8576fd66d11525bcc61e7d67ca2efababb70686737c84
+  "scripts/close-out.sh": b8ad3f561b4c36a97a2c608d0aa5fc63f1bc5e4f2f2f52b7a90cfabeb5dcefb0
   "scripts/integration.sh": c40c90380bde69b4d89e49a5bd20acbb1b054a6c2a114c36ddd35dec4d663b25
+  "scripts/lint-md.sh": f3c8d5c101baa44aebf43cadb97d24dd9001aa1b8f713b9b0c2cbd5cf4b2145c
   "scripts/smoke.sh": 4776969a52618b9c6f543a6b807623ee890c2b0e8bd2afef723bd54007d1cea5
   "scripts/test.sh": 99098e9398e7fa61aadf8febaeaafa1b29063a3927ee28828deb6de39fe038af
-  "wip/README.md": 569006524febe835f9f8d2ca744d2213655d09cc9de02cae5bcc67d39e27bdea
-  "wip/agents/README.md": 1c03076df7de959fde75d06433eada34edecf309878bd8aa13266e1847f56bfd
-  "wip/agents/index.md": 2a0d3cdb42424282dd60fe92fc5e76f08314dd0cc604c64bf4a6c5472e1bcff7
+  "wip/README.md": eeca5d75a5329a574d27dc4c2e91824c4e36b037e2562079cb3e0a2f8c07a7bb
+  "wip/agents/README.md": 5d08b426bb8b8d48377731e9b496413a61a7bb7c500b7dd4b870a84f00bb9709
+  "wip/agents/index.md": 5c11831d4118931b67a09601fc1502a25d48dd97189f9129a8b96f43b8fc015d
   "wip/archive/.gitkeep": e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-  "wip/kanban/board.md": cc4f9c3d3ded26ed3b0084f3225c182dcaf8210a5f4f96023c8a6d6531713ea5
+  "wip/kanban/board.md": 1c3ac9c20b830f15163113b57dbcca97a96f638458bfbb6fa2d3a00bca63c782
   "wip/kanban/epics/.gitkeep": e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   "wip/kanban/stories/.gitkeep": e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   "wip/kanban/tasks/.gitkeep": e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  "wip/messages/README.md": ebe38ec3e60915bef5e6be81679fcb81540b13f53deeafc600fd37fd6414caac
   "wip/threads/README.md": 1b4be15169fa84ca5b9189df60ec81f0a39a18dc4e6f22e1d1f226376eeee392
+topics:
+  "design/conventions/README.md": [all]
+  "design/conventions/code-quality.md": [all]
+  "design/conventions/communication.md": [all]
+  "design/conventions/continuous-improvement.md": [all]
+  "design/conventions/decisions.md": [all]
+  "design/conventions/delegation.md": [all]
+  "design/conventions/design-system.md": [all]
+  "design/conventions/documentation.md": [all]
+  "design/conventions/git.md": [all]
+  "design/conventions/logging.md": [all]
+  "design/conventions/safety.md": [all]
+  "design/conventions/session-start.md": [all]
+  "design/conventions/strategic-agents.md": [all]
+  "design/conventions/telemetry.md": [all]
+  "design/conventions/tooling.md": [all]
+  "design/conventions/work-management.md": [all]
+vars:
+  "description": "SPIFFE-based configuration and secrets distribution for Kubernetes"
+  "owner": "alex"
+  "project_key": "s"
+  "project_name": "signet"
+  "repo_url": "https://github.com/bytepunx/signet"
