@@ -3,16 +3,22 @@ id: S-0007
 type: story
 nature: improvement
 title: Root CI workflow that builds and tests every component on pull requests
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:54:19Z
-transitions: []
+updated: 2026-10-27T22:56:48Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:54:38Z
+    by: alex
 tags: []
 topics: [ci, github]
 touches: [".github/workflows/ci.yml", scripts/test.sh, scripts/test-server.sh, scripts/test-proto.sh, scripts/test-client-go.sh, scripts/test-client-python.sh, scripts/test-client-typescript.sh, scripts/test-client-rust.sh, scripts/test-client-csharp.sh, scripts/README.md, Makefile, scripts/buf-generate.sh, scripts/check-server-chart.sh, docs/operators/release.md]
 after: [S-0005]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 6h
   delivery: 2026-10-29T18:46:00Z
