@@ -7,12 +7,15 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T22:54:19Z
+updated: 2026-10-27T22:58:28Z
 transitions: []
 tags: [client-python]
 topics: [release, github]
 touches: [".github/workflows/release-client-python.yml", client-python/pyproject.toml, client-python/README.md, scripts/set-client-python-version.sh]
 after: [S-0007]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 2h
   delivery: 2026-10-30T14:22:00Z
