@@ -3,15 +3,20 @@ id: S-0003
 type: story
 nature: feature
 title: "Elixir client: SOPS encryption for secrets (encrypt_for_secret)"
-status: backlog
+status: ready
 parent: E-0001
 owner: alex
 created: 2026-10-27T19:05:08Z
-updated: 2026-10-27T19:05:08Z
-transitions: []
+updated: 2026-10-27T21:28:47Z
+transitions:
+  - to: ready
+    at: 2026-10-27T19:37:40Z
+    by: alex
 tags: []
 topics: [elixir, client, sops, age]
 touches: [client-elixir/lib/signet/sops_encrypt.ex, client-elixir/test/sops_encrypt_test.exs]
+agent:
+  harness: claude-code
 ---
 # S-0003 Elixir client: SOPS encryption for secrets (encrypt_for_secret)
 
