@@ -3,11 +3,11 @@ id: S-0005
 type: story
 nature: research
 title: Decide and record the mono-repo release and CI model
-status: review
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T21:28:10Z
+updated: 2026-10-27T22:48:44Z
 transitions:
   - to: ready
     at: 2026-10-27T19:47:51Z
@@ -18,6 +18,9 @@ transitions:
   - to: review
     at: 2026-10-27T21:28:10Z
     by: agent-S-0005
+  - to: done
+    at: 2026-10-27T22:48:44Z
+    by: alex
 tags: []
 topics: [release, ci, github]
 touches: [design/adrs/README.md, design/system/release.md, design/system/README.md, docs/operators/release.md, docs/operators/index.md, design/conventions/git.md, design/adrs/0001-the-mono-repo-releases-from-flai-tags-per-component-with-github-actions.md]
