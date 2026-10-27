@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# One job per component, named for the component. A job skipped because its
+# component did not change reports success, so every name can be a required
+# status check on main. Each job runs the script a developer runs locally.
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      proto: ${{ steps.filter.outputs.proto }}
+      client-go: ${{ steps.filter.outputs.client-go }}
+      client-python: ${{ steps.filter.outputs.client-python }}
+      client-typescript: ${{ steps.filter.outputs.client-typescript }}
+      client-rust: ${{ steps.filter.outputs.client-rust }}
+      client-csharp: ${{ steps.filter.outputs.client-csharp }}
+      client-elixir: ${{ steps.filter.outputs.client-elixir }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: filter
+        uses: dorny/paths-filter@v3.0.2
+        with:
+          filters: |
+            server:
+              - "server/**"
+              - "scripts/test-server.sh"
+              - "scripts/buf-generate.sh"
+              - "scripts/check-server-chart.sh"
+              - ".github/workflows/ci.yml"
+            proto:
+              - "proto/**"
+              - "scripts/test-proto.sh"
+              - ".github/workflows/ci.yml"
+            client-go:
+              - "client-go/**"
+              - "scripts/test-client-go.sh"
+              - "scripts/buf-generate.sh"
+              - ".github/workflows/ci.yml"
+            client-python:
+              - "client-python/**"
+              - "scripts/test-client-python.sh"
+              - "scripts/buf-generate.sh"
+              - ".github/workflows/ci.yml"
+            client-typescript:
+              - "client-typescript/**"
+              - "scripts/test-client-typescript.sh"
+              - "scripts/buf-generate.sh"
+              - ".github/workflows/ci.yml"
+            client-rust:
+              - "client-rust/**"
+              - "scripts/test-client-rust.sh"
+              - "scripts/buf-generate.sh"
+              - ".github/workflows/ci.yml"
+            client-csharp:
+              - "client-csharp/**"
+              - "scripts/test-client-csharp.sh"
+              - "scripts/buf-generate.sh"
+              - ".github/workflows/ci.yml"
+            client-elixir:
+              - "client-elixir/**"
+              - "scripts/test-client-elixir.sh"
+              - ".github/workflows/ci.yml"
+
+  server:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/test-server.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+
+  proto:
+    needs: changes
+    if: needs.changes.outputs.proto == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: scripts/test-proto.sh
+
+  client-go:
+    needs: changes
+    if: needs.changes.outputs.client-go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/test-client-go.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+
+  client-python:
+    needs: changes
+    if: needs.changes.outputs.client-python == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/test-client-python.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+
+  client-typescript:
+    needs: changes
+    if: needs.changes.outputs.client-typescript == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/test-client-typescript.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+
+  client-rust:
+    needs: changes
+    if: needs.changes.outputs.client-rust == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/test-client-rust.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+
+  client-csharp:
+    needs: changes
+    if: needs.changes.outputs.client-csharp == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/test-client-csharp.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+
+  client-elixir:
+    needs: changes
+    if: needs.changes.outputs.client-elixir == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/test-client-elixir.sh
