@@ -9,7 +9,7 @@ topics: [all, proto]
 
 | | |
 |---|---|
-| Version | 1.71.0 in `client-elixir/Dockerfile`; the other clients use whatever `buf` the developer or CI has |
+| Version | 1.71.0 in `client-elixir/Dockerfile` and as the `bufbuild/buf` image in `scripts/buf-generate.sh` and `scripts/test-proto.sh`, which CI and developers run |
 | Used in | `proto/` (lint and breaking checks), every `client-*/buf.gen.yaml` |
 
 ## Why
