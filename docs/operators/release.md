@@ -67,8 +67,27 @@ repository `bytepunx/signet`, the environment left empty, and the exact workflow
 
 The publishers of the old repositories (`bytepunx/signet-clients`, `bytepunx/signet-proto`)
 do not carry over: each registry checks the repository and workflow filename, so every one
-is registered again here. Branch protection on `main` requires the `ci.yml` jobs as
-status checks. S-0008 drives this setup.
+is registered again here. S-0008 drives this setup.
+
+### Checks to require on `main`
+
+Branch protection on `main` requires these status checks:
+
+| Check | Workflow | Runs |
+|-------|----------|------|
+| `server` | `ci.yml` | `scripts/test-server.sh` |
+| `proto` | `ci.yml` | `scripts/test-proto.sh` |
+| `client-go` | `ci.yml` | `scripts/test-client-go.sh` |
+| `client-python` | `ci.yml` | `scripts/test-client-python.sh` |
+| `client-typescript` | `ci.yml` | `scripts/test-client-typescript.sh` |
+| `client-rust` | `ci.yml` | `scripts/test-client-rust.sh` |
+| `client-csharp` | `ci.yml` | `scripts/test-client-csharp.sh` |
+| `client-elixir` | `ci.yml` | `scripts/test-client-elixir.sh` |
+| `check` | `system-flow-check.yml` | Markdown lint and `flai check --strict` |
+
+A job skipped because its component did not change counts as passing, so a pull request
+that leaves a component alone is not blocked by its check. To reproduce a failure
+locally, run `make test-<component>`, such as `make test-client-go`.
 
 ## Baselines and the old repositories
 
