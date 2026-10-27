@@ -7,11 +7,17 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T19:47:50Z
+updated: 2026-10-27T22:52:16Z
 transitions: []
 tags: [admin]
 topics: [admin]
-touches: [admin/README.md, system-flow.yaml]
+touches: [admin/README.md, admin/CLAUDE.md, system-flow.yaml, design/system/overview.md, design/system/admin.md]
+forecast:
+  duration: 45m
+  delivery: 2026-10-28T12:12:00Z
+  basis: "flai forecast gave 8m (median 116 s per size unit, size 4); raised to 45m because the story writes a design note, edits the manifest, and deletes a folder, and waits on the operator's decision."
+  by: planner-S-0018
+  at: 2026-10-27T22:52:16Z
 ---
 # S-0018 Decide the admin sub-project's place in the mono-repo
 
@@ -26,3 +32,20 @@ touches: [admin/README.md, system-flow.yaml]
 ## Tasks
 
 ## Notes
+
+### Planning
+
+Touches, by source:
+
+- `admin/README.md`, `system-flow.yaml`: declared.
+- `admin/CLAUDE.md`: layout. It is the only other file in `admin/` and goes with the folder if the project is removed.
+- `design/system/overview.md`: design. Criterion 1 names it as the place the decision is recorded.
+- `design/system/admin.md`: design. The note that keeps the README's planned architecture if the project is removed.
+- Co-change (`flai touches suggest`): no useful result, only `design/issues/summary.md` and `system-flow.lock.yaml`, which flai regenerates. Left out.
+- No folder touch is kept.
+
+Figures:
+
+- Forecast: `flai forecast` gave 8m. Adjusted to 45m, since the work writes a note, edits the manifest, and deletes files, and the 8m median comes from smaller stories. Delivery follows from the pull order and moves with the decision.
+- Cost of delay: no inputs on S-0018 or E-0002, so `flai cod` cannot give a value. They are the operator's; asked on the plan thread TH-0007 with a recommendation of `time_lost_per_cycle` 5m.
+- The decision, remove or scaffold, is also the operator's and is asked on TH-0007. The tasks wait for it.

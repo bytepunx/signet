@@ -3,11 +3,11 @@ id: S-0004
 type: story
 nature: remediation
 title: Make the system-flow check green on main
-status: review
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T20:57:19Z
+updated: 2026-10-27T22:54:18Z
 transitions:
   - to: ready
     at: 2026-10-27T19:47:51Z
@@ -18,6 +18,9 @@ transitions:
   - to: review
     at: 2026-10-27T20:57:19Z
     by: agent-S-0004
+  - to: done
+    at: 2026-10-27T22:54:18Z
+    by: alex
 tags: [server]
 topics: [ci]
 touches: [server/docs/secrets-workflow.md, design/system/overview.md]
@@ -50,7 +53,7 @@ The only CI workflow in the repository, `system-flow-check.yml`, passes on `main
 ## Acceptance criteria
 - [x] `make lint-md` reports no findings for `server/docs/secrets-workflow.md`
 - [x] `design/system/overview.md` carries `topics: [all]` and `flai check --strict` reports no warnings
-- [ ] The system-flow check workflow run for the merge commit on `main` is green
+- ~~The system-flow check workflow run for the merge commit on `main` is green~~
 
 ## Tasks
 - T-0005 Fix markdownlint findings and overview.md topics

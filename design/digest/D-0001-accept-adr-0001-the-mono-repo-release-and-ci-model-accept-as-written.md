@@ -2,12 +2,12 @@
 id: D-0001
 title: "Accept ADR-0001, the mono-repo release and CI model: accept as written"
 kind: answer
-sources: [TH-0001]
+sources: [TH-0001, S-0005]
 topics: [release, ci, github, all]
 paths: [design/adrs/README.md, design/system/release.md, design/system/README.md, docs/operators/release.md, docs/operators/index.md, design/conventions/git.md, design/adrs/0001-the-mono-repo-releases-from-flai-tags-per-component-with-github-actions.md]
 date: 2026-10-27
-status: active
-absorbed_by: ""
+status: absorbed
+absorbed_by: design/adrs/0001-the-mono-repo-releases-from-flai-tags-per-component-with-github-actions.md
 asked_again: []
 cited: []
 ---
