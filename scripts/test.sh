@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-# Behavior tests: fast, no external dependencies. Run on every iteration.
-# Replace the body with this project's command; keep the exit code honest.
+# Behavior tests: fast, no external dependencies beyond Docker. Run on every iteration.
+# One line per component; each script exits non-zero on failure.
 set -eu
 cd "$(dirname "$0")/.."
-echo "test.sh: no tests configured yet; see design/conventions/code-quality.md"
+scripts/test-client-elixir.sh

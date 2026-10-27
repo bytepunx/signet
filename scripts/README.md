@@ -5,6 +5,7 @@ Purpose-named shell scripts for common tasks. The `Makefile` calls these; CI cal
 | Script | Does |
 |--------|------|
 | `check.sh` | Runs `flai check --strict` on this repository |
-| `test.sh` | Behavior tests, fast, every iteration (`make test`) |
+| `test.sh` | Behavior tests, fast, every iteration (`make test`); runs every component's test script |
+| `test-client-elixir.sh` | Builds the Elixir client's toolchain image and runs stub generation, compile, and `mix test` inside Docker; any other `mix` or `buf` command can be passed as arguments |
 | `integration.sh` | Integration tests against real adapters (`make integration`) |
 | `smoke.sh` | End-to-end smoke tests (`make smoke`) |

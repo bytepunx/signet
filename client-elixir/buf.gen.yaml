@@ -1,0 +1,18 @@
+version: v2
+plugins:
+  # Buf's schema registry hosts no remote plugin for Elixir or Erlang (see
+  # ../client-erlang/README.md), so this runs protoc-gen-elixir, the escript
+  # the `protobuf` hex package ships, installed into the Docker image
+  # scripts/test-client-elixir.sh builds. Its version is pinned there and in
+  # mix.exs together; `plugins=grpc` adds the GRPC.Service and GRPC.Stub
+  # modules per service on top of the message modules.
+  - local: protoc-gen-elixir
+    out: lib/gen
+    opt:
+      - plugins=grpc
+# Pinned independently of the server's own buf.gen.yaml and of the other
+# language clients, to a tagged signet-proto release, so a schema change
+# upstream never changes this client's generated code until it is adopted
+# deliberately.
+inputs:
+  - module: buf.build/bytepunx/signet-proto:v0.4.0

@@ -1,0 +1,9 @@
+_build/
+deps/
+doc/
+.elixir_ls/
+*.ez
+erl_crash.dump
+# Generated stubs are not committed; buf generate runs before every build in
+# scripts/test-client-elixir.sh, as the Python, Rust, and TypeScript clients do.
+lib/gen/

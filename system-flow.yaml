@@ -26,6 +26,9 @@ projects:
   - name: client-csharp
     path: client-csharp
     kind: csharp
+  - name: client-elixir
+    path: client-elixir
+    kind: elixir
   - name: client-erlang
     path: client-erlang
     kind: erlang

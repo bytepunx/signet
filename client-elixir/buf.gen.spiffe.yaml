@@ -1,0 +1,12 @@
+version: v2
+plugins:
+  # The SPIFFE Workload API proto declares no package, which would put its
+  # modules at the top level of the Elixir namespace (X509SVID, X509SVIDRequest,
+  # SpiffeWorkloadAPI). package_prefix places them under Spiffe.Workload.
+  - local: protoc-gen-elixir
+    out: lib/gen
+    opt:
+      - plugins=grpc
+      - package_prefix=spiffe.workload
+inputs:
+  - directory: proto
