@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:54:19Z
+updated: 2026-10-27T22:56:13Z
 transitions:
   - to: ready
     at: 2026-10-27T22:23:53Z
@@ -16,6 +16,9 @@ tags: [server]
 topics: [release]
 touches: [server/.github/workflows/ci.yml, server/.github/workflows/publish.yml, server/.github/workflows/release-please.yml, server/.github/workflows/release.yml, server/.github/FUNDING.yml, server/release-please-config.json, server/.release-please-manifest.json, proto/.github/workflows/ci.yml, proto/.github/workflows/publish.yml, proto/.github/workflows/release-please.yml, proto/.github/workflows/release.yml, proto/release-please-config.json, proto/.release-please-manifest.json, client-erlang/README.md, system-flow.yaml, client-elixir/README.md, client-elixir/buf.gen.yaml, docs/operators/release.md]
 after: [S-0005]
+agent:
+  harness: claude-code
+  model: claude-sonnet-5-5
 forecast:
   duration: 1h
   delivery: 2026-10-28T06:13:00Z
