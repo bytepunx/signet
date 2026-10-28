@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
-	signetv1 "github.com/bytepunx/signet/gen/signet/v1"
+	adminv1 "github.com/bytepunx/signet/server/gen/admin/v1"
+	signetv1 "github.com/bytepunx/signet/server/gen/signet/v1"
 	grpccredentials "github.com/spiffe/go-spiffe/v2/spiffegrpc/grpccredentials"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"

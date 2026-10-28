@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bytepunx/signet/internal/store"
+	"github.com/bytepunx/signet/server/internal/store"
 )
 
 // Writer records audit entries and maintains the HMAC chain head in memory.

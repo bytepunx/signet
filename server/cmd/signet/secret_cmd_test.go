@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"filippo.io/age"
-	"github.com/bytepunx/signet/internal/gitops"
+	"github.com/bytepunx/signet/server/internal/gitops"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"filippo.io/age"
-	"github.com/bytepunx/signet/internal/audit"
-	icrypto "github.com/bytepunx/signet/internal/crypto"
-	"github.com/bytepunx/signet/internal/store"
+	"github.com/bytepunx/signet/server/internal/audit"
+	icrypto "github.com/bytepunx/signet/server/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/store"
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	icrypto "github.com/bytepunx/signet/internal/crypto"
-	"github.com/bytepunx/signet/internal/store"
+	icrypto "github.com/bytepunx/signet/server/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

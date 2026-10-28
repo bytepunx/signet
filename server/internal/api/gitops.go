@@ -18,12 +18,12 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 
-	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
-	"github.com/bytepunx/signet/internal/audit"
-	"github.com/bytepunx/signet/internal/auth"
-	icrypto "github.com/bytepunx/signet/internal/crypto"
-	"github.com/bytepunx/signet/internal/gitops"
-	"github.com/bytepunx/signet/internal/store"
+	adminv1 "github.com/bytepunx/signet/server/gen/admin/v1"
+	"github.com/bytepunx/signet/server/internal/audit"
+	"github.com/bytepunx/signet/server/internal/auth"
+	icrypto "github.com/bytepunx/signet/server/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/gitops"
+	"github.com/bytepunx/signet/server/internal/store"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"

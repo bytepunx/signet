@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/bytepunx/signet/internal/audit"
-	"github.com/bytepunx/signet/internal/store"
-	"github.com/bytepunx/signet/internal/unseal"
+	"github.com/bytepunx/signet/server/internal/audit"
+	"github.com/bytepunx/signet/server/internal/store"
+	"github.com/bytepunx/signet/server/internal/unseal"
 )
 
 // secretFetcher is the subset of *store.Store used for reading secrets and config.

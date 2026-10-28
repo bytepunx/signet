@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
-	signetv1 "github.com/bytepunx/signet/gen/signet/v1"
-	"github.com/bytepunx/signet/internal/server"
+	adminv1 "github.com/bytepunx/signet/server/gen/admin/v1"
+	signetv1 "github.com/bytepunx/signet/server/gen/signet/v1"
+	"github.com/bytepunx/signet/server/internal/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"

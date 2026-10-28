@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bytepunx/signet/internal/auth"
-	icrypto "github.com/bytepunx/signet/internal/crypto"
-	"github.com/bytepunx/signet/internal/store"
-	"github.com/bytepunx/signet/internal/unseal"
+	"github.com/bytepunx/signet/server/internal/auth"
+	icrypto "github.com/bytepunx/signet/server/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/store"
+	"github.com/bytepunx/signet/server/internal/unseal"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

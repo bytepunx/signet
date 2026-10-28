@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bytepunx/signet/internal/store"
+	"github.com/bytepunx/signet/server/internal/store"
 	grpccredentials "github.com/spiffe/go-spiffe/v2/spiffegrpc/grpccredentials"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"

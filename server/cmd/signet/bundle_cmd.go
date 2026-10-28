@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
+	adminv1 "github.com/bytepunx/signet/server/gen/admin/v1"
 	gogit "github.com/go-git/go-git/v5"
 	gogitobject "github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/spf13/cobra"

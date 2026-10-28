@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bytepunx/signet/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/crypto"
 )
 
 // State represents the current operational state of the server.

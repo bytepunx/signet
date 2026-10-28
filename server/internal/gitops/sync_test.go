@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytepunx/signet/internal/store"
+	"github.com/bytepunx/signet/server/internal/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

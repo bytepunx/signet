@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	icrypto "github.com/bytepunx/signet/internal/crypto"
-	"github.com/bytepunx/signet/internal/store"
+	icrypto "github.com/bytepunx/signet/server/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/store"
 )
 
 // activeKEK returns the id and plaintext bytes of the current active

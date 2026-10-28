@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"filippo.io/age"
-	icrypto "github.com/bytepunx/signet/internal/crypto"
+	icrypto "github.com/bytepunx/signet/server/internal/crypto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

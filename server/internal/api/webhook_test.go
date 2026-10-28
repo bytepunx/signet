@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	icrypto "github.com/bytepunx/signet/internal/crypto"
-	"github.com/bytepunx/signet/internal/gitops"
-	"github.com/bytepunx/signet/internal/store"
-	"github.com/bytepunx/signet/internal/unseal"
+	icrypto "github.com/bytepunx/signet/server/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/gitops"
+	"github.com/bytepunx/signet/server/internal/store"
+	"github.com/bytepunx/signet/server/internal/unseal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

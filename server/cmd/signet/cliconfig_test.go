@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
+	adminv1 "github.com/bytepunx/signet/server/gen/admin/v1"
 )
 
 // overrideConfigPath redirects configFilePath to a temp directory for the

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/bytepunx/signet/internal/audit"
-	"github.com/bytepunx/signet/internal/store"
+	"github.com/bytepunx/signet/server/internal/audit"
+	"github.com/bytepunx/signet/server/internal/store"
 )
 
 // secretStore is satisfied by *store.Store for the sync path.

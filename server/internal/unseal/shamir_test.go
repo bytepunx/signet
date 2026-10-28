@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytepunx/signet/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/crypto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

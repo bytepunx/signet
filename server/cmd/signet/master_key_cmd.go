@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
+	adminv1 "github.com/bytepunx/signet/server/gen/admin/v1"
 	"github.com/spf13/cobra"
 )
 

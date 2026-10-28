@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
-	"github.com/bytepunx/signet/internal/auth"
-	"github.com/bytepunx/signet/internal/store"
+	adminv1 "github.com/bytepunx/signet/server/gen/admin/v1"
+	"github.com/bytepunx/signet/server/internal/auth"
+	"github.com/bytepunx/signet/server/internal/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bytepunx/signet/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/crypto"
 )
 
 // expectedShareLen is the byte length of a valid Shamir share for a master key:

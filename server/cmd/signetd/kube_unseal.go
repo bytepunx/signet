@@ -11,10 +11,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/bytepunx/signet/internal/api"
-	"github.com/bytepunx/signet/internal/crypto"
-	"github.com/bytepunx/signet/internal/store"
-	"github.com/bytepunx/signet/internal/unseal"
+	"github.com/bytepunx/signet/server/internal/api"
+	"github.com/bytepunx/signet/server/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/store"
+	"github.com/bytepunx/signet/server/internal/unseal"
 )
 
 // attemptKubeUnseal fetches the master key from a Kubernetes Secret and calls

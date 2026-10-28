@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	signetv1 "github.com/bytepunx/signet/gen/signet/v1"
-	"github.com/bytepunx/signet/internal/store"
+	signetv1 "github.com/bytepunx/signet/server/gen/signet/v1"
+	"github.com/bytepunx/signet/server/internal/store"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"

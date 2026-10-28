@@ -11,10 +11,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/bytepunx/signet/internal/api"
-	icrypto "github.com/bytepunx/signet/internal/crypto"
-	"github.com/bytepunx/signet/internal/store"
-	"github.com/bytepunx/signet/internal/unseal"
+	"github.com/bytepunx/signet/server/internal/api"
+	icrypto "github.com/bytepunx/signet/server/internal/crypto"
+	"github.com/bytepunx/signet/server/internal/store"
+	"github.com/bytepunx/signet/server/internal/unseal"
 )
 
 // fakeKCVStore is a minimal in-memory api.KeyCheckStore fake, avoiding a real

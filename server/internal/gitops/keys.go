@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"filippo.io/age"
-	icrypto "github.com/bytepunx/signet/internal/crypto"
+	icrypto "github.com/bytepunx/signet/server/internal/crypto"
 )
 
 // GenerateAgeKey generates a new X25519 age keypair.

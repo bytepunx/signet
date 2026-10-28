@@ -1,4 +1,4 @@
-module github.com/bytepunx/signet
+module github.com/bytepunx/signet/server
 
 go 1.26.0
 

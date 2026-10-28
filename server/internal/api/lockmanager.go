@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bytepunx/signet/internal/store"
+	"github.com/bytepunx/signet/server/internal/store"
 )
 
 // lockWaiter represents a single process waiting to acquire a restart lock.

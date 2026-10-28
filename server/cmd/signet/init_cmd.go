@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	adminv1 "github.com/bytepunx/signet/gen/admin/v1"
+	adminv1 "github.com/bytepunx/signet/server/gen/admin/v1"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"

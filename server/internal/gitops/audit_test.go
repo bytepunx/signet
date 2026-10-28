@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/bytepunx/signet/internal/audit"
+	"github.com/bytepunx/signet/server/internal/audit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

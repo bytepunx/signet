@@ -18,7 +18,7 @@ managed:
     - file_option: cc_enable_arenas
   override:
     - file_option: go_package_prefix
-      value: github.com/bytepunx/signet/gen
+      value: github.com/bytepunx/signet/server/gen
 plugins:
   # Pinned to specific plugin versions, not just the schema module below —
   # an unpinned `remote:` reference resolves to whatever the BSR currently
