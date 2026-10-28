@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T23:01:46Z
+updated: 2026-10-28T05:51:49Z
 transitions:
   - to: ready
     at: 2026-10-27T23:01:00Z
@@ -18,10 +18,10 @@ touches: [".github/workflows/release-client-go.yml", client-go/go.mod, client-go
 after: [S-0007]
 forecast:
   duration: 2h
-  delivery: 2026-10-29T10:40:00Z
-  basis: "Its own forecast of 2h; 5th in the pull order with an in-progress limit of 2, behind S-0007, S-0008, S-0009, S-0010 and S-0020."
+  delivery: 2026-10-28T17:59:00Z
+  basis: "Its own forecast of 2h; 5th in the pull order with an in-progress limit of 2, behind S-0008, S-0009, S-0010 and S-0020."
   by: flai
-  at: 2026-10-27T23:01:46Z
+  at: 2026-10-28T05:51:49Z
 ---
 # S-0011 Go client: module path for the mono-repo and release workflow on client-go/v* tags
 

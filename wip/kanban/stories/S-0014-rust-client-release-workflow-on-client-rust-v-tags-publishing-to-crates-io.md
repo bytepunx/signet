@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-27T23:01:46Z
+updated: 2026-10-28T05:51:49Z
 transitions: []
 tags: [client-rust]
 topics: [release, github]
@@ -18,10 +18,10 @@ agent:
   model: claude-sonnet-5-5
 forecast:
   duration: 2h
-  delivery: 2026-10-29T12:56:00Z
-  basis: "Its own forecast of 2h; 8th in the pull order with an in-progress limit of 2, behind S-0007, S-0008, S-0009, S-0010, S-0020, S-0011, S-0012 and S-0013."
+  delivery: 2026-10-28T20:21:00Z
+  basis: "Its own forecast of 2h; 8th in the pull order with an in-progress limit of 2, behind S-0008, S-0009, S-0010, S-0020, S-0011, S-0012 and S-0013."
   by: flai
-  at: 2026-10-27T23:01:46Z
+  at: 2026-10-28T05:51:49Z
 ---
 # S-0014 Rust client: release workflow on client-rust/v* tags publishing to crates.io
 
