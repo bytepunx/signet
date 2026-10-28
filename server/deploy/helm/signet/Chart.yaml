@@ -2,6 +2,8 @@ apiVersion: v2
 name: signet
 description: Configuration and secrets management service with SPIFFE/SPIRE workload identity
 type: application
+# version and appVersion are placeholders: the release workflow replaces them
+# with helm package --version X.Y.Z --app-version vX.Y.Z.
 version: 0.1.0
 appVersion: "0.1.0"
 keywords:
@@ -9,4 +11,4 @@ keywords:
   - spiffe
   - spire
   - kubernetes
-home: https://github.com/bytepunx/signet
+home: https://github.com/bytepunx/signet/tree/main/server

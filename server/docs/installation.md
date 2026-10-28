@@ -21,6 +21,14 @@ helm install signet oci://ghcr.io/bytepunx/charts/signet \
   --set signet.existingSecret=signet-secrets
 ```
 
+The chart is published with each `server/vX.Y.Z` release: chart version `X.Y.Z`,
+appVersion `vX.Y.Z`. Pin it with `--version X.Y.Z`. The images are
+`ghcr.io/bytepunx/signetd` and `docker.io/bytepunx/signet`, tagged `vX.Y.Z`, `vX.Y`,
+and `latest` (pre-releases get only the exact tag), plus `main` for the main branch.
+The CLI installs with `install.sh` (newest `server/v*` release, `SIGNET_VERSION=X.Y.Z`
+to pin) or `go install github.com/bytepunx/signet/server/cmd/signet@server/vX.Y.Z`.
+How a release is cut is in [docs/operators/release.md](../../docs/operators/release.md).
+
 All configuration is supplied via Helm values. The reference below covers every
 supported value.
 

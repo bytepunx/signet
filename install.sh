@@ -38,19 +38,25 @@ step "Platform: ${PLATFORM}"
 # The repository releases every component under its own tag prefix, so
 # releases/latest may be a client; pick the newest server/vX.Y.Z release.
 # Pre-releases (server/vX.Y.Z-suffix) are skipped.
-step "Fetching latest server release..."
-API_RESPONSE=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases?per_page=100" 2>/dev/null || true)
-VERSION=$(printf '%s' "$API_RESPONSE" \
-  | grep '"tag_name"' \
-  | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' \
-  | grep -E '^server/v[0-9]+\.[0-9]+\.[0-9]+$' \
-  | head -n1 \
-  || true)
+# SIGNET_VERSION pins one (X.Y.Z, vX.Y.Z, or server/vX.Y.Z).
+if [ -n "${SIGNET_VERSION:-}" ]; then
+  PINNED="${SIGNET_VERSION#server/}"
+  VERSION="server/v${PINNED#v}"
+else
+  step "Fetching latest server release..."
+  API_RESPONSE=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases?per_page=100" 2>/dev/null || true)
+  VERSION=$(printf '%s' "$API_RESPONSE" \
+    | grep '"tag_name"' \
+    | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' \
+    | grep -E '^server/v[0-9]+\.[0-9]+\.[0-9]+$' \
+    | head -n1 \
+    || true)
+fi
 
 if [ -z "$VERSION" ]; then
   fatal "could not find a server/v* release — check https://github.com/${REPO}/releases"
 fi
-step "Latest version: ${VERSION}"
+step "Version: ${VERSION}"
 
 # ── download ──────────────────────────────────────────────────────────────────
 DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${BINARY}-${PLATFORM}"

@@ -91,9 +91,25 @@ Install the `signet` operator CLI (Linux/macOS, amd64/arm64):
 curl -fsSL https://raw.githubusercontent.com/bytepunx/signet/main/install.sh | bash
 ```
 
-This downloads the latest release binary to `/usr/local/bin/signet` and
-verifies its checksum. See [CLI Reference](docs/cli.md) for usage, or build
+This downloads the newest `server/v*` release binary to `/usr/local/bin/signet` and
+verifies its checksum; other components' releases are ignored. Pin a version with
+`SIGNET_VERSION=X.Y.Z`. With Go, install a release directly:
+`go install github.com/bytepunx/signet/server/cmd/signet@server/vX.Y.Z`. See [CLI Reference](docs/cli.md) for usage, or build
 from source with `make build` (see [Development](#development) below).
+
+### Releases
+
+Each server release is a `server/vX.Y.Z` git tag. A tag push publishes:
+
+| Artifact | Name | Versions |
+|----------|------|----------|
+| CLI binaries and `sha256sums.txt` | GitHub Release `server/vX.Y.Z` | linux and darwin, amd64 and arm64 |
+| Images | `ghcr.io/bytepunx/signetd` and `docker.io/bytepunx/signet` | `vX.Y.Z`, `vX.Y`, `latest` |
+| Helm chart | `oci://ghcr.io/bytepunx/charts/signet` | version `X.Y.Z`, appVersion `vX.Y.Z` |
+
+A pre-release tag (`server/vX.Y.Z-rc.1`) publishes only the exact `vX.Y.Z-rc.1` image tag.
+A push to `main` that changes `server/` publishes the `main` image tag. Pin a chart with
+`--version X.Y.Z`. How a release is cut is in [docs/operators/release.md](../docs/operators/release.md).
 
 ## Documentation
 
