@@ -1,6 +1,6 @@
 ---
 title: Publishing a release
-updated: 2026-10-27
+updated: 2026-10-28
 status: active
 topics: [all, release, ci, github]
 ---
@@ -69,6 +69,30 @@ The publishers of the old repositories (`bytepunx/signet-clients`, `bytepunx/sig
 do not carry over: each registry checks the repository and workflow filename, so every one
 is registered again here. S-0008 drives this setup.
 
+### Setup checklist
+
+Tick each item in S-0008's notes with the date when it is done. Check the secrets at any
+time with `scripts/set-release-secrets.sh check`; set them with
+`scripts/set-release-secrets.sh set`, which reads each value from the environment variable
+of the same name (for example `BUF_TOKEN=... DOCKERHUB_TOKEN=... scripts/set-release-secrets.sh set`)
+and skips any that is empty. Values never go on the command line.
+
+| Done | Item | Created at | Scope | Names workflow |
+|------|------|------------|-------|----------------|
+| [ ] | Secret `BUF_TOKEN` | buf.build, user settings, tokens | write on `bytepunx/signet-proto` | `release-proto.yml`, `publish-proto-main.yml`, `ci.yml` |
+| [ ] | Secret `DOCKERHUB_USERNAME` | Docker Hub account name | none | `release-server.yml`, `publish-server-main.yml` |
+| [ ] | Secret `DOCKERHUB_TOKEN` | Docker Hub, account settings, security | write on `bytepunx/signet` | `release-server.yml`, `publish-server-main.yml` |
+| [ ] | Secret `CARGO_REGISTRY_TOKEN` | crates.io, account settings, API tokens | publish for `signet-client` | `release-client-rust.yml` |
+| [ ] | Secret `NUGET_USER` | NuGet account name that owns the policy | none | `release-client-csharp.yml` |
+| [ ] | Secret `HEX_API_KEY` | `mix hex.user key generate` | `api:write` for `signet_client` | `release-client-elixir.yml` |
+| [ ] | PyPI trusted publisher | pypi.org, project `signet-client`, Publishing | repository `bytepunx/signet`, no environment | `release-client-python.yml` |
+| [ ] | npm trusted publisher | npmjs.com, package `@bytepunx/signet-client`, Settings | repository `bytepunx/signet`, no environment | `release-client-typescript.yml` |
+| [ ] | NuGet trusted publishing policy | nuget.org, account, Trusted Publishing | repository `bytepunx/signet`, no environment | `release-client-csharp.yml` |
+| [ ] | Branch protection on `main` | `scripts/protect-main.sh --apply` | see below | none |
+| [ ] | Old repositories archived | `scripts/archive-old-repos.sh --apply` | see below | none |
+
+Client stories may add items; they add their row here.
+
 ### Checks to require on `main`
 
 Branch protection on `main` requires these status checks:
@@ -88,6 +112,21 @@ Branch protection on `main` requires these status checks:
 A job skipped because its component did not change counts as passing, so a pull request
 that leaves a component alone is not blocked by its check. To reproduce a failure
 locally, run `make test-<component>`, such as `make test-client-go`.
+
+### Protect `main`
+
+```bash
+scripts/protect-main.sh            # dry run: prints the body and the command
+scripts/protect-main.sh --apply    # sets the protection
+scripts/protect-main.sh --show     # prints what is set now
+```
+
+It requires the checks above with the branch not required to be up to date, so a branch
+rebased by `flai stream sync` need not re-run CI. Administrators are not enforced and no
+pull request review is required, because acceptance is local and `flai release --pending`
+pushes `main` directly. A required check that never reports blocks a pull request, so
+`ci.yml` must skip a path-filtered job at job level (`if:` on the job), never with a
+workflow-level `paths:` filter.
 
 ## Baselines and the old repositories
 
@@ -117,6 +156,21 @@ flai release --pending --dry-run   # only client-elixir may plan from 0.0.0
 ```
 
 The old root `v*` tags stay as the server's history. These tags start no workflow.
+
+### Archive the old repositories
+
+Order: publish a release from this repository, confirm its workflow succeeded and the
+artifact is in the registry, then run:
+
+```bash
+scripts/archive-old-repos.sh            # dry run: prints each step
+scripts/archive-old-repos.sh --apply    # updates the READMEs, then archives
+```
+
+For `bytepunx/signet-clients`, `bytepunx/signet-proto`, and `bytepunx/signet-admin` it
+replaces `README.md` with a pointer to `bytepunx/signet` and the `<component>/vX.Y.Z` tag
+scheme, then archives the repository; one already archived is skipped, and one whose README
+update fails is not archived. To undo, unarchive it under Settings, Danger Zone.
 
 ## If a release workflow fails
 
