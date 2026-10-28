@@ -35,15 +35,20 @@ PLATFORM="${OS}-${ARCH}"
 step "Platform: ${PLATFORM}"
 
 # ── latest version ────────────────────────────────────────────────────────────
-step "Fetching latest release..."
-API_RESPONSE=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null || true)
+# The repository releases every component under its own tag prefix, so
+# releases/latest may be a client; pick the newest server/vX.Y.Z release.
+# Pre-releases (server/vX.Y.Z-suffix) are skipped.
+step "Fetching latest server release..."
+API_RESPONSE=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases?per_page=100" 2>/dev/null || true)
 VERSION=$(printf '%s' "$API_RESPONSE" \
   | grep '"tag_name"' \
   | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' \
+  | grep -E '^server/v[0-9]+\.[0-9]+\.[0-9]+$' \
+  | head -n1 \
   || true)
 
 if [ -z "$VERSION" ]; then
-  fatal "could not determine latest release — check https://github.com/${REPO}/releases"
+  fatal "could not find a server/v* release — check https://github.com/${REPO}/releases"
 fi
 step "Latest version: ${VERSION}"
 
@@ -98,7 +103,7 @@ info "Installed ${DEST}"
 FOUND=$(command -v "$BINARY" 2>/dev/null || true)
 
 if [ "$FOUND" = "$DEST" ]; then
-  info "signet ${VERSION} is ready — run 'signet --help' to get started"
+  info "signet ${VERSION#server/} is ready — run 'signet --help' to get started"
 elif [ -n "$FOUND" ]; then
   warn "'which signet' points to ${FOUND}, not ${DEST}"
   warn "Another version earlier in your PATH takes precedence."
