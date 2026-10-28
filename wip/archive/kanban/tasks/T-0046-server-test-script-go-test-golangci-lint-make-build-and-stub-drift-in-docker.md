@@ -3,16 +3,37 @@ id: T-0046
 type: task
 nature: feature
 title: "Server test script: go test, golangci-lint, make build, and stub drift in Docker"
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:26:18Z
-updated: 2026-10-27T22:27:03Z
-transitions: []
+updated: 2026-10-27T23:52:14Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:52:14Z
+    by: agent-S-0007
 stream: S-0007
 tags: [server, ci]
 touches: [scripts/test-server.sh]
 after: [T-0042]
+usage:
+  source: log
+  seconds: 2843
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 36
+      output: 6284
+      cache_read: 1753338
+      cache_write: 74457
+      cost: 0.4686
 ---
 # T-0046 Server test script: go test, golangci-lint, make build, and stub drift in Docker
 

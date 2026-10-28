@@ -3,15 +3,36 @@ id: T-0026
 type: task
 nature: improvement
 title: Remove client-erlang as a component and keep its toolchain note in the Elixir client
-status: backlog
+status: done
 parent: S-0006
 owner: alex
 created: 2026-10-27T22:25:22Z
-updated: 2026-10-27T22:25:22Z
-transitions: []
+updated: 2026-10-27T22:57:00Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:56:55Z
+    by: agent-S-0006
+  - to: in-progress
+    at: 2026-10-27T22:56:55Z
+    by: agent-S-0006
+  - to: done
+    at: 2026-10-27T22:57:00Z
+    by: agent-S-0006
 stream: S-0006
 tags: [client-elixir, client-erlang]
 touches: [client-erlang/README.md, client-elixir/README.md, client-elixir/buf.gen.yaml, system-flow.yaml]
+usage:
+  source: log
+  seconds: 5
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 1
+      output: 129
+      cache_read: 24953
+      cache_write: 1815
+      cost: 0.011
 ---
 # T-0026 Remove client-erlang as a component and keep its toolchain note in the Elixir client
 

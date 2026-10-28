@@ -3,16 +3,37 @@ id: T-0051
 type: task
 nature: feature
 title: "C# client test script in Docker"
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:26:34Z
-updated: 2026-10-27T22:26:34Z
-transitions: []
+updated: 2026-10-27T23:45:57Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:45:57Z
+    by: agent-S-0007
 stream: S-0007
 tags: [client-csharp, ci]
 touches: [scripts/test-client-csharp.sh]
 after: [T-0042]
+usage:
+  source: log
+  seconds: 2466
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 33
+      output: 5683
+      cache_read: 1585432
+      cache_write: 67326
+      cost: 0.4238
 ---
 # T-0051 C# client test script in Docker
 

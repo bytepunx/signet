@@ -15,6 +15,21 @@ touches: [admin/README.md, admin/CLAUDE.md, system-flow.yaml, design/system/over
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+usage:
+  source: sum
+  seconds: 0
+  models: []
+  strategic:
+    - kind: planner
+      seconds: 131
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 14
+          output: 1114
+          cache_read: 278085
+          cache_write: 37378
+          cost: 0.1885
 forecast:
   duration: 45m
   delivery: 2026-10-29T11:50:00Z

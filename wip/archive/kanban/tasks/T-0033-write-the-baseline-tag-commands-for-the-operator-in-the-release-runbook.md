@@ -3,15 +3,36 @@ id: T-0033
 type: task
 nature: improvement
 title: Write the baseline tag commands for the operator in the release runbook
-status: backlog
+status: done
 parent: S-0006
 owner: alex
 created: 2026-10-27T22:25:38Z
-updated: 2026-10-27T22:25:38Z
-transitions: []
+updated: 2026-10-27T22:57:01Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:56:55Z
+    by: agent-S-0006
+  - to: in-progress
+    at: 2026-10-27T22:56:55Z
+    by: agent-S-0006
+  - to: done
+    at: 2026-10-27T22:57:01Z
+    by: agent-S-0006
 stream: S-0006
 tags: [server, proto]
 touches: [docs/operators/release.md]
+usage:
+  source: log
+  seconds: 6
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 1
+      output: 129
+      cache_read: 24953
+      cache_write: 1815
+      cost: 0.011
 ---
 # T-0033 Write the baseline tag commands for the operator in the release runbook
 

@@ -3,16 +3,31 @@ id: T-0054
 type: task
 nature: feature
 title: "Root ci.yml: a path-filtered job per component calling its script"
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:27:18Z
-updated: 2026-10-27T22:27:18Z
-transitions: []
+updated: 2026-10-27T23:55:09Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:55:07Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T23:55:07Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:55:09Z
+    by: agent-S-0007
 stream: S-0007
 tags: [ci]
 touches: [".github/workflows/ci.yml"]
 after: [T-0044, T-0046, T-0047, T-0048, T-0049, T-0050, T-0051, T-0052]
+usage:
+  source: log
+  seconds: 2
+  estimated: true
+  priced_by: harness
+  models: []
 ---
 # T-0054 Root ci.yml: a path-filtered job per component calling its script
 

@@ -6,8 +6,8 @@ sources: [S-0003]
 topics: [elixir, sops, client-elixir]
 paths: [client-elixir/lib/signet/sops_encrypt.ex]
 date: 2026-10-27
-status: active
-absorbed_by: ""
+status: absorbed
+absorbed_by: "design/tech/sops.md#why"
 asked_again: []
 cited: []
 ---

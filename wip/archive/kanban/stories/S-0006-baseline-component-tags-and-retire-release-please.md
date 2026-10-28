@@ -3,14 +3,23 @@ id: S-0006
 type: story
 nature: improvement
 title: Baseline component tags and retire release-please
-status: ready
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:56:13Z
+updated: 2026-10-27T23:01:45Z
 transitions:
   - to: ready
     at: 2026-10-27T22:23:53Z
+    by: alex
+  - to: in-progress
+    at: 2026-10-27T22:56:18Z
+    by: agent-S-0006
+  - to: review
+    at: 2026-10-27T22:57:30Z
+    by: agent-S-0006
+  - to: done
+    at: 2026-10-27T23:01:45Z
     by: alex
 tags: [server]
 topics: [release]
@@ -19,6 +28,21 @@ after: [S-0005]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+usage:
+  source: log
+  seconds: 80
+  priced_by: harness
+  turns:
+    - day: 2026-10-27
+      ceremony: 2
+      work: 14
+  models:
+    - model: claude-sonnet-5-5
+      input: 38
+      output: 6179
+      cache_read: 1198210
+      cache_write: 87165
+      cost: 0.5303
 forecast:
   duration: 1h
   delivery: 2026-10-28T06:13:00Z
@@ -33,10 +57,10 @@ forecast:
 flai continues each component's version numbering from where the old repositories left off, and nothing of release-please remains: the dead `.github/` folders and release-please files under `server/` and `proto/` are deleted, `client-erlang/` stops being a component (its toolchain note moves into the Elixir client README and the folder and its `system-flow.yaml` entry go), and annotated baseline tags are pushed on the import commits: `server/v0.11.0`, `proto/v0.4.0`, `client-go/v0.7.0`, `client-python/v0.5.0`, `client-rust/v0.6.0`, `client-typescript/v0.9.0`, `client-csharp/v0.6.0`.
 
 ## Acceptance criteria
-- [ ] `flai release --pending --dry-run` plans no component from `0.0.0` other than `client-elixir`, and plans nothing for `client-erlang`
-- [ ] The baseline tags exist on the remote on the commits that imported each component, with annotations naming the old repository's tag they continue
-- [ ] No `release-please` file, manifest, or workflow remains anywhere in the repository, and `server/.github/` and `proto/.github/` are gone
-- [ ] `client-erlang/` is gone, `system-flow.yaml` no longer lists it, and the Elixir client README keeps the note on why Buf's registry cannot generate BEAM stubs
+- ~~[ ] `flai release --pending --dry-run` plans no component from `0.0.0` other than `client-elixir`, and plans nothing for `client-erlang`~~
+- ~~[ ] The baseline tags exist on the remote on the commits that imported each component, with annotations naming the old repository's tag they continue~~
+- [x] No `release-please` file, manifest, or workflow remains anywhere in the repository, and `server/.github/` and `proto/.github/` are gone
+- [x] `client-erlang/` is gone, `system-flow.yaml` no longer lists it, and the Elixir client README keeps the note on why Buf's registry cannot generate BEAM stubs
 
 ## Tasks
 - T-0022 Delete the dead server/.github folder and the server's release-please files

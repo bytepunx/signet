@@ -3,16 +3,37 @@ id: T-0052
 type: task
 nature: feature
 title: Server Helm chart lint and render checks script
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:26:58Z
-updated: 2026-10-27T22:26:58Z
-transitions: []
+updated: 2026-10-27T23:55:08Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:52:28Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T23:52:28Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:55:08Z
+    by: agent-S-0007
 stream: S-0007
 tags: [server, ci]
 touches: [scripts/check-server-chart.sh, scripts/test-server.sh]
 after: [T-0046]
+usage:
+  source: log
+  seconds: 160
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 9
+      output: 1473
+      cache_read: 410832
+      cache_write: 17446
+      cost: 0.1098
 ---
 # T-0052 Server Helm chart lint and render checks script
 

@@ -3,16 +3,37 @@ id: T-0048
 type: task
 nature: feature
 title: Python client test script in Docker
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:26:24Z
-updated: 2026-10-27T22:26:24Z
-transitions: []
+updated: 2026-10-27T23:55:07Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:55:07Z
+    by: agent-S-0007
 stream: S-0007
 tags: [client-python, ci]
 touches: [scripts/test-client-python.sh]
 after: [T-0042]
+usage:
+  source: log
+  seconds: 3016
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 51
+      output: 8815
+      cache_read: 2459316
+      cache_write: 104437
+      cost: 0.6573
 ---
 # T-0048 Python client test script in Docker
 

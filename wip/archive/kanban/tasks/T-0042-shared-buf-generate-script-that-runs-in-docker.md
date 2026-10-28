@@ -3,15 +3,36 @@ id: T-0042
 type: task
 nature: feature
 title: Shared buf generate script that runs in Docker
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:26:07Z
-updated: 2026-10-27T22:26:07Z
-transitions: []
+updated: 2026-10-27T23:04:43Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:57:53Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T22:57:53Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:04:43Z
+    by: agent-S-0007
 stream: S-0007
 tags: [ci]
-touches: [scripts/buf-generate.sh]
+touches: [scripts/buf-generate.sh, ".gitignore"]
+usage:
+  source: log
+  seconds: 410
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 9
+      output: 1492
+      cache_read: 416360
+      cache_write: 17681
+      cost: 0.1113
 ---
 # T-0042 Shared buf generate script that runs in Docker
 

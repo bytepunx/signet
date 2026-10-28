@@ -3,22 +3,49 @@ id: S-0007
 type: story
 nature: improvement
 title: Root CI workflow that builds and tests every component on pull requests
-status: ready
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-27T22:56:48Z
+updated: 2026-10-28T05:51:49Z
 transitions:
   - to: ready
     at: 2026-10-27T22:54:38Z
     by: alex
+  - to: in-progress
+    at: 2026-10-27T22:57:35Z
+    by: agent-S-0007
+  - to: review
+    at: 2026-10-28T05:43:06Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-28T05:51:49Z
+    by: alex
 tags: []
 topics: [ci, github]
-touches: [".github/workflows/ci.yml", scripts/test.sh, scripts/test-server.sh, scripts/test-proto.sh, scripts/test-client-go.sh, scripts/test-client-python.sh, scripts/test-client-typescript.sh, scripts/test-client-rust.sh, scripts/test-client-csharp.sh, scripts/README.md, Makefile, scripts/buf-generate.sh, scripts/check-server-chart.sh, docs/operators/release.md]
+touches: [".github/workflows/ci.yml", scripts/test.sh, scripts/test-server.sh, scripts/test-proto.sh, scripts/test-client-go.sh, scripts/test-client-python.sh, scripts/test-client-typescript.sh, scripts/test-client-rust.sh, scripts/test-client-csharp.sh, scripts/README.md, Makefile, scripts/buf-generate.sh, scripts/check-server-chart.sh, docs/operators/release.md, ".gitignore", design/issues/I-0003-scripts-test-client-elixir-sh-stalls-in-docker-build-when-the-registry-is-unreachable-although-the-toolchain-image-exists-locally.md, design/issues/summary.md, design/issues/I-0004-flai-verify-panics-with-a-nil-pointer-dereference-at-verify-go-244-when-its-test-tier-is-interrupted.md]
 after: [S-0005]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+usage:
+  source: log
+  seconds: 4946
+  priced_by: harness
+  turns:
+    - day: 2026-10-27
+      test_runs: 1
+      hand_edits: 1
+      work: 42
+    - day: 2026-10-28
+      work: 16
+  models:
+    - model: claude-sonnet-5-5
+      input: 328
+      output: 56526
+      cache_read: 15770469
+      cache_write: 669704
+      cost: 4.2152
 forecast:
   duration: 6h
   delivery: 2026-10-29T18:46:00Z
@@ -33,11 +60,11 @@ forecast:
 A root `.github/workflows/ci.yml` runs one job per component on every pull request and push to `main`, each path-filtered to its folder and running the same script a developer runs locally: `scripts/test-<component>.sh`, each running inside Docker as `scripts/test-client-elixir.sh` does, so nothing is installed on a host or a runner beyond Docker. `scripts/test.sh` runs them all for `make test`. The proto job also runs `buf lint` and `buf breaking` against the last `proto/v*` tag; the server job also runs `golangci-lint`, `make build`, the Helm chart lint and render checks from the old `server/.github/workflows/ci.yml`, and the stub-drift check.
 
 ## Acceptance criteria
-- [ ] `make test` runs every component's behaviour tests and fails if any fails
-- [ ] `ci.yml` has a job per component (`server`, `proto`, `client-go`, `client-python`, `client-typescript`, `client-rust`, `client-csharp`, `client-elixir`) that runs only when its folder, its script, or the workflow changed, and a pull request touching one component runs only that job plus the system-flow check
-- [ ] Each job's commands are the scripts under `scripts/`, not inline commands
-- [ ] The job names are listed in `docs/operators/release.md` as the checks to require on `main`
-- [ ] A pull request from this story shows every job green
+- [x] `make test` runs every component's behaviour tests and fails if any fails
+- [x] `ci.yml` has a job per component (`server`, `proto`, `client-go`, `client-python`, `client-typescript`, `client-rust`, `client-csharp`, `client-elixir`) that runs only when its folder, its script, or the workflow changed, and a pull request touching one component runs only that job plus the system-flow check
+- [x] Each job's commands are the scripts under `scripts/`, not inline commands
+- [x] The job names are listed in `docs/operators/release.md` as the checks to require on `main`
+- ~~[ ] A pull request from this story shows every job green~~
 
 ## Tasks
 - T-0042 Shared buf generate script that runs in Docker

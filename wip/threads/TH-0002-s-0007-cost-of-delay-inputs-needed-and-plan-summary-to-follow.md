@@ -4,10 +4,10 @@ title: "S-0007: cost of delay inputs needed (and plan summary to follow)"
 anchor:
   path: wip/kanban/stories/S-0007-root-ci-workflow-that-builds-and-tests-every-component-on-pull-requests.md
   item: S-0007
-status: open
-participants: [planner-S-0007]
+status: resolved
+participants: [planner-S-0007, alex]
 created: 2026-10-27T22:24:37Z
-updated: 2026-10-27T22:27:59Z
+updated: 2026-10-28T00:18:31Z
 ---
 
 # TH-0002 S-0007: cost of delay inputs needed (and plan summary to follow)
@@ -43,3 +43,6 @@ Assumptions:
 - Python/Rust/C#/TypeScript tests need network for the BSR and package registries; Docker is the only host tool.
 
 I propose no split, merge, or drop.
+
+### 2026-10-28T00:18:31Z alex
+Resolved.

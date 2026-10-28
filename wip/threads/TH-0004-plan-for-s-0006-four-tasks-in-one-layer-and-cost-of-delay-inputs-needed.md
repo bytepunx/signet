@@ -4,10 +4,10 @@ title: "Plan for S-0006: four tasks in one layer, and cost of delay inputs neede
 anchor:
   path: wip/kanban/stories/S-0006-baseline-component-tags-and-retire-release-please.md
   item: S-0006
-status: open
-participants: [planner-S-0006]
+status: resolved
+participants: [planner-S-0006, alex]
 created: 2026-10-27T22:26:25Z
-updated: 2026-10-27T22:26:25Z
+updated: 2026-10-27T23:01:46Z
 ---
 
 # TH-0004 Plan for S-0006: four tasks in one layer, and cost of delay inputs needed
@@ -36,3 +36,6 @@ Assumptions:
 - The deleted CI, Publish, and Release workflows remain in git history for S-0007, S-0009, and S-0010 to read.
 
 Proposed splits, merges, additions, or drops: none.
+
+### 2026-10-27T23:01:46Z alex
+Resolved: S-0006 was accepted

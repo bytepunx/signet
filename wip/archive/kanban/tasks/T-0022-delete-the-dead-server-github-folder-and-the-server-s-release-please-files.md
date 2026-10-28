@@ -3,15 +3,30 @@ id: T-0022
 type: task
 nature: improvement
 title: Delete the dead server/.github folder and the server's release-please files
-status: backlog
+status: done
 parent: S-0006
 owner: alex
 created: 2026-10-27T22:25:13Z
-updated: 2026-10-27T22:25:13Z
-transitions: []
+updated: 2026-10-27T22:56:59Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:56:54Z
+    by: agent-S-0006
+  - to: in-progress
+    at: 2026-10-27T22:56:55Z
+    by: agent-S-0006
+  - to: done
+    at: 2026-10-27T22:56:59Z
+    by: agent-S-0006
 stream: S-0006
 tags: [server]
 touches: [server/.github/workflows/ci.yml, server/.github/workflows/publish.yml, server/.github/workflows/release-please.yml, server/.github/workflows/release.yml, server/.github/FUNDING.yml, server/release-please-config.json, server/.release-please-manifest.json]
+usage:
+  source: log
+  seconds: 4
+  estimated: true
+  priced_by: harness
+  models: []
 ---
 # T-0022 Delete the dead server/.github folder and the server's release-please files
 

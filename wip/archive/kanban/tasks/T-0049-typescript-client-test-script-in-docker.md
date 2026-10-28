@@ -3,16 +3,37 @@ id: T-0049
 type: task
 nature: feature
 title: TypeScript client test script in Docker
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:26:28Z
-updated: 2026-10-27T22:26:28Z
-transitions: []
+updated: 2026-10-27T23:45:57Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:45:57Z
+    by: agent-S-0007
 stream: S-0007
 tags: [client-typescript, ci]
 touches: [scripts/test-client-typescript.sh]
 after: [T-0042]
+usage:
+  source: log
+  seconds: 2466
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 26
+      output: 4465
+      cache_read: 1245751
+      cache_write: 52902
+      cost: 0.333
 ---
 # T-0049 TypeScript client test script in Docker
 

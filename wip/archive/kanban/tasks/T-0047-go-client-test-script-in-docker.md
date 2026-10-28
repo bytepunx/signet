@@ -3,16 +3,37 @@ id: T-0047
 type: task
 nature: feature
 title: Go client test script in Docker
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:26:21Z
-updated: 2026-10-27T22:26:21Z
-transitions: []
+updated: 2026-10-27T23:45:54Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:45:54Z
+    by: agent-S-0007
 stream: S-0007
 tags: [client-go, ci]
 touches: [scripts/test-client-go.sh]
 after: [T-0042]
+usage:
+  source: log
+  seconds: 2463
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 8
+      output: 1393
+      cache_read: 388629
+      cache_write: 16503
+      cost: 0.1039
 ---
 # T-0047 Go client test script in Docker
 

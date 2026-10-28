@@ -1,9 +1,9 @@
 ---
 kind: curator
-accrued_cost: 0.8185
-accrued_seconds: 108
-tasks_completed: 3
-last_run: 2026-10-27T22:49:11Z
+accrued_cost: 1.2828
+accrued_seconds: 156
+tasks_completed: 5
+last_run: 2026-10-27T23:02:11Z
 ---
 
 # Curator activity
@@ -35,3 +35,19 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Items: D-0001
 - Seconds: 24
 - Cost: 0.2259 USD, estimated
+
+### 2026-10-27T22:54:48Z
+
+- Summary: Nothing new to take in since 2026-10-27T22:49:11Z: no entries written or merged, D-0012 absorbed by `design/tech/sops.md#why`, and `flai digest compact` compacted none.
+- Trigger: accepted S-0004
+- Items: D-0012
+- Seconds: 26
+- Cost: 0.2254 USD, estimated
+
+### 2026-10-27T23:02:11Z
+
+- Summary: I found nothing new to take in since 2026-10-27T22:54:48Z, so I wrote, merged, absorbed and compacted no entries. S-0006 was archived with no recorded decisions. The five active entries, D-0006 to D-0010, are not stated in any design document, convention or ADR, so they stay active. `flai digest compact` compacted none, because every entry falls inside the 720-hour window.
+- Trigger: accepted S-0006
+- Items: none
+- Seconds: 22
+- Cost: 0.2389 USD, estimated

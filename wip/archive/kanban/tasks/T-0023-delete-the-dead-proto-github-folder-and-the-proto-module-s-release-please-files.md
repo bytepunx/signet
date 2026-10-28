@@ -3,15 +3,36 @@ id: T-0023
 type: task
 nature: improvement
 title: Delete the dead proto/.github folder and the proto module's release-please files
-status: backlog
+status: done
 parent: S-0006
 owner: alex
 created: 2026-10-27T22:25:18Z
-updated: 2026-10-27T22:25:18Z
-transitions: []
+updated: 2026-10-27T22:57:00Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:56:55Z
+    by: agent-S-0006
+  - to: in-progress
+    at: 2026-10-27T22:56:55Z
+    by: agent-S-0006
+  - to: done
+    at: 2026-10-27T22:57:00Z
+    by: agent-S-0006
 stream: S-0006
 tags: [proto]
 touches: [proto/.github/workflows/ci.yml, proto/.github/workflows/publish.yml, proto/.github/workflows/release-please.yml, proto/.github/workflows/release.yml, proto/release-please-config.json, proto/.release-please-manifest.json]
+usage:
+  source: log
+  seconds: 5
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 1
+      output: 129
+      cache_read: 24953
+      cache_write: 1815
+      cost: 0.011
 ---
 # T-0023 Delete the dead proto/.github folder and the proto module's release-please files
 

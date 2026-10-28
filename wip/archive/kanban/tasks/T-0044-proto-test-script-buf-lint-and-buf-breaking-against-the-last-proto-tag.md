@@ -3,15 +3,36 @@ id: T-0044
 type: task
 nature: feature
 title: "Proto test script: buf lint and buf breaking against the last proto tag"
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:26:10Z
-updated: 2026-10-27T22:26:10Z
-transitions: []
+updated: 2026-10-27T23:04:47Z
+transitions:
+  - to: ready
+    at: 2026-10-27T22:57:53Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T22:57:53Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:04:47Z
+    by: agent-S-0007
 stream: S-0007
 tags: [proto, ci]
 touches: [scripts/test-proto.sh]
+usage:
+  source: log
+  seconds: 414
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 31
+      output: 5272
+      cache_read: 1470977
+      cache_write: 62466
+      cost: 0.3932
 ---
 # T-0044 Proto test script: buf lint and buf breaking against the last proto tag
 

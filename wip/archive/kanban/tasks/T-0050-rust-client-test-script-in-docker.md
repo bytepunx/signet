@@ -3,16 +3,37 @@ id: T-0050
 type: task
 nature: feature
 title: Rust client test script in Docker
-status: backlog
+status: done
 parent: S-0007
 owner: alex
 created: 2026-10-27T22:26:31Z
-updated: 2026-10-27T22:26:31Z
-transitions: []
+updated: 2026-10-27T23:55:08Z
+transitions:
+  - to: ready
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: in-progress
+    at: 2026-10-27T23:04:51Z
+    by: agent-S-0007
+  - to: done
+    at: 2026-10-27T23:55:08Z
+    by: agent-S-0007
 stream: S-0007
 tags: [client-rust, ci]
 touches: [scripts/test-client-rust.sh]
 after: [T-0042]
+usage:
+  source: log
+  seconds: 3017
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 43
+      output: 7448
+      cache_read: 2078030
+      cache_write: 88245
+      cost: 0.5554
 ---
 # T-0050 Rust client test script in Docker
 
