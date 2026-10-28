@@ -7,7 +7,7 @@ count: 1
 cost: 5m
 first_reported: 2026-10-28T00:16:42Z
 last_reported: 2026-10-28T00:16:42Z
-updated: 2026-10-28T00:16:42Z
+updated: 2026-10-28T05:51:49Z
 ---
 
 # I-0004 flai verify panics with a nil pointer dereference at verify.go:244 when its test tier is interrupted
@@ -22,3 +22,5 @@ Story: S-0007.
 The close-out was killed during the test tier after 20 minutes; flai verify S-0007 then printed 'stopped at test (interrupted)' followed by a SIGSEGV in verifyStory (flai/cmd/verify.go:244) instead of recording the stop.
 
 ## Remediation
+
+Story S-0022 remediates this issue, created from it at 2026-10-28T05:51:49Z.
