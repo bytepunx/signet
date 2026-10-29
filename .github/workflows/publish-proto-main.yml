@@ -1,0 +1,34 @@
+name: Publish proto main
+
+# Pushes the schema to the Buf Schema Registry (buf.build/bytepunx/signet-proto)
+# when a push to main changes proto/. Tagged releases use release-proto.yml,
+# which also labels the module with the version.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "proto/**"
+      - ".github/workflows/publish-proto-main.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  buf-push:
+    name: Push to BSR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up buf
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push
+        working-directory: proto
+        run: buf push
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
