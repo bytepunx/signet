@@ -1,0 +1,75 @@
+name: Release proto
+
+# A push of proto/vX.Y.Z labels the BSR module with vX.Y.Z, without the
+# proto/ prefix, so consumers pin `buf.build/bytepunx/signet-proto:vX.Y.Z`,
+# and creates a GitHub Release named by the tag, with the tag annotation as
+# its notes. A pre-release tag (proto/vX.Y.Z-suffix) makes a pre-release.
+
+on:
+  push:
+    tags:
+      - "proto/v*"
+
+permissions:
+  contents: write   # create the GitHub release
+
+jobs:
+  release:
+    name: Label BSR module and release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history for the notes
+
+      - name: Resolve version
+        id: v
+        run: |
+          LABEL="${GITHUB_REF_NAME#proto/}"
+          if ! [[ "$LABEL" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "tag ${GITHUB_REF_NAME} is not proto/vX.Y.Z[-suffix]" >&2
+            exit 1
+          fi
+          {
+            echo "label=${LABEL}"
+            if [[ -n "${BASH_REMATCH[4]}" ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up buf
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lint
+        working-directory: proto
+        run: buf lint
+
+      - name: Push to BSR with the version label
+        working-directory: proto
+        run: buf push --label "${{ steps.v.outputs.label }}"
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+
+      - name: Generate release notes
+        run: |
+          # The tag annotation, then the commits since the previous proto/ tag.
+          # checkout may leave an annotated tag as a lightweight ref, so fetch it.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          {
+            git tag -l --format='%(contents)' "${GITHUB_REF_NAME}"
+            echo
+            echo "## Changes"
+          } > release_notes.md
+          PREV_TAG=$(git tag -l 'proto/v*' --sort=-v:refname | grep -vxF "${GITHUB_REF_NAME}" | grep -v -- '-' | head -n1 || true)
+          if [[ -n "$PREV_TAG" ]]; then
+            git log --oneline "${PREV_TAG}..${GITHUB_REF_NAME}" -- proto >> release_notes.md
+          else
+            git log --oneline "${GITHUB_REF_NAME}" -- proto >> release_notes.md
+          fi
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release_notes.md
+          prerelease: ${{ steps.v.outputs.prerelease == 'true' }}
