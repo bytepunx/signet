@@ -3,22 +3,60 @@ id: S-0008
 type: story
 nature: improvement
 title: "Operator setup: credentials, trusted publishers, branch protection, and archiving the old repositories"
-status: ready
+status: review
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-28T05:51:49Z
+updated: 2026-11-05T19:22:09Z
 transitions:
   - to: ready
     at: 2026-10-27T22:54:41Z
     by: alex
+  - to: in-progress
+    at: 2026-10-28T05:51:53Z
+    by: agent-S-0008
+  - to: review
+    at: 2026-10-30T01:54:24Z
+    by: agent-S-0008
+blocked:
+  - from: 2026-10-28T05:55:21Z
+    until: 2026-10-30T01:52:14Z
+    reason: "Close-out test tier fails on BSR rate limiting (I-0005), outside this change; rerun close-out when it clears"
 tags: []
 topics: [release, github]
-touches: [docs/operators/release.md, scripts/README.md, scripts/set-release-secrets.sh, scripts/protect-main.sh, scripts/archive-old-repos.sh]
+touches: [docs/operators/release.md, scripts/README.md, scripts/set-release-secrets.sh, scripts/protect-main.sh, scripts/archive-old-repos.sh, design/issues/I-0005-bsr-rate-limit-fails-stub-generation-in-the-whole-suite-test-tier-when-buf-token-is-not-set.md, design/issues/summary.md]
 after: [S-0005, S-0007]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+usage:
+  source: log
+  seconds: 350
+  priced_by: harness
+  turns:
+    - day: 2026-10-28
+      work: 21
+    - day: 2026-10-30
+      ceremony: 1
+      work: 7
+  models:
+    - model: claude-sonnet-5-5
+      input: 66
+      output: 12137
+      cache_read: 1825164
+      cache_write: 106544
+      cost: 0.7302
+  strategic:
+    - kind: orchestrator
+      seconds: 6
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 4
+          output: 32
+          cache_read: 34474
+          cache_write: 47246
+          cost: 0.0275
 forecast:
   duration: 2h
   delivery: 2026-10-28T14:59:00Z
@@ -33,8 +71,8 @@ forecast:
 The `bytepunx/signet` repository can publish every component: the Actions secrets the release workflows need exist (`BUF_TOKEN`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `CARGO_REGISTRY_TOKEN`, `NUGET_USER`, `HEX_API_KEY`, and whatever the client stories settle on), PyPI, NuGet, and npm trusted publishing are registered against this repository and the new workflow filenames, `main` is protected with the CI jobs as required checks, and `signet-clients`, `signet-proto`, and `signet-admin` are archived on GitHub with a README pointing here.
 
 ## Acceptance criteria
-- [ ] `docs/operators/release.md` holds the checklist of secrets and trusted publishers per component, each with where it is registered and which workflow file it names
-- [ ] Every item on that checklist is done by the operator and ticked in the story notes with the date
+- [x] `docs/operators/release.md` holds the checklist of secrets and trusted publishers per component, each with where it is registered and which workflow file it names
+- [x] Every item on that checklist is done by the operator and ticked in the story notes with the date
 - [ ] Branch protection on `main` requires the CI jobs and the system-flow check
 - [ ] The three old repositories are archived and their READMEs point to this repository
 
