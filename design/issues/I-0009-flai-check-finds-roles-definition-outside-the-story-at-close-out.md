@@ -6,7 +6,7 @@ status: open
 count: 1
 first_reported: 2026-11-03T02:48:50Z
 last_reported: 2026-11-03T02:48:50Z
-updated: 2026-11-03T02:48:50Z
+updated: 2026-11-05T19:24:45Z
 ---
 
 # I-0009 flai check finds `roles.definition` outside the story at close-out
@@ -25,3 +25,5 @@ flai check found outside the story:
 `.claude/agents/planner.md`: .claude/agents/planner.md is a copy whose prompt differs from the definition flai generates for the planner from the baseline flai carries for design/workflows/roles/planner.md; replace it with the link to that definition: run flai role definition --write, then ln -sf ../../.flai-cache/agents/planner.md .claude/agents/planner.md (ADR-0236)
 
 ## Remediation
+
+Story S-0025 remediates this issue, created from it at 2026-11-05T19:24:45Z.
