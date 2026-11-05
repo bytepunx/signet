@@ -6,7 +6,7 @@ status: open
 count: 1
 first_reported: 2026-11-03T02:48:50Z
 last_reported: 2026-11-03T02:48:50Z
-updated: 2026-11-03T02:48:50Z
+updated: 2026-11-05T19:24:45Z
 ---
 
 # I-0008 flai check finds `roles.baseline` outside the story at close-out
@@ -25,3 +25,5 @@ flai check found outside the story:
 `design/workflows/roles/planner.md`: design/workflows/roles/planner.md is missing: flai runs the planner from the baseline it carries; run flai upgrade to add the file from the template
 
 ## Remediation
+
+Story S-0024 remediates this issue, created from it at 2026-11-05T19:24:45Z.
