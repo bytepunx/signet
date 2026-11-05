@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-10-28T05:51:49Z
+updated: 2026-11-05T19:24:45Z
 transitions: []
 tags: [client-elixir]
 topics: [release, github]
@@ -18,10 +18,10 @@ agent:
   model: claude-sonnet-5-5
 forecast:
   duration: 2h
-  delivery: 2026-10-28T22:21:00Z
-  basis: "Its own forecast of 2h; 10th in the pull order with an in-progress limit of 2, behind S-0008, S-0009, S-0010, S-0020, S-0011, S-0012, S-0013, S-0014 and S-0015."
+  delivery: 2026-11-06T03:16:00Z
+  basis: "Its own forecast of 2h; 7th in the pull order with an in-progress limit of 2, behind S-0020, S-0011, S-0012, S-0013, S-0014 and S-0015."
   by: flai
-  at: 2026-10-28T05:51:49Z
+  at: 2026-11-05T19:24:45Z
 ---
 # S-0016 Elixir client: release workflow on client-elixir/v* tags publishing to hex.pm
 
