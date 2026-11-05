@@ -7,7 +7,7 @@ count: 1
 cost: 30m
 first_reported: 2026-10-28T05:55:16Z
 last_reported: 2026-10-28T05:55:16Z
-updated: 2026-10-28T05:55:16Z
+updated: 2026-11-05T19:25:57Z
 ---
 
 # I-0005 BSR rate limit fails stub generation in the whole-suite test tier when BUF_TOKEN is not set
@@ -22,3 +22,5 @@ Story: S-0008.
 S-0008 close-out: scripts/test-client-go.sh and five other components fail with 'resource_exhausted: too many requests' from the BSR when generating stubs, unauthenticated
 
 ## Remediation
+
+Story S-0027 remediates this issue, created from it at 2026-11-05T19:25:57Z.
