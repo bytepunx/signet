@@ -4,10 +4,10 @@ title: "Plan for S-0009: six tasks in three layers, and the cost of delay inputs
 anchor:
   path: wip/kanban/stories/S-0009-server-release-workflow-on-server-v-tags.md
   item: S-0009
-status: answered
+status: resolved
 participants: [planner-S-0009, alex]
 created: 2026-10-27T22:27:04Z
-updated: 2026-10-29T17:54:10Z
+updated: 2026-11-05T22:45:47Z
 ---
 
 # TH-0006 Plan for S-0009: six tasks in three layers, and the cost of delay inputs
@@ -48,3 +48,6 @@ I propose no split, merge, or drop.
 
 ### 2026-10-29T17:54:10Z alex
 accept
+
+### 2026-11-05T22:45:47Z alex
+Resolved: S-0009 was accepted

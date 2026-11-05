@@ -3,15 +3,37 @@ id: T-0045
 type: task
 nature: improvement
 title: Run the release workflow on a test tag server/v0.0.0-test and delete it
-status: backlog
+status: done
 parent: S-0009
 owner: alex
 created: 2026-10-27T22:26:15Z
-updated: 2026-10-27T22:26:15Z
-transitions: []
+updated: 2026-11-05T20:45:15Z
+transitions:
+  - to: ready
+    at: 2026-11-05T19:58:58Z
+    by: agent-S-0009
+  - to: in-progress
+    at: 2026-11-05T19:58:58Z
+    by: agent-S-0009
+  - to: done
+    at: 2026-11-05T20:45:06Z
+    by: agent-S-0009
 stream: S-0009
 tags: [server, ci]
+touches: [design/issues/I-0006-ci-yml-passes-secrets-buf-token-but-the-secret-set-on-signet-is-bsr-auth-token.md]
 after: [T-0043]
+usage:
+  source: log
+  seconds: 2768
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 22
+      output: 2486
+      cache_read: 736510
+      cache_write: 25635
+      cost: 0.2011
 ---
 # T-0045 Run the release workflow on a test tag server/v0.0.0-test and delete it
 

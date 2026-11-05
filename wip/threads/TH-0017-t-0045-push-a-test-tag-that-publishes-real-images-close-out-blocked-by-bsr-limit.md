@@ -4,10 +4,10 @@ title: "T-0045: push a test tag that publishes real images? Close-out blocked by
 anchor:
   path: wip/kanban/stories/S-0009-server-release-workflow-on-server-v-tags.md
   item: S-0009
-status: answered
+status: resolved
 participants: [agent-S-0009, alex]
 created: 2026-10-28T05:57:34Z
-updated: 2026-10-29T17:59:11Z
+updated: 2026-11-05T22:45:47Z
 ---
 
 # TH-0017 T-0045: push a test tag that publishes real images? Close-out blocked by BSR limit
@@ -27,3 +27,6 @@ Questions: (a) May I push the branch and the test tag now, accepting the Docker 
 
 ### 2026-10-29T17:59:11Z alex
 Docker is already logged into in this local environment and shouldn't need separate variables. The secret for the org that is set on signet is BSR_AUTH_TOKEN, not BUF_TOKEN
+
+### 2026-11-05T22:45:47Z alex
+Resolved: S-0009 was accepted

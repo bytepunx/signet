@@ -6,7 +6,7 @@ title: Release process for the mono-repo with GitHub CI
 status: in-progress
 owner: arobson
 created: 2026-10-27T19:44:30Z
-updated: 2026-10-27T20:53:09Z
+updated: 2026-11-05T21:28:47Z
 transitions:
   - to: ready
     at: 2026-10-27T19:47:51Z
@@ -18,8 +18,9 @@ tags: []
 topics: [release, ci, github]
 usage:
   source: sum
-  seconds: 8703
+  seconds: 11990
   priced_by: harness
+  empty_wakes: 2
   turns:
     - day: 2026-10-27
       ceremony: 8
@@ -38,6 +39,10 @@ usage:
     - day: 2026-11-03
       ceremony: 1
       work: 5
+    - day: 2026-11-05
+      ceremony: 2
+      empty_wakes: 2
+      work: 26
   models:
     - model: claude-fable-5-1
       input: 770
@@ -52,11 +57,11 @@ usage:
       cache_write: 109675
       cost: 1.2577
     - model: claude-sonnet-5-5
-      input: 636
-      output: 111422
-      cache_read: 25206125
-      cache_write: 1232509
-      cost: 7.9596
+      input: 700
+      output: 118621
+      cache_read: 27338629
+      cache_write: 1306732
+      cost: 8.5418
   strategic:
     - kind: planner
       seconds: 310
@@ -75,15 +80,15 @@ usage:
           cache_write: 441759
           cost: 4.1925
     - kind: orchestrator
-      seconds: 39
+      seconds: 58
       estimated: true
       models:
         - model: claude-sonnet-5-5
-          input: 24
-          output: 171
-          cache_read: 530643
-          cache_write: 179391
-          cost: 0.2387
+          input: 34
+          output: 291
+          cache_read: 797903
+          cache_write: 269329
+          cost: 0.3798
 ---
 # E-0002 Release process for the mono-repo with GitHub CI
 
@@ -109,6 +114,7 @@ Every component of the mono-repo (server, proto, and the six clients) is tested 
 - S-0018 Decide the admin sub-project's place in the mono-repo
 - S-0019 Smoke-test echo images built from the clients' examples
 - S-0020 Generate in-repo stubs from proto/ by directory instead of the BSR pin
+- S-0029 Verify publish-server-main.yml and install.sh after S-0009 reaches main
 
 ## Notes
 
