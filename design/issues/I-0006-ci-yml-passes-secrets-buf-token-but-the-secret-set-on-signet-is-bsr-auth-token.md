@@ -7,7 +7,7 @@ count: 1
 cost: 10m
 first_reported: 2026-10-29T17:59:55Z
 last_reported: 2026-10-29T17:59:55Z
-updated: 2026-10-29T17:59:55Z
+updated: 2026-11-05T20:45:12Z
 ---
 
 # I-0006 ci.yml passes secrets.BUF_TOKEN, but the secret set on signet is BSR_AUTH_TOKEN, so BSR calls run unauthenticated and hit the rate limit
@@ -22,3 +22,5 @@ Story: S-0009.
 First occurrence.
 
 ## Remediation
+
+Story S-0028 remediates this issue, created from it at 2026-11-05T20:45:12Z.
