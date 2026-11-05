@@ -6,7 +6,7 @@ title: scripts/test-client-elixir.sh rebuilds the toolchain image on every run a
 status: backlog
 owner: alex
 created: 2026-10-27T22:31:00Z
-updated: 2026-11-05T19:24:46Z
+updated: 2026-11-05T19:25:58Z
 transitions: []
 tags: []
 touches: [scripts/test-client-elixir.sh, scripts/integration-client-elixir.sh, scripts/ensure-client-elixir-image.sh, scripts/test-ensure-client-elixir-image.sh, scripts/test.sh, scripts/README.md, design/issues/I-0002-scripts-test-client-elixir-sh-rebuilds-the-toolchain-image-on-every-run-and-fails-when-the-registry-stalls.md, design/issues/summary.md]
@@ -37,10 +37,10 @@ cost_of_delay:
     at: 2026-10-27T22:31:00Z
 forecast:
   duration: 1h
-  delivery: 2026-11-06T08:28:00Z
+  delivery: 2026-11-06T15:13:00Z
   basis: "Its own forecast of 1h; 11th in the pull order with an in-progress limit of 2, behind S-0020, S-0011, S-0012, S-0013, S-0014, S-0015, S-0016, S-0017, S-0018 and S-0019."
   by: flai
-  at: 2026-11-05T19:24:46Z
+  at: 2026-11-05T19:25:58Z
 finalized:
   by: alex
   at: 2026-10-27T22:52:01Z

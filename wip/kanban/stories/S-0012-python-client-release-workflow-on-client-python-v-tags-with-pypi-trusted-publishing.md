@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-05T19:24:45Z
+updated: 2026-11-05T19:25:57Z
 transitions: []
 tags: [client-python]
 topics: [release, github]
@@ -18,10 +18,10 @@ agent:
   model: claude-sonnet-5-5
 forecast:
   duration: 2h
-  delivery: 2026-11-06T00:00:00Z
+  delivery: 2026-11-06T00:01:00Z
   basis: "Its own forecast of 2h; 3rd in the pull order with an in-progress limit of 2, behind S-0020 and S-0011."
   by: flai
-  at: 2026-11-05T19:24:45Z
+  at: 2026-11-05T19:25:57Z
 ---
 # S-0012 Python client: release workflow on client-python/v* tags with PyPI trusted publishing
 
