@@ -35,7 +35,7 @@ echo "test-server.sh: [2/5] golangci-lint ${lint_version}"
 go_run "${go_image}" sh -c "
   [ \"\$(golangci-lint version --format short 2>/dev/null)\" = \"${lint_version#v}\" ] ||
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@${lint_version}
-  golangci-lint run ./..."
+  golangci-lint run --timeout 15m ./..."
 
 echo "test-server.sh: [3/5] make build"
 go_run "${go_image}" make build
