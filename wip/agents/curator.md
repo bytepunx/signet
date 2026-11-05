@@ -1,9 +1,9 @@
 ---
 kind: curator
-accrued_cost: 1.5167
-accrued_seconds: 182
-tasks_completed: 6
-last_run: 2026-10-28T05:52:19Z
+accrued_cost: 1.8640
+accrued_seconds: 210
+tasks_completed: 7
+last_run: 2026-11-05T19:25:19Z
 ---
 
 # Curator activity
@@ -59,3 +59,11 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Items: D-0016, D-0017, D-0018, D-0019
 - Seconds: 26
 - Cost: 0.2339 USD, estimated
+
+### 2026-11-05T19:25:19Z
+
+- Summary: No new entries: the two harvested candidates (TH-0006, TH-0017) were already held by D-0020 and D-0021. I merged D-0021's body so it states its fact: the BSR secret is `BSR_AUTH_TOKEN`, not `BUF_TOKEN`, which `design/system/release.md` still names. I absorbed none because no document states an active entry's fact, and `flai digest compact` compacted none.
+- Trigger: accepted S-0010
+- Items: D-0021
+- Seconds: 28
+- Cost: 0.3473 USD, estimated

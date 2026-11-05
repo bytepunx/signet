@@ -14,7 +14,7 @@ cited: []
 
 # D-0021 T-0045: push a test tag that publishes real images? Close-out blocked by BSR limit: Docker is already logged into in this local environment and shouldn't need separate variables
 
-The operator, alex, answered TH-0017 at 2026-10-29T17:59:11Z.
+The operator, alex, answered TH-0017 at 2026-10-29T17:59:11Z, on story S-0009's T-0045, which pushes a test tag (`server/v0.0.0-test`) that would publish real images to ghcr.io and Docker Hub.
 
 What was asked:
 
@@ -27,5 +27,7 @@ The answer:
 ```text
 Docker is already logged into in this local environment and shouldn't need separate variables. The secret for the org that is set on signet is BSR_AUTH_TOKEN, not BUF_TOKEN
 ```
+
+The fact for later stories: the BSR credential set on the repository is the secret `BSR_AUTH_TOKEN`, not `BUF_TOKEN`, and Docker Hub login is already present in the operator's local environment, so a story need not wait for separate Docker variables. `design/system/release.md` still names `BUF_TOKEN` for the proto workflows, which disagrees with this answer, so the entry stays active.
 
 Source: TH-0017.

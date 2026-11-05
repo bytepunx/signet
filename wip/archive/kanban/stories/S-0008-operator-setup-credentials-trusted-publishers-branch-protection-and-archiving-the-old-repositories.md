@@ -3,11 +3,11 @@ id: S-0008
 type: story
 nature: improvement
 title: "Operator setup: credentials, trusted publishers, branch protection, and archiving the old repositories"
-status: review
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-11-05T19:24:02Z
+updated: 2026-11-05T19:25:57Z
 transitions:
   - to: ready
     at: 2026-10-27T22:54:41Z
@@ -18,6 +18,9 @@ transitions:
   - to: review
     at: 2026-10-30T01:54:24Z
     by: agent-S-0008
+  - to: done
+    at: 2026-11-05T19:25:57Z
+    by: alex
 blocked:
   - from: 2026-10-28T05:55:21Z
     until: 2026-10-30T01:52:14Z
