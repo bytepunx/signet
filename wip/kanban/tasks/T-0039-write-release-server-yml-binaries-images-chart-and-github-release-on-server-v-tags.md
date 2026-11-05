@@ -3,15 +3,36 @@ id: T-0039
 type: task
 nature: feature
 title: "Write release-server.yml: binaries, images, chart, and GitHub Release on server/v* tags"
-status: backlog
+status: done
 parent: S-0009
 owner: alex
 created: 2026-10-27T22:25:55Z
-updated: 2026-10-27T22:25:55Z
-transitions: []
+updated: 2026-10-28T05:55:47Z
+transitions:
+  - to: ready
+    at: 2026-10-28T05:55:34Z
+    by: agent-S-0009
+  - to: in-progress
+    at: 2026-10-28T05:55:34Z
+    by: agent-S-0009
+  - to: done
+    at: 2026-10-28T05:55:47Z
+    by: agent-S-0009
 stream: S-0009
 tags: [server, ci]
 touches: [".github/workflows/release-server.yml"]
+usage:
+  source: log
+  seconds: 13
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 1
+      output: 310
+      cache_read: 51749
+      cache_write: 2711
+      cost: 0.0191
 ---
 # T-0039 Write release-server.yml: binaries, images, chart, and GitHub Release on server/v* tags
 

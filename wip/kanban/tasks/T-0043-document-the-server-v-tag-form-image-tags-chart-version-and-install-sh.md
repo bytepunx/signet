@@ -3,16 +3,37 @@ id: T-0043
 type: task
 nature: improvement
 title: "Document the server/v* tag form, image tags, chart version, and install.sh"
-status: backlog
+status: done
 parent: S-0009
 owner: alex
 created: 2026-10-27T22:26:09Z
-updated: 2026-10-27T22:26:09Z
-transitions: []
+updated: 2026-10-28T05:56:13Z
+transitions:
+  - to: ready
+    at: 2026-10-28T05:55:51Z
+    by: agent-S-0009
+  - to: in-progress
+    at: 2026-10-28T05:55:51Z
+    by: agent-S-0009
+  - to: done
+    at: 2026-10-28T05:56:13Z
+    by: agent-S-0009
 stream: S-0009
 tags: [server, docs]
-touches: [server/docs/installation.md, server/README.md, server/deploy/helm/signet/Chart.yaml, server/Makefile]
+touches: [server/docs/installation.md, server/README.md, server/deploy/helm/signet/Chart.yaml, server/Makefile, install.sh]
 after: [T-0037, T-0039, T-0040, T-0041]
+usage:
+  source: log
+  seconds: 22
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 8
+      output: 1968
+      cache_read: 328749
+      cache_write: 17222
+      cost: 0.1215
 ---
 # T-0043 Document the server/v* tag form, image tags, chart version, and install.sh
 

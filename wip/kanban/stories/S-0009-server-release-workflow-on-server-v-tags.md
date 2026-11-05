@@ -3,22 +3,57 @@ id: S-0009
 type: story
 nature: feature
 title: "Server release workflow on server/v* tags"
-status: ready
+status: review
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:49Z
-updated: 2026-10-28T05:51:49Z
+updated: 2026-10-29T18:02:21Z
 transitions:
   - to: ready
     at: 2026-10-27T22:54:46Z
     by: alex
+  - to: in-progress
+    at: 2026-10-28T05:51:51Z
+    by: agent-S-0009
+  - to: review
+    at: 2026-10-29T18:02:21Z
+    by: agent-S-0009
 tags: [server]
 topics: [release, github]
-touches: [".github/workflows/release-server.yml", ".github/workflows/publish-server-main.yml", server/go.mod, server/buf.gen.yaml, server/gen, server/Makefile, server/deploy/helm/signet/Chart.yaml, server/docs/installation.md, server/README.md, install.sh]
+touches: [".github/workflows/release-server.yml", ".github/workflows/publish-server-main.yml", server/go.mod, server/buf.gen.yaml, server/gen, server/Makefile, server/deploy/helm/signet/Chart.yaml, server/docs/installation.md, server/README.md, install.sh, server/cmd/signet/bundle_cmd.go, server/cmd/signet/cliconfig_test.go, server/cmd/signet/init_cmd.go, server/cmd/signet/init_cmd_test.go, server/cmd/signet/kek_cmd.go, server/cmd/signet/master_key_cmd.go, server/cmd/signet/policy_cmd.go, server/cmd/signet/repo_cmd.go, server/cmd/signet/root.go, server/cmd/signet/seal.go, server/cmd/signet/secret_cmd_test.go, server/cmd/signet/sops_key_cmd.go, server/cmd/signet/sops_key_config.go, server/cmd/signet/status.go, server/cmd/signet/unseal.go, server/cmd/signetd/kube_unseal.go, server/cmd/signetd/kube_unseal_test.go, server/cmd/signetd/main.go, server/internal/api/admin.go, server/internal/api/admin_test.go, server/internal/api/deps.go, server/internal/api/errors.go, server/internal/api/errors_test.go, server/internal/api/gitops.go, server/internal/api/gitops_get_config_test.go, server/internal/api/gitops_get_sops_public_key_test.go, server/internal/api/gitops_patch_config_test.go, server/internal/api/gitops_put_config_test.go, server/internal/api/gitops_test.go, server/internal/api/kcv.go, server/internal/api/lockmanager.go, server/internal/api/locks.go, server/internal/api/locks_test.go, server/internal/api/secrets.go, server/internal/api/secrets_test.go, server/internal/api/webhook.go, server/internal/api/webhook_test.go, server/internal/audit/audit.go, server/internal/auth/auth.go, server/internal/auth/checker_test.go, server/internal/gitops/audit_test.go, server/internal/gitops/dedup_test.go, server/internal/gitops/deps.go, server/internal/gitops/kek.go, server/internal/gitops/kek_test.go, server/internal/gitops/keys.go, server/internal/gitops/keys_test.go, server/internal/gitops/sync.go, server/internal/gitops/sync_test.go, server/internal/server/admin_tls_test.go, server/internal/server/server.go, server/internal/server/server_test.go, server/internal/unseal/manager.go, server/internal/unseal/manager_test.go, server/internal/unseal/shamir.go, server/internal/unseal/shamir_test.go, design/issues/I-0006-ci-yml-passes-secrets-buf-token-but-the-secret-set-on-signet-is-bsr-auth-token.md, design/issues/summary.md]
 after: [S-0007]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+usage:
+  source: log
+  seconds: 540
+  priced_by: harness
+  turns:
+    - day: 2026-10-28
+      test_runs: 1
+      work: 29
+    - day: 2026-10-29
+      ceremony: 1
+      work: 8
+  models:
+    - model: claude-sonnet-5-5
+      input: 84
+      output: 19957
+      cache_read: 3333373
+      cache_write: 174622
+      cost: 1.2316
+  strategic:
+    - kind: orchestrator
+      seconds: 24
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 12
+          output: 73
+          cache_read: 322515
+          cache_write: 56132
+          cost: 0.1195
 forecast:
   duration: 3h
   delivery: 2026-10-28T19:32:00Z
@@ -35,9 +70,9 @@ A push of `server/vX.Y.Z` builds and publishes everything the old `server/.githu
 ## Acceptance criteria
 - [ ] `release-server.yml` triggers on `server/v*` tags only and produces the binaries, images, chart, and GitHub Release described above
 - [ ] `publish-server-main.yml` pushes the `main` image only when `server/` changed
-- [ ] `server/go.mod` is `github.com/bytepunx/signet/server`, every import and the `go_package_prefix` follow, and `make build` and `make test` pass in `server/`
+- [x] `server/go.mod` is `github.com/bytepunx/signet/server`, every import and the `go_package_prefix` follow, and `make build` and `make test` pass in `server/`
 - [ ] `install.sh` installs the newest `server/v*` release on linux and darwin and ignores other components' releases
-- [ ] `server/docs/installation.md` and `server/README.md` name the new tag form, image tags, and chart version
+- [x] `server/docs/installation.md` and `server/README.md` name the new tag form, image tags, and chart version
 - [ ] A test tag on a branch (for example `server/v0.0.0-test`) run of the workflow is green, then deleted
 
 ## Tasks

@@ -3,16 +3,31 @@ id: T-0030
 type: task
 nature: improvement
 title: "Runbook: operator checklist of secrets, trusted publishers, protection, and archiving"
-status: backlog
+status: done
 parent: S-0008
 owner: alex
 created: 2026-10-27T22:25:34Z
-updated: 2026-10-27T22:25:34Z
-transitions: []
+updated: 2026-10-28T05:52:43Z
+transitions:
+  - to: ready
+    at: 2026-10-28T05:52:41Z
+    by: agent-S-0008
+  - to: in-progress
+    at: 2026-10-28T05:52:41Z
+    by: agent-S-0008
+  - to: done
+    at: 2026-10-28T05:52:43Z
+    by: agent-S-0008
 stream: S-0008
 tags: [release, github, docs]
 touches: [docs/operators/release.md, scripts/README.md]
 after: [T-0024, T-0025, T-0027]
+usage:
+  source: log
+  seconds: 2
+  estimated: true
+  priced_by: harness
+  models: []
 ---
 # T-0030 Runbook: operator checklist of secrets, trusted publishers, protection, and archiving
 

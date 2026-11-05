@@ -3,15 +3,36 @@ id: T-0027
 type: task
 nature: improvement
 title: "Script: point the old repositories here and archive them"
-status: backlog
+status: done
 parent: S-0008
 owner: alex
 created: 2026-10-27T22:25:25Z
-updated: 2026-10-27T22:25:25Z
-transitions: []
+updated: 2026-10-28T05:52:28Z
+transitions:
+  - to: ready
+    at: 2026-10-28T05:52:05Z
+    by: agent-S-0008
+  - to: in-progress
+    at: 2026-10-28T05:52:05Z
+    by: agent-S-0008
+  - to: done
+    at: 2026-10-28T05:52:28Z
+    by: agent-S-0008
 stream: S-0008
 tags: [release, github]
 touches: [scripts/archive-old-repos.sh]
+usage:
+  source: log
+  seconds: 23
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 475
+      cache_read: 70069
+      cache_write: 3415
+      cost: 0.0254
 ---
 # T-0027 Script: point the old repositories here and archive them
 

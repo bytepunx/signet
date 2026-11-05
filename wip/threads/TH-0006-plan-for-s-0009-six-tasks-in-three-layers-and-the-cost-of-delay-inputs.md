@@ -4,10 +4,10 @@ title: "Plan for S-0009: six tasks in three layers, and the cost of delay inputs
 anchor:
   path: wip/kanban/stories/S-0009-server-release-workflow-on-server-v-tags.md
   item: S-0009
-status: open
-participants: [planner-S-0009]
+status: answered
+participants: [planner-S-0009, alex]
 created: 2026-10-27T22:27:04Z
-updated: 2026-10-27T22:27:04Z
+updated: 2026-10-29T17:54:10Z
 ---
 
 # TH-0006 Plan for S-0009: six tasks in three layers, and the cost of delay inputs
@@ -45,3 +45,6 @@ Assumptions:
 - The old server/.github workflows and release-please files stay for S-0006 to delete.
 
 I propose no split, merge, or drop.
+
+### 2026-10-29T17:54:10Z alex
+accept

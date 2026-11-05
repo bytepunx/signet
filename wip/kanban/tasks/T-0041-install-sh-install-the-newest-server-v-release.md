@@ -3,15 +3,36 @@ id: T-0041
 type: task
 nature: improvement
 title: "install.sh: install the newest server/v* release"
-status: backlog
+status: done
 parent: S-0009
 owner: alex
 created: 2026-10-27T22:26:01Z
-updated: 2026-10-27T22:26:01Z
-transitions: []
+updated: 2026-10-28T05:55:48Z
+transitions:
+  - to: ready
+    at: 2026-10-28T05:55:34Z
+    by: agent-S-0009
+  - to: in-progress
+    at: 2026-10-28T05:55:34Z
+    by: agent-S-0009
+  - to: done
+    at: 2026-10-28T05:55:48Z
+    by: agent-S-0009
 stream: S-0009
 tags: [server, ci]
 touches: [install.sh]
+usage:
+  source: log
+  seconds: 14
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 1
+      output: 310
+      cache_read: 51749
+      cache_write: 2711
+      cost: 0.0191
 ---
 # T-0041 install.sh: install the newest server/v* release
 

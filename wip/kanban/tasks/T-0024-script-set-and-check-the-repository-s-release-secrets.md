@@ -3,15 +3,36 @@ id: T-0024
 type: task
 nature: improvement
 title: "Script: set and check the repository's release secrets"
-status: backlog
+status: done
 parent: S-0008
 owner: alex
 created: 2026-10-27T22:25:18Z
-updated: 2026-10-27T22:25:18Z
-transitions: []
+updated: 2026-10-28T05:52:27Z
+transitions:
+  - to: ready
+    at: 2026-10-28T05:52:05Z
+    by: agent-S-0008
+  - to: in-progress
+    at: 2026-10-28T05:52:05Z
+    by: agent-S-0008
+  - to: done
+    at: 2026-10-28T05:52:27Z
+    by: agent-S-0008
 stream: S-0008
 tags: [release, github]
 touches: [scripts/set-release-secrets.sh]
+usage:
+  source: log
+  seconds: 22
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 1
+      output: 267
+      cache_read: 39330
+      cache_write: 1917
+      cost: 0.0143
 ---
 # T-0024 Script: set and check the repository's release secrets
 

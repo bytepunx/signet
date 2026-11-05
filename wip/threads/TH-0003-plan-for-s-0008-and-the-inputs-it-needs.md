@@ -4,10 +4,10 @@ title: Plan for S-0008 and the inputs it needs
 anchor:
   path: wip/kanban/stories/S-0008-operator-setup-credentials-trusted-publishers-branch-protection-and-archiving-the-old-repositories.md
   item: S-0008
-status: open
-participants: [planner-S-0008]
+status: resolved
+participants: [planner-S-0008, alex]
 created: 2026-10-27T22:26:05Z
-updated: 2026-10-27T22:26:05Z
+updated: 2026-10-30T01:51:09Z
 ---
 
 # TH-0003 Plan for S-0008 and the inputs it needs
@@ -46,3 +46,6 @@ Story-level change: I added `S-0007` to `after`, beside `S-0005`. `protect-main.
 - `ci.yml` must skip a path-filtered job at job level, not at workflow level. A required check that never reports blocks a pull request. S-0007 should keep this in mind; T-0030 records it in the runbook.
 - No folder touches are kept.
 - The forecast is 2h of agent time against the 1h default, and delivery assumes S-0005 and S-0007 are accepted first.
+
+### 2026-10-30T01:51:09Z alex
+Resolved.

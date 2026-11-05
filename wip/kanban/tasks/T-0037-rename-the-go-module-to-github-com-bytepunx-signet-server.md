@@ -3,15 +3,36 @@ id: T-0037
 type: task
 nature: improvement
 title: Rename the Go module to github.com/bytepunx/signet/server
-status: backlog
+status: done
 parent: S-0009
 owner: alex
 created: 2026-10-27T22:25:50Z
-updated: 2026-10-27T22:25:50Z
-transitions: []
+updated: 2026-10-28T05:55:08Z
+transitions:
+  - to: ready
+    at: 2026-10-28T05:52:11Z
+    by: agent-S-0009
+  - to: in-progress
+    at: 2026-10-28T05:52:11Z
+    by: agent-S-0009
+  - to: done
+    at: 2026-10-28T05:55:08Z
+    by: agent-S-0009
 stream: S-0009
 tags: [server, go]
 touches: [server/go.mod, server/buf.gen.yaml, server/cmd/signet/bundle_cmd.go, server/cmd/signet/cliconfig_test.go, server/cmd/signet/init_cmd_test.go, server/cmd/signet/init_cmd.go, server/cmd/signet/kek_cmd.go, server/cmd/signet/master_key_cmd.go, server/cmd/signet/policy_cmd.go, server/cmd/signet/repo_cmd.go, server/cmd/signet/root.go, server/cmd/signet/seal.go, server/cmd/signet/secret_cmd_test.go, server/cmd/signet/sops_key_cmd.go, server/cmd/signet/sops_key_config.go, server/cmd/signet/status.go, server/cmd/signet/unseal.go, server/cmd/signetd/kube_unseal_test.go, server/cmd/signetd/kube_unseal.go, server/cmd/signetd/main.go, server/gen/admin/v1/admin.pb.go, server/gen/signet/v1/secrets.pb.go, server/internal/api/admin_test.go, server/internal/api/admin.go, server/internal/api/deps.go, server/internal/api/errors_test.go, server/internal/api/errors.go, server/internal/api/gitops_get_config_test.go, server/internal/api/gitops_get_sops_public_key_test.go, server/internal/api/gitops_patch_config_test.go, server/internal/api/gitops_put_config_test.go, server/internal/api/gitops_test.go, server/internal/api/gitops.go, server/internal/api/kcv.go, server/internal/api/lockmanager.go, server/internal/api/locks_test.go, server/internal/api/locks.go, server/internal/api/secrets_test.go, server/internal/api/secrets.go, server/internal/api/webhook_test.go, server/internal/api/webhook.go, server/internal/audit/audit.go, server/internal/auth/auth.go, server/internal/auth/checker_test.go, server/internal/gitops/audit_test.go, server/internal/gitops/dedup_test.go, server/internal/gitops/deps.go, server/internal/gitops/kek_test.go, server/internal/gitops/kek.go, server/internal/gitops/keys_test.go, server/internal/gitops/keys.go, server/internal/gitops/sync_test.go, server/internal/gitops/sync.go, server/internal/server/admin_tls_test.go, server/internal/server/server_test.go, server/internal/server/server.go, server/internal/unseal/manager_test.go, server/internal/unseal/manager.go, server/internal/unseal/shamir_test.go, server/internal/unseal/shamir.go]
+usage:
+  source: log
+  seconds: 177
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 7
+      output: 1666
+      cache_read: 278237
+      cache_write: 14576
+      cost: 0.1028
 ---
 # T-0037 Rename the Go module to github.com/bytepunx/signet/server
 

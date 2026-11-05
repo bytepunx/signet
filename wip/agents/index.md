@@ -1,6 +1,6 @@
 ---
 title: Active streams
-updated: 2026-11-05T19:24:02Z
+updated: 2026-11-05T19:24:45Z
 ---
 
 # Active streams
@@ -9,7 +9,6 @@ updated: 2026-11-05T19:24:02Z
 |--------|-------|--------|------------|---------|
 | [S-0008](S-0008.md) | Operator setup: credentials, trusted publishers, branch protection, and archiving the old repositories | review | agent-S-0008 | 2026-10-30T01:54:22Z |
 | [S-0009](S-0009.md) | Server release workflow on server/v* tags | review | agent-S-0009 | 2026-10-29T18:02:18Z |
-| [S-0010](S-0010.md) | Proto publish workflow: BSR push from main and label on proto/v* tags | review | agent-S-0010 | 2026-10-30T02:07:40Z |
 
 ## Strategic agents
 
