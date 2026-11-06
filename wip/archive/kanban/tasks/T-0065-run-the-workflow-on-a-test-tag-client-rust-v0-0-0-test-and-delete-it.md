@@ -3,12 +3,15 @@ id: T-0065
 type: task
 nature: feature
 title: Run the workflow on a test tag client-rust/v0.0.0-test and delete it
-status: backlog
+status: cancelled
 parent: S-0014
 owner: alex
 created: 2026-10-27T22:52:25Z
-updated: 2026-10-27T22:52:25Z
-transitions: []
+updated: 2026-11-06T08:11:41Z
+transitions:
+  - to: cancelled
+    at: 2026-11-06T08:11:41Z
+    by: alex
 stream: S-0014
 tags: [client-rust]
 after: [T-0062, T-0063]
@@ -35,3 +38,4 @@ Prove the workflow end to end without publishing to crates.io, where a version c
 ## Notes
 
 Waits for the Cargo.toml task and the README task. It touches no file. The real publish with `CARGO_REGISTRY_TOKEN` is the operator's first `flai release --pending`; the secret is set by S-0008.
+- 2026-11-06T08:11:41Z: moved to cancelled: Skipped

@@ -4,10 +4,10 @@ title: "T-0065: may I push story/S-0014 and the test tag client-rust/v0.0.0-test
 anchor:
   path: wip/kanban/stories/S-0014-rust-client-release-workflow-on-client-rust-v-tags-publishing-to-crates-io.md
   item: S-0014
-status: answered
+status: resolved
 participants: [agent-S-0014, alex]
 created: 2026-11-06T07:53:59Z
-updated: 2026-11-06T08:09:29Z
+updated: 2026-11-06T08:12:58Z
 ---
 
 # TH-0023 T-0065: may I push story/S-0014 and the test tag client-rust/v0.0.0-test to origin?
@@ -21,3 +21,6 @@ T-0061, T-0062 and T-0063 are done and committed on story/S-0014 (workflow, Carg
 
 ### 2026-11-06T08:09:29Z alex
 no
+
+### 2026-11-06T08:12:58Z alex
+Resolved: S-0014 was accepted

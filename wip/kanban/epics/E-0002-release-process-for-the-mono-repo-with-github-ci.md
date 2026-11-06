@@ -18,7 +18,7 @@ tags: []
 topics: [release, ci, github]
 usage:
   source: sum
-  seconds: 15134
+  seconds: 15331
   priced_by: harness
   empty_wakes: 3
   turns:
@@ -44,10 +44,10 @@ usage:
       empty_wakes: 2
       work: 41
     - day: 2026-11-06
-      ceremony: 16
+      ceremony: 18
       empty_wakes: 1
       hand_edits: 6
-      work: 267
+      work: 285
   models:
     - model: claude-fable-5-1
       input: 770
@@ -62,11 +62,11 @@ usage:
       cache_write: 109675
       cost: 1.2577
     - model: claude-sonnet-5-5
-      input: 1392
-      output: 222035
-      cache_read: 60849823
-      cache_write: 2209049
-      cost: 16.5379
+      input: 1438
+      output: 225709
+      cache_read: 62520935
+      cache_write: 2258056
+      cost: 16.9379
   strategic:
     - kind: planner
       seconds: 403

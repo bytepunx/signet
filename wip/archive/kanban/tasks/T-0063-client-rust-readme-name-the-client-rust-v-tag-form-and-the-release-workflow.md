@@ -30,10 +30,10 @@ usage:
   models:
     - model: claude-sonnet-5-5
       input: 2
-      output: 696
-      cache_read: 62414
-      cache_write: 7556
-      cost: 0.0434
+      output: 277
+      cache_read: 67226
+      cache_write: 2744
+      cost: 0.0205
 ---
 # T-0063 client-rust README: name the client-rust/v tag form and the release workflow
 

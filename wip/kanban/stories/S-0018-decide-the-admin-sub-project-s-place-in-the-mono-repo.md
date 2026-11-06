@@ -3,12 +3,21 @@ id: S-0018
 type: story
 nature: research
 title: Decide the admin sub-project's place in the mono-repo
-status: backlog
+status: in-progress
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:10:01Z
-transitions: []
+updated: 2026-11-06T08:12:51Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:12:31Z
+    by: alex
+  - to: in-progress
+    at: 2026-11-06T08:12:37Z
+    by: agent-S-0018
+blocked:
+  - from: 2026-11-06T08:12:51Z
+    reason: awaiting the operator on TH-0007
 tags: [admin]
 topics: [admin]
 touches: [admin/README.md, admin/CLAUDE.md, system-flow.yaml, design/system/overview.md, design/system/admin.md]
@@ -16,9 +25,19 @@ agent:
   harness: claude-code
   model: claude-sonnet-5-5
 usage:
-  source: sum
-  seconds: 0
-  models: []
+  source: log
+  seconds: 17
+  priced_by: harness
+  turns:
+    - day: 2026-11-06
+      work: 5
+  models:
+    - model: claude-sonnet-5-5
+      input: 12
+      output: 1551
+      cache_read: 209718
+      cache_write: 33963
+      cost: 0.1724
   strategic:
     - kind: planner
       seconds: 131

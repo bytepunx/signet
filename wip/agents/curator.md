@@ -1,9 +1,9 @@
 ---
 kind: curator
-accrued_cost: 3.6925
-accrued_seconds: 413
-tasks_completed: 16
-last_run: 2026-11-06T08:05:12Z
+accrued_cost: 3.8656
+accrued_seconds: 438
+tasks_completed: 17
+last_run: 2026-11-06T08:10:38Z
 ---
 
 # Curator activity
@@ -139,3 +139,11 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Items: none
 - Seconds: 18
 - Cost: 0.1452 USD, estimated
+
+### 2026-11-06T08:10:38Z
+
+- Summary: I wrote D-0028 (the I-0002 cause and fix, merged with S-0021's publish-script decision), and the absorption search found no active entry that a design document or ADR states. `flai digest compact` compacted none, because no entry was past the 720h window. I merged nothing: TH-0023 was already in D-0027, and I left the rest of S-0021's decisions out as plan chatter.
+- Trigger: accepted S-0021
+- Items: D-0028
+- Seconds: 25
+- Cost: 0.1731 USD, estimated

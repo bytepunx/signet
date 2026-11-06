@@ -3,12 +3,15 @@ id: S-0019
 type: story
 nature: feature
 title: Smoke-test echo images built from the clients' examples
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:10:01Z
-transitions: []
+updated: 2026-11-06T08:12:34Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:12:34Z
+    by: alex
 tags: []
 topics: [ci, github]
 touches: [".github/workflows/smoke-images.yml", scripts/build-echo-images.sh, scripts/smoke.sh, scripts/README.md, docs/operators/smoke-tests.md, docs/operators/index.md]

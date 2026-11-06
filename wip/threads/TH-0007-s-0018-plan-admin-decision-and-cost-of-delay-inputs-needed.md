@@ -5,9 +5,9 @@ anchor:
   path: wip/kanban/stories/S-0018-decide-the-admin-sub-project-s-place-in-the-mono-repo.md
   item: S-0018
 status: open
-participants: [planner-S-0018]
+participants: [planner-S-0018, agent-S-0018]
 created: 2026-10-27T22:52:03Z
-updated: 2026-10-27T22:52:03Z
+updated: 2026-11-06T08:12:49Z
 ---
 
 # TH-0007 S-0018 plan: admin decision and cost of delay inputs needed
@@ -28,3 +28,13 @@ Draft plan, assuming 'remove' (I will revise it when you answer; for 'scaffold' 
 - T2 (layer 2, after T1) Remove `admin` from `system-flow.yaml`, delete `admin/`, and run `flai check --strict`. Touches: system-flow.yaml, admin/README.md, admin/CLAUDE.md.
 
 Assumptions: `flai check --strict` already reports nothing about `admin` on main, so criterion 2 holds after the change by not regressing. S-0006 also edits `system-flow.yaml` (drops `client-erlang`); the lines differ, so I set no `after` between the stories.
+
+### 2026-11-06T08:12:49Z agent-S-0018 (recommendation)
+S-0018 is in progress, but this thread has no answer yet and the decision is yours. I need two inputs before I write tasks:
+
+1. Remove or scaffold `admin`? I recommend remove, as the planner did. That means moving `admin/README.md` and `admin/CLAUDE.md` into `design/system/admin.md`, recording the decision in `design/system/overview.md`, dropping `admin` from `system-flow.yaml` and deleting `admin/`.
+2. Cost of delay: should I set `time_lost_per_cycle` to 5m, or leave it unset?
+
+When you answer, I will write the two tasks and work them.
+
+Source: design/system/overview.md

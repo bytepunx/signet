@@ -3,11 +3,11 @@ id: S-0014
 type: story
 nature: feature
 title: "Rust client: release workflow on client-rust/v* tags publishing to crates.io"
-status: in-progress
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:09:30Z
+updated: 2026-11-06T08:12:58Z
 transitions:
   - to: ready
     at: 2026-11-06T07:50:05Z
@@ -15,6 +15,12 @@ transitions:
   - to: in-progress
     at: 2026-11-06T07:53:13Z
     by: agent-S-0014
+  - to: review
+    at: 2026-11-06T08:12:29Z
+    by: agent-S-0014
+  - to: done
+    at: 2026-11-06T08:12:58Z
+    by: alex
 blocked:
   - from: 2026-11-06T07:54:04Z
     until: 2026-11-06T08:09:30Z
@@ -28,18 +34,19 @@ agent:
   model: claude-sonnet-5-5
 usage:
   source: log
-  seconds: 52
+  seconds: 232
   priced_by: harness
   turns:
     - day: 2026-11-06
-      work: 9
+      ceremony: 2
+      work: 22
   models:
     - model: claude-sonnet-5-5
-      input: 22
-      output: 6201
-      cache_read: 556022
-      cache_write: 67311
-      cost: 0.3869
+      input: 56
+      output: 8324
+      cache_read: 2017416
+      cache_write: 82355
+      cost: 0.6145
 forecast:
   duration: 2h
   delivery: 2026-11-15T08:55:00Z

@@ -3,12 +3,18 @@ id: T-0074
 type: task
 nature: remediation
 title: Move server/CLAUDE.md's protocol facts into server/README.md and delete it
-status: backlog
+status: in-progress
 parent: S-0017
 owner: alex
 created: 2026-10-27T22:52:43Z
-updated: 2026-10-27T22:52:43Z
-transitions: []
+updated: 2026-11-06T08:12:48Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:12:48Z
+    by: agent-S-0017
+  - to: in-progress
+    at: 2026-11-06T08:12:48Z
+    by: agent-S-0017
 stream: S-0017
 tags: [server, docs]
 touches: [server/CLAUDE.md, server/README.md]

@@ -3,12 +3,18 @@ id: T-0076
 type: task
 nature: remediation
 title: Run the server pre-commit hook from server/
-status: backlog
+status: in-progress
 parent: S-0017
 owner: alex
 created: 2026-10-27T22:52:47Z
-updated: 2026-10-27T22:52:47Z
-transitions: []
+updated: 2026-11-06T08:12:48Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:12:48Z
+    by: agent-S-0017
+  - to: in-progress
+    at: 2026-11-06T08:12:48Z
+    by: agent-S-0017
 stream: S-0017
 tags: [server]
 touches: [server/githooks/pre-commit, server/Makefile]

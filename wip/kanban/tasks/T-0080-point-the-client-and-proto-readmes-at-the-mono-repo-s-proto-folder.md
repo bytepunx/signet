@@ -3,12 +3,18 @@ id: T-0080
 type: task
 nature: remediation
 title: Point the client and proto READMEs at the mono-repo's proto/ folder
-status: backlog
+status: in-progress
 parent: S-0017
 owner: alex
 created: 2026-10-27T22:52:55Z
-updated: 2026-10-27T22:52:55Z
-transitions: []
+updated: 2026-11-06T08:12:48Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:12:48Z
+    by: agent-S-0017
+  - to: in-progress
+    at: 2026-11-06T08:12:48Z
+    by: agent-S-0017
 stream: S-0017
 tags: [docs]
 touches: [proto/README.md, client-csharp/README.md, client-elixir/README.md, client-erlang/README.md, client-go/README.md, client-python/README.md, client-rust/README.md, client-typescript/README.md]

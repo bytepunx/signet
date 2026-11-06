@@ -9,19 +9,7 @@ wip_limits:
 order:
   - S-0020
   - S-0011
-  - S-0017
-  - S-0018
   - S-0019
-placed:
-  S-0017:
-    by: arobson
-    at: 2026-10-27T19:47:51Z
-  S-0018:
-    by: arobson
-    at: 2026-10-27T19:47:51Z
-  S-0019:
-    by: arobson
-    at: 2026-10-27T19:47:51Z
 ---
 
 # Board
