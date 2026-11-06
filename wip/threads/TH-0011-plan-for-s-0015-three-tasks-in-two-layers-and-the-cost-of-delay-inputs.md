@@ -4,10 +4,10 @@ title: "Plan for S-0015: three tasks in two layers, and the cost of delay inputs
 anchor:
   path: wip/kanban/stories/S-0015-c-client-release-workflow-on-client-csharp-v-tags-with-nuget-trusted-publishing.md
   item: S-0015
-status: open
-participants: [planner-S-0015]
+status: resolved
+participants: [planner-S-0015, alex]
 created: 2026-10-27T22:53:23Z
-updated: 2026-10-27T22:53:23Z
+updated: 2026-11-06T08:02:55Z
 ---
 
 # TH-0011 Plan for S-0015: three tasks in two layers, and the cost of delay inputs
@@ -40,3 +40,6 @@ Assumptions:
 - client-csharp/CHANGELOG.md is left alone, per ADR-0001.
 
 Forecast adjusted from flai's 12m to 2h, delivery 2026-10-28T12:42:00Z. I propose no split, merge, or drop.
+
+### 2026-11-06T08:02:55Z alex
+Resolved: S-0015 was accepted

@@ -3,16 +3,31 @@ id: T-0082
 type: task
 nature: feature
 title: "Write release-client-elixir.yml: test, publish to hex.pm, and create the GitHub Release on client-elixir/v* tags"
-status: backlog
+status: done
 parent: S-0016
 owner: alex
 created: 2026-10-27T22:52:56Z
-updated: 2026-10-27T22:52:56Z
-transitions: []
+updated: 2026-11-06T07:59:17Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:59:14Z
+    by: agent-S-0016
+  - to: in-progress
+    at: 2026-11-06T07:59:15Z
+    by: agent-S-0016
+  - to: done
+    at: 2026-11-06T07:59:17Z
+    by: agent-S-0016
 stream: S-0016
 tags: [client-elixir]
 touches: [".github/workflows/release-client-elixir.yml"]
 after: [T-0075]
+usage:
+  source: log
+  seconds: 2
+  estimated: true
+  priced_by: harness
+  models: []
 ---
 # T-0082 Write release-client-elixir.yml: test, publish to hex.pm, and create the GitHub Release on client-elixir/v* tags
 

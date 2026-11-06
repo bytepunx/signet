@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 10.4518
-accrued_seconds: 156411
-tasks_completed: 49
-last_run: 2026-11-06T07:54:36Z
+accrued_cost: 11.3058
+accrued_seconds: 156516
+tasks_completed: 55
+last_run: 2026-11-06T08:02:45Z
 ---
 
 # Orchestrator activity
@@ -355,6 +355,48 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Seconds: 4
 - Cost: 0.0506 USD, estimated
 
+### 2026-11-06T07:55:57Z
+
+- Summary: release-due (S-0012 accepted): no release published. system-flow.yaml has no orchestration.permissions block, so publish is off; the policy is judgement (2 pending, S-0012 and S-0013, 0 USD/week, not met by itself). No other permission is on, so I acted on nothing else.
+- Items: S-0012, S-0013
+- Seconds: 37
+- Cost: 0.1484 USD, estimated
+
+### 2026-11-06T07:56:01Z
+
+- Summary: I published no release. Publish is off because `system-flow.yaml` has no `orchestration.permissions` block. The release policy is judgement, so it is not met by itself either. S-0012 and S-0013 stay accepted and unreleased. Both are worth 0 USD/week.
+- Items: none
+- Seconds: 4
+- Cost: 0.0391 USD, estimated
+
+### 2026-11-06T07:59:03Z
+
+- Summary: S-0015 in review: not accepted. flai guard refused `flai accept --dry-run` because orchestration.permissions.accept_reviews is off. Its last verify passed at 9c1c502 (1m20s), but the branch head is now 8680a83, so the acceptance is the operator's. Nothing moved; no retry until the permission changes.
+- Items: S-0015
+- Seconds: 17
+- Cost: 0.1639 USD, estimated
+
+### 2026-11-06T07:59:08Z
+
+- Summary: I did not accept S-0015. `flai guard` refused the dry-run because `orchestration.permissions.accept_reviews` is off. The story stays in review for the operator to accept.
+- Items: none
+- Seconds: 5
+- Cost: 0.0501 USD, estimated
+
+### 2026-11-06T08:02:41Z
+
+- Summary: Reviewed S-0016 (review reason). Last flai verify passed at d554ab035fd9, which is the head of story/S-0016. flai guard refused `flai accept --dry-run` because orchestration.permissions.accept_reviews is off, so I did not accept, enqueue or open a thread. Board shows queue blocker TH-0015, the planner's open cost-of-delay thread on S-0016, which is the operator's. Left S-0016 in review for the operator.
+- Items: S-0016
+- Seconds: 38
+- Cost: 0.4064 USD, estimated
+
+### 2026-11-06T08:02:45Z
+
+- Summary: I did not accept S-0016. `orchestration.permissions.accept_reviews` is off, so flai guard refused `flai accept --dry-run`.
+- Items: none
+- Seconds: 4
+- Cost: 0.0461 USD, estimated
+
 ## Refusals
 
 ### 2026-10-27T22:25:32Z
@@ -391,3 +433,18 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 
 - Call: `git branch -a`
 - Needs: none
+
+### 2026-11-06T07:58:59Z
+
+- Call: `flai accept S-0015 --by orchestrator --verified 8680a83e91a53e99d92c6c2d3b7250bb31a9fd11 --dry-run 2>&1`
+- Needs: orchestration.permissions.accept_reviews
+
+### 2026-11-06T08:02:20Z
+
+- Call: `flai queue --json 2>&1`
+- Needs: none
+
+### 2026-11-06T08:02:34Z
+
+- Call: `flai accept S-0016 --by orchestrator --verified d554ab035fd92ed6c1d6e429b141bdcf2ec28cf2 --dry-run 2>&1`
+- Needs: orchestration.permissions.accept_reviews

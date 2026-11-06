@@ -45,15 +45,15 @@ usage:
       cost: 0.4574
   strategic:
     - kind: orchestrator
-      seconds: 38
+      seconds: 56
       estimated: true
       models:
         - model: claude-sonnet-5-5
-          input: 20
-          output: 123
-          cache_read: 594274
-          cache_write: 76828
-          cost: 0.3403
+          input: 25
+          output: 151
+          cache_read: 719451
+          cache_write: 97580
+          cost: 0.4145
 ---
 # S-0013 TypeScript client: release workflow on client-typescript/v* tags with npm provenance
 

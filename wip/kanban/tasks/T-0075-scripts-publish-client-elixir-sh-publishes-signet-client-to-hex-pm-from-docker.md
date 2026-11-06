@@ -3,16 +3,31 @@ id: T-0075
 type: task
 nature: feature
 title: scripts/publish-client-elixir.sh publishes signet_client to hex.pm from Docker
-status: backlog
+status: done
 parent: S-0016
 owner: alex
 created: 2026-10-27T22:52:45Z
-updated: 2026-10-27T22:52:45Z
-transitions: []
+updated: 2026-11-06T07:59:06Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:59:04Z
+    by: agent-S-0016
+  - to: in-progress
+    at: 2026-11-06T07:59:04Z
+    by: agent-S-0016
+  - to: done
+    at: 2026-11-06T07:59:06Z
+    by: agent-S-0016
 stream: S-0016
 tags: [client-elixir]
 touches: [scripts/publish-client-elixir.sh, scripts/README.md]
 after: [T-0068]
+usage:
+  source: log
+  seconds: 2
+  estimated: true
+  priced_by: harness
+  models: []
 ---
 # T-0075 scripts/publish-client-elixir.sh publishes signet_client to hex.pm from Docker
 

@@ -25,14 +25,14 @@ usage:
   source: log
   seconds: 8
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
       input: 2
-      output: 13
-      cache_read: 45333
-      cache_write: 183
-      cost: 0.0152
+      output: 241
+      cache_read: 42569
+      cache_write: 2947
+      cost: 0.0185
 ---
 # T-0066 Point SignetClient.csproj at bytepunx/signet and drop the hard-coded version
 

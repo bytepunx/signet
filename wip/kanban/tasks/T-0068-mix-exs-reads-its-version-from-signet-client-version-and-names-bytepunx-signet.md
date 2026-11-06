@@ -3,15 +3,36 @@ id: T-0068
 type: task
 nature: feature
 title: mix.exs reads its version from SIGNET_CLIENT_VERSION and names bytepunx/signet
-status: backlog
+status: done
 parent: S-0016
 owner: alex
 created: 2026-10-27T22:52:33Z
-updated: 2026-10-27T22:52:33Z
-transitions: []
+updated: 2026-11-06T07:59:00Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:58:37Z
+    by: agent-S-0016
+  - to: in-progress
+    at: 2026-11-06T07:58:37Z
+    by: agent-S-0016
+  - to: done
+    at: 2026-11-06T07:59:00Z
+    by: agent-S-0016
 stream: S-0016
 tags: [client-elixir]
 touches: [client-elixir/mix.exs]
+usage:
+  source: log
+  seconds: 23
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 6
+      output: 1116
+      cache_read: 197783
+      cache_write: 10674
+      cost: 0.0736
 ---
 # T-0068 mix.exs reads its version from SIGNET_CLIENT_VERSION and names bytepunx/signet
 

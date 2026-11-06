@@ -3,14 +3,17 @@ id: S-0021
 type: story
 nature: improvement
 title: scripts/test-client-elixir.sh rebuilds the toolchain image on every run and fails when the registry stalls
-status: ready
+status: in-progress
 owner: alex
 created: 2026-10-27T22:31:00Z
-updated: 2026-11-06T07:54:48Z
+updated: 2026-11-06T08:01:37Z
 transitions:
   - to: ready
     at: 2026-11-06T07:51:18Z
     by: alex
+  - to: in-progress
+    at: 2026-11-06T08:01:37Z
+    by: agent-S-0021
 tags: []
 touches: [scripts/test-client-elixir.sh, scripts/integration-client-elixir.sh, scripts/ensure-client-elixir-image.sh, scripts/test-ensure-client-elixir-image.sh, scripts/test.sh, scripts/README.md, design/issues/I-0002-scripts-test-client-elixir-sh-rebuilds-the-toolchain-image-on-every-run-and-fails-when-the-registry-stalls.md, design/issues/summary.md]
 agent:
@@ -19,9 +22,20 @@ agent:
   config:
     effort: high
 usage:
-  source: sum
-  seconds: 0
-  models: []
+  source: log
+  seconds: 74
+  estimated: true
+  priced_by: estimate
+  turns:
+    - day: 2026-11-06
+      work: 13
+  models:
+    - model: claude-sonnet-5-5
+      input: 28
+      output: 230
+      cache_read: 877723
+      cache_write: 80124
+      cost: 0.3209
   strategic:
     - kind: planner
       seconds: 84

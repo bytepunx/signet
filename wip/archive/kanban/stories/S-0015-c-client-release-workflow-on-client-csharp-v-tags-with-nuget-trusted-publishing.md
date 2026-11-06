@@ -3,11 +3,11 @@ id: S-0015
 type: story
 nature: feature
 title: "C# client: release workflow on client-csharp/v* tags with NuGet trusted publishing"
-status: in-progress
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:53:57Z
+updated: 2026-11-06T08:02:55Z
 transitions:
   - to: ready
     at: 2026-11-06T07:50:07Z
@@ -15,6 +15,12 @@ transitions:
   - to: in-progress
     at: 2026-11-06T07:53:57Z
     by: agent-S-0015
+  - to: review
+    at: 2026-11-06T07:58:13Z
+    by: agent-S-0015
+  - to: done
+    at: 2026-11-06T08:02:55Z
+    by: alex
 tags: [client-csharp]
 topics: [release, github]
 touches: [".github/workflows/release-client-csharp.yml", client-csharp/SignetClient.csproj, client-csharp/README.md]
@@ -24,20 +30,30 @@ agent:
   model: claude-sonnet-5-5
 usage:
   source: log
-  seconds: 47
-  estimated: true
-  priced_by: estimate
+  seconds: 262
+  priced_by: harness
   turns:
     - day: 2026-11-06
-      ceremony: 1
-      work: 8
+      ceremony: 2
+      work: 13
   models:
     - model: claude-sonnet-5-5
-      input: 22
-      output: 129
-      cache_read: 450254
-      cache_write: 53750
-      cost: 0.1678
+      input: 36
+      output: 5730
+      cache_read: 1012626
+      cache_write: 70108
+      cost: 0.4391
+  strategic:
+    - kind: orchestrator
+      seconds: 17
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 10
+          output: 66
+          cache_read: 269421
+          cache_write: 51512
+          cost: 0.1639
 forecast:
   duration: 2h
   delivery: 2026-11-06T14:29:00Z
@@ -52,9 +68,9 @@ forecast:
 A push of `client-csharp/vX.Y.Z` builds and tests `Signet.Client`, packs it with the version from the tag, publishes to NuGet with the OIDC login the old workflow used, and creates the GitHub Release. The project file names this repository.
 
 ## Acceptance criteria
-- [ ] `release-client-csharp.yml` triggers on `client-csharp/v*` only, passes `-p:Version=X.Y.Z` to `dotnet pack`, publishes via `NuGet/login` and `dotnet nuget push`, and creates the GitHub Release with notes from the tag annotation
-- [ ] `SignetClient.csproj` repository and project URLs name `bytepunx/signet` and no longer hard-code a version that would be overridden
-- [ ] `client-csharp/README.md` names the tag form, the workflow, and the trusted publisher
+- [x] `release-client-csharp.yml` triggers on `client-csharp/v*` only, passes `-p:Version=X.Y.Z` to `dotnet pack`, publishes via `NuGet/login` and `dotnet nuget push`, and creates the GitHub Release with notes from the tag annotation
+- [x] `SignetClient.csproj` repository and project URLs name `bytepunx/signet` and no longer hard-code a version that would be overridden
+- [x] `client-csharp/README.md` names the tag form, the workflow, and the trusted publisher
 
 ## Tasks
 - T-0066 Point SignetClient.csproj at bytepunx/signet and drop the hard-coded version

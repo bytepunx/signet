@@ -3,16 +3,37 @@ id: T-0084
 type: task
 nature: improvement
 title: Retire CHANGELOG.md and document the client-elixir/v tag form, workflow, and hex.pm install
-status: backlog
+status: done
 parent: S-0016
 owner: alex
 created: 2026-10-27T22:53:01Z
-updated: 2026-10-27T22:53:08Z
-transitions: []
+updated: 2026-11-06T07:59:30Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:59:21Z
+    by: agent-S-0016
+  - to: in-progress
+    at: 2026-11-06T07:59:21Z
+    by: agent-S-0016
+  - to: done
+    at: 2026-11-06T07:59:30Z
+    by: agent-S-0016
 stream: S-0016
 tags: [client-elixir]
 touches: [client-elixir/README.md, client-elixir/CHANGELOG.md, design/system/release.md]
 after: [T-0068, T-0075, T-0082]
+usage:
+  source: log
+  seconds: 9
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 5
+      output: 901
+      cache_read: 159627
+      cache_write: 8615
+      cost: 0.0594
 ---
 # T-0084 Retire CHANGELOG.md and document the client-elixir/v tag form, workflow, and hex.pm install
 

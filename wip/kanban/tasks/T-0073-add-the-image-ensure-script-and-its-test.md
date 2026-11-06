@@ -3,15 +3,36 @@ id: T-0073
 type: task
 nature: improvement
 title: Add the image-ensure script and its test
-status: backlog
+status: done
 parent: S-0021
 owner: alex
 created: 2026-10-27T22:52:43Z
-updated: 2026-10-27T22:52:43Z
-transitions: []
+updated: 2026-11-06T08:02:49Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:02:05Z
+    by: agent-S-0021
+  - to: in-progress
+    at: 2026-11-06T08:02:05Z
+    by: agent-S-0021
+  - to: done
+    at: 2026-11-06T08:02:49Z
+    by: agent-S-0021
 stream: S-0021
 tags: [scripts]
 touches: [scripts/ensure-client-elixir-image.sh, scripts/test-ensure-client-elixir-image.sh]
+usage:
+  source: log
+  seconds: 44
+  estimated: true
+  priced_by: estimate
+  models:
+    - model: claude-sonnet-5-5
+      input: 12
+      output: 94
+      cache_read: 445440
+      cache_write: 9553
+      cost: 0.1524
 ---
 # T-0073 Add the image-ensure script and its test
 
