@@ -25,14 +25,14 @@ usage:
   source: log
   seconds: 5
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 4
-      output: 52
-      cache_read: 181237
-      cache_write: 5624
-      cost: 0.0618
+      input: 5
+      output: 1059
+      cache_read: 177074
+      cache_write: 9786
+      cost: 0.0675
 ---
 # T-0060 Script that writes the tag's version into pyproject.toml
 

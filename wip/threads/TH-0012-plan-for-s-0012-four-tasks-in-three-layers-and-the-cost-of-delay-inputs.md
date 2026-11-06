@@ -4,10 +4,10 @@ title: "Plan for S-0012: four tasks in three layers, and the cost of delay input
 anchor:
   path: wip/kanban/stories/S-0012-python-client-release-workflow-on-client-python-v-tags-with-pypi-trusted-publishing.md
   item: S-0012
-status: open
-participants: [planner-S-0012]
+status: resolved
+participants: [planner-S-0012, alex]
 created: 2026-10-27T22:53:24Z
-updated: 2026-10-27T22:53:24Z
+updated: 2026-11-06T07:54:47Z
 ---
 
 # TH-0012 Plan for S-0012: four tasks in three layers, and the cost of delay inputs
@@ -44,3 +44,6 @@ Assumptions:
 - Forecast 2h (flai's 14m ignored workflow work); delivery 2026-10-28T12:02Z.
 
 I propose no split, merge, or drop.
+
+### 2026-11-06T07:54:47Z alex
+Resolved: S-0012 was accepted

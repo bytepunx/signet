@@ -7,7 +7,7 @@ status: in-progress
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:53:13Z
+updated: 2026-11-06T07:54:04Z
 transitions:
   - to: ready
     at: 2026-11-06T07:50:05Z
@@ -15,6 +15,9 @@ transitions:
   - to: in-progress
     at: 2026-11-06T07:53:13Z
     by: agent-S-0014
+blocked:
+  - from: 2026-11-06T07:54:04Z
+    reason: awaiting the operator on TH-0023
 tags: [client-rust]
 topics: [release, github]
 touches: [".github/workflows/release-client-rust.yml", client-rust/Cargo.toml, client-rust/README.md]
@@ -24,19 +27,18 @@ agent:
   model: claude-sonnet-5-5
 usage:
   source: log
-  seconds: 32
-  estimated: true
-  priced_by: estimate
+  seconds: 52
+  priced_by: harness
   turns:
     - day: 2026-11-06
-      work: 6
+      work: 9
   models:
     - model: claude-sonnet-5-5
-      input: 14
-      output: 73
-      cache_read: 260793
-      cache_write: 51036
-      cost: 0.1031
+      input: 22
+      output: 6201
+      cache_read: 556022
+      cache_write: 67311
+      cost: 0.3869
 forecast:
   duration: 2h
   delivery: 2026-11-15T08:55:00Z
@@ -51,9 +53,9 @@ forecast:
 A push of `client-rust/vX.Y.Z` sets the crate version from the tag, builds, tests, publishes `signet-client` to crates.io, and creates the GitHub Release. `Cargo.toml` names this repository.
 
 ## Acceptance criteria
-- [ ] `release-client-rust.yml` triggers on `client-rust/v*` only, sets the version in `Cargo.toml` from the tag before `cargo publish`, publishes with `CARGO_REGISTRY_TOKEN` or crates.io trusted publishing, and creates the GitHub Release with notes from the tag annotation
-- [ ] `Cargo.toml` repository and documentation fields name `bytepunx/signet`
-- [ ] `client-rust/README.md` names the tag form and the workflow
+- [x] `release-client-rust.yml` triggers on `client-rust/v*` only, sets the version in `Cargo.toml` from the tag before `cargo publish`, publishes with `CARGO_REGISTRY_TOKEN` or crates.io trusted publishing, and creates the GitHub Release with notes from the tag annotation
+- [x] `Cargo.toml` repository and documentation fields name `bytepunx/signet`
+- [x] `client-rust/README.md` names the tag form and the workflow
 
 ## Tasks
 - T-0061 Write release-client-rust.yml: version from the tag, test, publish to crates.io, GitHub Release

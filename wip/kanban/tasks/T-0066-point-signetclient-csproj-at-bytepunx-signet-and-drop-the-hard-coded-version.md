@@ -3,15 +3,36 @@ id: T-0066
 type: task
 nature: improvement
 title: Point SignetClient.csproj at bytepunx/signet and drop the hard-coded version
-status: backlog
+status: done
 parent: S-0015
 owner: alex
 created: 2026-10-27T22:52:29Z
-updated: 2026-10-27T22:52:29Z
-transitions: []
+updated: 2026-11-06T07:54:42Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:54:34Z
+    by: agent-S-0015
+  - to: in-progress
+    at: 2026-11-06T07:54:34Z
+    by: agent-S-0015
+  - to: done
+    at: 2026-11-06T07:54:42Z
+    by: agent-S-0015
 stream: S-0015
 tags: [client-csharp, release]
 touches: [client-csharp/SignetClient.csproj]
+usage:
+  source: log
+  seconds: 8
+  estimated: true
+  priced_by: estimate
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 13
+      cache_read: 45333
+      cache_write: 183
+      cost: 0.0152
 ---
 # T-0066 Point SignetClient.csproj at bytepunx/signet and drop the hard-coded version
 

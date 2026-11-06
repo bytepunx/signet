@@ -3,11 +3,11 @@ id: T-0063
 type: task
 nature: improvement
 title: "client-rust README: name the client-rust/v tag form and the release workflow"
-status: in-progress
+status: done
 parent: S-0014
 owner: alex
 created: 2026-10-27T22:52:20Z
-updated: 2026-11-06T07:53:44Z
+updated: 2026-11-06T07:53:47Z
 transitions:
   - to: ready
     at: 2026-11-06T07:53:44Z
@@ -15,10 +15,25 @@ transitions:
   - to: in-progress
     at: 2026-11-06T07:53:44Z
     by: agent-S-0014
+  - to: done
+    at: 2026-11-06T07:53:47Z
+    by: agent-S-0014
 stream: S-0014
 tags: [client-rust]
 touches: [client-rust/README.md]
 after: [T-0061]
+usage:
+  source: log
+  seconds: 3
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 696
+      cache_read: 62414
+      cache_write: 7556
+      cost: 0.0434
 ---
 # T-0063 client-rust README: name the client-rust/v tag form and the release workflow
 

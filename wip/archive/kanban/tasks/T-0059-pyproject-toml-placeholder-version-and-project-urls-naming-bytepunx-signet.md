@@ -25,7 +25,7 @@ usage:
   source: log
   seconds: 2
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models: []
 ---
 # T-0059 pyproject.toml: placeholder version and project URLs naming bytepunx/signet

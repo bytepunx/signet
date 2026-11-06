@@ -26,14 +26,14 @@ usage:
   source: log
   seconds: 3
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
       input: 2
-      output: 3
-      cache_read: 96008
-      cache_write: 4423
-      cost: 0.0332
+      output: 569
+      cache_read: 95171
+      cache_write: 5260
+      cost: 0.0363
 ---
 # T-0064 Write release-client-python.yml: test, build, publish to PyPI, and GitHub Release on client-python/v* tags
 

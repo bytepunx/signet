@@ -26,14 +26,14 @@ usage:
   source: log
   seconds: 5
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 2
-      output: 64
-      cache_read: 100431
-      cache_write: 4599
-      cost: 0.0348
+      input: 3
+      output: 595
+      cache_read: 99529
+      cache_write: 5501
+      cost: 0.0379
 ---
 # T-0067 README: the client-python/v tag form, the release workflow, and the PyPI trusted publisher
 

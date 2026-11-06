@@ -3,15 +3,18 @@ id: S-0015
 type: story
 nature: feature
 title: "C# client: release workflow on client-csharp/v* tags with NuGet trusted publishing"
-status: ready
+status: in-progress
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:53:46Z
+updated: 2026-11-06T07:53:57Z
 transitions:
   - to: ready
     at: 2026-11-06T07:50:07Z
     by: alex
+  - to: in-progress
+    at: 2026-11-06T07:53:57Z
+    by: agent-S-0015
 tags: [client-csharp]
 topics: [release, github]
 touches: [".github/workflows/release-client-csharp.yml", client-csharp/SignetClient.csproj, client-csharp/README.md]
@@ -19,6 +22,22 @@ after: [S-0007]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+usage:
+  source: log
+  seconds: 47
+  estimated: true
+  priced_by: estimate
+  turns:
+    - day: 2026-11-06
+      ceremony: 1
+      work: 8
+  models:
+    - model: claude-sonnet-5-5
+      input: 22
+      output: 129
+      cache_read: 450254
+      cache_write: 53750
+      cost: 0.1678
 forecast:
   duration: 2h
   delivery: 2026-11-06T14:29:00Z

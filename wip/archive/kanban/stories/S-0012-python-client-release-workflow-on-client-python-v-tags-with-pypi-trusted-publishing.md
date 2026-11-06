@@ -3,11 +3,11 @@ id: S-0012
 type: story
 nature: feature
 title: "Python client: release workflow on client-python/v* tags with PyPI trusted publishing"
-status: review
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:54:41Z
+updated: 2026-11-06T07:54:47Z
 transitions:
   - to: ready
     at: 2026-11-06T07:50:00Z
@@ -18,6 +18,9 @@ transitions:
   - to: review
     at: 2026-11-06T07:53:48Z
     by: agent-S-0012
+  - to: done
+    at: 2026-11-06T07:54:47Z
+    by: alex
 tags: [client-python]
 topics: [release, github]
 touches: [".github/workflows/release-client-python.yml", client-python/pyproject.toml, client-python/README.md, scripts/set-client-python-version.sh]

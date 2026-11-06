@@ -1,15 +1,14 @@
 ---
 title: Active streams
-updated: 2026-11-06T07:54:41Z
+updated: 2026-11-06T07:54:47Z
 ---
 
 # Active streams
 
 | Stream | Title | Status | Last agent | Updated |
 |--------|-------|--------|------------|---------|
-| [S-0012](S-0012.md) | Python client: release workflow on client-python/v* tags with PyPI trusted publishing | review | agent-S-0012 | 2026-11-06T07:51:44Z |
 | [S-0014](S-0014.md) | Rust client: release workflow on client-rust/v* tags publishing to crates.io | in-progress | agent-S-0014 | 2026-11-06T07:53:57Z |
-| [S-0015](S-0015.md) | C# client: release workflow on client-csharp/v* tags with NuGet trusted publishing | in-progress | agent-S-0015 | 2026-11-06T07:53:57Z |
+| [S-0015](S-0015.md) | C# client: release workflow on client-csharp/v* tags with NuGet trusted publishing | in-progress | agent-S-0015 | 2026-11-06T07:54:42Z |
 
 ## Strategic agents
 
