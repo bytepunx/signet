@@ -84,7 +84,7 @@ workflow writes the tag's version before building:
 | client-typescript | `package.json` `version` (`npm version --no-git-tag-version`) |
 | client-rust | `Cargo.toml` `version` |
 | client-csharp | `dotnet pack -p:Version=X.Y.Z` |
-| client-elixir | `mix.exs` `@version` |
+| client-elixir | `mix.exs`, from `SIGNET_CLIENT_VERSION` (default `0.0.0-dev`), set by `scripts/publish-client-elixir.sh` |
 
 ## Baseline tags
 

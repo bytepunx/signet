@@ -15,7 +15,8 @@ def deps do
 end
 ```
 
-The package is not yet published to Hex; depend on it by path or git until it is.
+The package is [`signet_client` on hex.pm](https://hex.pm/packages/signet_client); the
+versions are the `client-elixir/v*` tags, and each has a GitHub Release holding its notes.
 
 ## Building and testing
 
@@ -32,6 +33,21 @@ The script builds the toolchain image from `Dockerfile` (Elixir, Erlang/OTP, buf
 --warnings-as-errors`, and `mix test` inside it with this folder mounted at `/app`, so
 `deps/`, `_build/`, and the generated `lib/gen/` persist on the host between runs,
 gitignored. Any other `mix` or `buf` command can be passed as arguments.
+
+## Releasing
+
+Pushing an annotated tag `client-elixir/vX.Y.Z` runs
+`.github/workflows/release-client-elixir.yml`: it runs `scripts/test-client-elixir.sh`,
+publishes `signet_client` X.Y.Z to hex.pm with `scripts/publish-client-elixir.sh`, and
+creates the GitHub Release named by the tag, with the tag annotation and the commits under
+`client-elixir/` since the previous tag as its notes. A tag with a `-` in its version, such
+as `client-elixir/v0.2.0-rc.1`, is marked a pre-release.
+
+`mix.exs` takes its version from the `SIGNET_CLIENT_VERSION` environment variable, which the
+publish script sets from the tag, and defaults to `0.0.0-dev`; no commit bumps it. The
+workflow needs the `HEX_API_KEY` secret. To see what would be published, run
+`scripts/publish-client-elixir.sh --dry-run client-elixir/v0.1.0`, which builds the package
+and publishes nothing. A Hex release cannot be deleted after an hour, so check before tagging.
 
 ## Regenerating stubs
 
