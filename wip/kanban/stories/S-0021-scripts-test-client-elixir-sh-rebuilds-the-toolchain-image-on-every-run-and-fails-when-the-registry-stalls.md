@@ -6,7 +6,7 @@ title: scripts/test-client-elixir.sh rebuilds the toolchain image on every run a
 status: ready
 owner: alex
 created: 2026-10-27T22:31:00Z
-updated: 2026-11-06T07:53:47Z
+updated: 2026-11-06T07:54:48Z
 transitions:
   - to: ready
     at: 2026-11-06T07:51:18Z
@@ -40,10 +40,10 @@ cost_of_delay:
     at: 2026-10-27T22:31:00Z
 forecast:
   duration: 1h
-  delivery: 2026-11-06T20:55:00Z
-  basis: "Its own forecast of 1h; 5th in the pull order with an in-progress limit of 2, behind S-0012, S-0014, S-0020, S-0011, S-0015 and S-0016."
+  delivery: 2026-11-06T18:56:00Z
+  basis: "Its own forecast of 1h; 4th in the pull order with an in-progress limit of 2, behind S-0014, S-0015, S-0020, S-0011 and S-0016."
   by: flai
-  at: 2026-11-06T07:53:47Z
+  at: 2026-11-06T07:54:48Z
 finalized:
   by: alex
   at: 2026-10-27T22:52:01Z
