@@ -3,17 +3,20 @@ id: S-0017
 type: story
 nature: remediation
 title: Retire the old three-repository layout from agent instructions and READMEs
-status: in-progress
+status: review
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:16:10Z
+updated: 2026-11-06T08:22:41Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:22Z
     by: alex
   - to: in-progress
     at: 2026-11-06T08:12:29Z
+    by: agent-S-0017
+  - to: review
+    at: 2026-11-06T08:20:05Z
     by: agent-S-0017
 tags: [server]
 topics: [docs]
@@ -23,20 +26,30 @@ agent:
   model: claude-sonnet-5-5
 usage:
   source: log
-  seconds: 213
-  estimated: true
-  priced_by: estimate
+  seconds: 464
+  priced_by: harness
   turns:
     - day: 2026-11-06
-      ceremony: 1
-      work: 18
+      ceremony: 2
+      work: 39
   models:
     - model: claude-sonnet-5-5
-      input: 40
-      output: 199
-      cache_read: 1263273
-      cache_write: 94594
-      cost: 0.4567
+      input: 88
+      output: 13507
+      cache_read: 4102264
+      cache_write: 116508
+      cost: 1.0115
+  strategic:
+    - kind: orchestrator
+      seconds: 21
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 12
+          output: 55
+          cache_read: 350317
+          cache_write: 54399
+          cost: 0.2102
 forecast:
   duration: 1h30m
   delivery: 2026-11-06T13:57:00Z
@@ -51,7 +64,7 @@ forecast:
 No file in the repository describes signet, signet-proto, signet-clients, and signet-admin as separate repositories. `server/CLAUDE.md` and `admin/CLAUDE.md`, which predate the root `CLAUDE.md` and contradict it, are deleted after anything still true moves into the root conventions' project additions or `docs/contributors/`. `server/README.md`'s protocol section, `admin/README.md`'s related-repos section, and `design/system/overview.md`'s placeholder diagram describe the mono-repo. The server pre-commit hook runs from `server/`.
 
 ## Acceptance criteria
-- [ ] `grep -r "signet-clients\|signet-proto\|signet-admin"` finds only the BSR module name `buf.build/bytepunx/signet-proto` and historical changelog entries
+- [x] `grep -r "signet-clients\|signet-proto\|signet-admin"` finds only the BSR module name `buf.build/bytepunx/signet-proto` and historical changelog entries
 - [x] `server/CLAUDE.md` and `admin/CLAUDE.md` are gone and `docs/contributors/index.md` tells a contributor how each component is built and tested
 - [x] `design/system/overview.md` shows the real parts (server, proto, admin, the clients) and how they relate
 
