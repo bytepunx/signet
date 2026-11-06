@@ -1,7 +1,10 @@
 [project]
 name = "signet-client"
-version = "0.5.0"
-description = "Python client for signet, generated from bytepunx/signet-proto"
+# Placeholder. The release workflow rewrites this line from the
+# client-python/vX.Y.Z tag with scripts/set-client-python-version.sh; no commit
+# bumps it.
+version = "0.0.0"
+description = "Python client for signet, generated from the signet proto schema"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
@@ -25,6 +28,12 @@ dependencies = [
     # `enc: |` block the way sops itself does.
     "ruamel.yaml>=0.18",
 ]
+
+[project.urls]
+Homepage = "https://github.com/bytepunx/signet"
+Repository = "https://github.com/bytepunx/signet/tree/main/client-python"
+Issues = "https://github.com/bytepunx/signet/issues"
+Releases = "https://github.com/bytepunx/signet/releases"
 
 [project.optional-dependencies]
 dev = ["grpcio-tools>=1.66", "pytest>=8.0"]
