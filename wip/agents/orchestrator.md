@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 11.3058
-accrued_seconds: 156516
-tasks_completed: 55
-last_run: 2026-11-06T08:02:45Z
+accrued_cost: 11.5123
+accrued_seconds: 156541
+tasks_completed: 57
+last_run: 2026-11-06T08:03:58Z
 ---
 
 # Orchestrator activity
@@ -396,6 +396,20 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Items: none
 - Seconds: 4
 - Cost: 0.0461 USD, estimated
+
+### 2026-11-06T08:03:54Z
+
+- Summary: release-due S-0015: did not publish. system-flow.yaml has no orchestration.permissions, so publish is off. The policy defaults to judgement; the evaluation (read before I checked the permission) was not met: 3 accepted stories unreleased (S-0012, S-0013, S-0015), 0 USD/week, all unvalued. No formula run, no release.
+- Items: S-0015, S-0012, S-0013
+- Seconds: 21
+- Cost: 0.1747 USD, estimated
+
+### 2026-11-06T08:03:58Z
+
+- Summary: I didn't publish. `system-flow.yaml` has no `orchestration` section, so every orchestrator permission is off, including `publish`.
+- Items: none
+- Seconds: 4
+- Cost: 0.0318 USD, estimated
 
 ## Refusals
 

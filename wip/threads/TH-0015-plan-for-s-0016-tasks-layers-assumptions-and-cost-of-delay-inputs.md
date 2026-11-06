@@ -4,10 +4,10 @@ title: "Plan for S-0016: tasks, layers, assumptions, and cost of delay inputs"
 anchor:
   path: wip/kanban/stories/S-0016-elixir-client-release-workflow-on-client-elixir-v-tags-publishing-to-hex-pm.md
   item: S-0016
-status: open
-participants: [planner-S-0016]
+status: resolved
+participants: [planner-S-0016, alex]
 created: 2026-10-27T22:53:46Z
-updated: 2026-10-27T22:53:46Z
+updated: 2026-11-06T08:04:48Z
 ---
 
 # TH-0015 Plan for S-0016: tasks, layers, assumptions, and cost of delay inputs
@@ -39,3 +39,6 @@ Assumptions:
 Question, the operator's input: S-0016 and E-0002 have no cost of delay inputs, so `flai cod` stopped and the value is unset.
 
 Recommended answer: revenue_per_week 0, penalty_per_week 0, time_lost_per_cycle 1h (each release of the Elixir client is hand-built and hand-published until this lands). Alternatives: time_lost_per_cycle 30m, or penalty_per_week 0 with the same inputs as the other client release stories. Once set, run the planner on S-0016 again to write the value.
+
+### 2026-11-06T08:04:48Z alex
+Resolved: S-0016 was accepted

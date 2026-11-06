@@ -3,12 +3,18 @@ id: T-0077
 type: task
 nature: improvement
 title: Use the ensure script in the Elixir test scripts and document it
-status: backlog
+status: in-progress
 parent: S-0021
 owner: alex
 created: 2026-10-27T22:52:47Z
-updated: 2026-10-27T22:52:47Z
-transitions: []
+updated: 2026-11-06T08:02:59Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:02:59Z
+    by: agent-S-0021
+  - to: in-progress
+    at: 2026-11-06T08:02:59Z
+    by: agent-S-0021
 stream: S-0021
 tags: [scripts]
 touches: [scripts/test-client-elixir.sh, scripts/integration-client-elixir.sh, scripts/test.sh, scripts/README.md]
