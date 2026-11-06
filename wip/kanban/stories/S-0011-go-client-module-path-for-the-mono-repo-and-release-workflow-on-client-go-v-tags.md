@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:22:49Z
+updated: 2026-11-06T08:23:27Z
 transitions:
   - to: ready
     at: 2026-10-27T23:01:00Z
@@ -16,6 +16,8 @@ tags: [client-go]
 topics: [release, github]
 touches: [".github/workflows/release-client-go.yml", client-go/go.mod, client-go/client.go, client-go/restart.go, client-go/restart_test.go, client-go/sops_encrypt.go, client-go/examples/echo/main.go, client-go/examples/getsecret/main.go, client-go/examples/gitops-workload/main.go, client-go/examples/restart-on-change/main.go, client-go/README.md, client-go/buf.gen.yaml, client-go/gen/admin/v1/admin.pb.go, client-go/gen/admin/v1/admin_grpc.pb.go, client-go/gen/signet/v1/secrets.pb.go, client-go/gen/signet/v1/secrets_grpc.pb.go]
 after: [S-0007]
+agent:
+  harness: claude-code
 forecast:
   duration: 2h
   delivery: 2026-11-06T10:58:00Z
