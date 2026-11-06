@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:49:36Z
+updated: 2026-11-06T07:49:45Z
 transitions: []
 tags: [client-csharp]
 topics: [release, github]
@@ -18,10 +18,10 @@ agent:
   model: claude-sonnet-5-5
 forecast:
   duration: 2h
-  delivery: 2026-11-16T03:47:00Z
+  delivery: 2026-11-16T03:48:00Z
   basis: "Its own forecast of 2h; 6th in the pull order with an in-progress limit of 2, behind S-0020, S-0011, S-0012, S-0013 and S-0014."
   by: flai
-  at: 2026-11-06T07:49:36Z
+  at: 2026-11-06T07:49:45Z
 ---
 # S-0015 C# client: release workflow on client-csharp/v* tags with NuGet trusted publishing
 
