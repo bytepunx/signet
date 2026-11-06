@@ -13,9 +13,15 @@ reference design this crate mirrors (idiomatically, not mechanically).
 cargo add signet-client
 ```
 
-Published to [crates.io](https://crates.io/crates/signet-client) automatically by
-[`publish-rust.yml`](../.github/workflows/publish-rust.yml) whenever release-please tags a
-`rust-v*` release.
+Published to [crates.io](https://crates.io/crates/signet-client) when a tag
+`client-rust/vX.Y.Z` is pushed, by
+[`release-client-rust.yml`](../.github/workflows/release-client-rust.yml). The `version` in
+`Cargo.toml` is a placeholder: the workflow writes the tag's version before it publishes,
+and the tag is the version. A tag with a pre-release suffix such as
+`client-rust/v0.0.0-test` only runs `cargo publish --dry-run`. Operators cut the tag with
+`flai release --pending`; see [the release runbook](../docs/operators/release.md). The
+GitHub Release carries the notes, and `CHANGELOG.md` is history from the old release-please
+setup.
 
 ## Regenerating stubs
 
