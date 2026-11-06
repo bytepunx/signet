@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:48:36Z
-updated: 2026-11-06T08:10:01Z
+updated: 2026-11-06T08:12:58Z
 transitions:
   - to: ready
     at: 2026-10-27T23:00:58Z
@@ -42,10 +42,10 @@ usage:
           cost: 4.004
 forecast:
   duration: 3h
-  delivery: 2026-11-06T21:51:00Z
-  basis: "Its own forecast of 3h; 1st in the pull order with an in-progress limit of 2, behind S-0014."
+  delivery: 2026-11-06T22:38:00Z
+  basis: "Its own forecast of 3h; 1st in the pull order with an in-progress limit of 2, behind S-0017 and S-0018."
   by: flai
-  at: 2026-11-06T08:10:01Z
+  at: 2026-11-06T08:12:58Z
 ---
 # S-0020 Generate in-repo stubs from proto/ by directory instead of the BSR pin
 
