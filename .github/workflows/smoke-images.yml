@@ -1,0 +1,88 @@
+name: smoke-images
+
+# Rebuilds the test-only echo image of each client whose folder changed on main,
+# for the external bytepunx/signet-smoke-test harness, which pulls
+# ghcr.io/bytepunx/signet-echo-<language>:latest. The images print secrets to
+# stdout and must never run in production.
+#
+# The Elixir client has no examples/echo yet. Once it has one with a
+# `docker build -f` header line, add "elixir" to ALL in the changes job and to
+# scripts/build-echo-images.sh's language list.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client-go/**"
+      - "client-python/**"
+      - "client-typescript/**"
+      - "client-rust/**"
+      - "client-csharp/**"
+      - "proto/proto/**"
+      - "scripts/build-echo-images.sh"
+      - ".github/workflows/smoke-images.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      languages: ${{ steps.pick.outputs.languages }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          ALL="go python typescript rust csharp"
+          zeros=0000000000000000000000000000000000000000
+          if [ "$EVENT" = "workflow_dispatch" ] || [ "$BEFORE" = "$zeros" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            langs="$ALL"
+          else
+            files=$(git diff --name-only "$BEFORE" "$AFTER")
+            langs=""
+            # Shared inputs rebuild every image.
+            if printf '%s\n' "$files" | grep -Eq '^(proto/proto/|scripts/build-echo-images\.sh$|\.github/workflows/smoke-images\.yml$)'; then
+              langs="$ALL"
+            else
+              for l in $ALL; do
+                if printf '%s\n' "$files" | grep -q "^client-$l/"; then
+                  langs="$langs $l"
+                fi
+              done
+            fi
+          fi
+          json=$(printf '%s\n' $langs | jq -R . | jq -sc .)
+          echo "languages=$json" >> "$GITHUB_OUTPUT"
+          echo "languages: $json"
+
+  images:
+    needs: changes
+    if: needs.changes.outputs.languages != '[]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJson(needs.changes.outputs.languages) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push latest
+        run: scripts/build-echo-images.sh "${{ matrix.language }}" --tag latest --push
+      - name: Build and push the commit tag
+        run: scripts/build-echo-images.sh "${{ matrix.language }}" --tag "${{ github.sha }}" --push
