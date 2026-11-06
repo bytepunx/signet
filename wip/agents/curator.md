@@ -1,9 +1,9 @@
 ---
 kind: curator
-accrued_cost: 4.0650
-accrued_seconds: 461
-tasks_completed: 18
-last_run: 2026-11-06T08:13:25Z
+accrued_cost: 4.2530
+accrued_seconds: 497
+tasks_completed: 19
+last_run: 2026-11-06T08:18:24Z
 ---
 
 # Curator activity
@@ -155,3 +155,11 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Items: none
 - Seconds: 23
 - Cost: 0.1994 USD, estimated
+
+### 2026-11-06T08:18:24Z
+
+- Summary: I wrote no new entries and merged nothing. D-0029 was already in the digest and I corrected its body. I absorbed D-0029 into `design/system/overview.md#decisions`, and `flai digest compact` compacted none.
+- Trigger: accepted S-0018
+- Items: D-0029
+- Seconds: 36
+- Cost: 0.1880 USD, estimated

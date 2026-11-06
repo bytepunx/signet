@@ -26,7 +26,7 @@ usage:
   source: log
   seconds: 3
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models: []
 ---
 # T-0085 Write the contributors guide: how each component is built and tested

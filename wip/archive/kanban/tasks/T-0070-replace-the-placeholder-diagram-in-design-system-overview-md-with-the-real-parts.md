@@ -25,14 +25,14 @@ usage:
   source: log
   seconds: 176
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 0
-      output: 14
-      cache_read: 116438
-      cache_write: 3277
-      cost: 0.0403
+      input: 2
+      output: 383
+      cache_read: 116410
+      cache_write: 3306
+      cost: 0.0287
 ---
 # T-0070 Replace the placeholder diagram in design/system/overview.md with the real parts
 

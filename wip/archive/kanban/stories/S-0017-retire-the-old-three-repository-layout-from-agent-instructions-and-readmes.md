@@ -3,11 +3,11 @@ id: S-0017
 type: story
 nature: remediation
 title: Retire the old three-repository layout from agent instructions and READMEs
-status: review
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:22:41Z
+updated: 2026-11-06T08:22:48Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:22Z
@@ -18,6 +18,9 @@ transitions:
   - to: review
     at: 2026-11-06T08:20:05Z
     by: agent-S-0017
+  - to: done
+    at: 2026-11-06T08:22:48Z
+    by: alex
 tags: [server]
 topics: [docs]
 touches: [server/CLAUDE.md, admin/CLAUDE.md, server/README.md, admin/README.md, docs/contributors/index.md, design/system/overview.md, server/githooks/pre-commit, server/Makefile, README.md, proto/README.md, client-csharp/README.md, client-elixir/README.md, client-erlang/README.md, client-go/README.md, client-python/README.md, client-rust/README.md, client-typescript/README.md, server/design/draft.md, server/CHECKLIST.md]

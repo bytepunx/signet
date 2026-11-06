@@ -24,16 +24,16 @@ touches: [server/design/draft.md, server/CHECKLIST.md]
 after: [T-0074, T-0079, T-0080]
 usage:
   source: log
-  seconds: 3
+  seconds: 8
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 2
-      output: 24
-      cache_read: 108997
-      cache_write: 272
-      cost: 0.0368
+      input: 5
+      output: 712
+      cache_read: 216344
+      cache_write: 6144
+      cost: 0.0533
 ---
 # T-0087 Sweep the remaining separate-repository references and verify the grep criterion
 

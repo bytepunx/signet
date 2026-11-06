@@ -1,13 +1,12 @@
 ---
 title: Active streams
-updated: 2026-11-06T08:22:41Z
+updated: 2026-11-06T08:22:48Z
 ---
 
 # Active streams
 
 | Stream | Title | Status | Last agent | Updated |
 |--------|-------|--------|------------|---------|
-| [S-0017](S-0017.md) | Retire the old three-repository layout from agent instructions and READMEs | review | agent-S-0017 | 2026-11-06T08:20:04Z |
 
 ## Strategic agents
 

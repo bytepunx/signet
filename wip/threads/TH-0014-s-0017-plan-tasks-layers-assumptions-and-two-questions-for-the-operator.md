@@ -4,10 +4,10 @@ title: "S-0017 plan: tasks, layers, assumptions, and two questions for the opera
 anchor:
   path: wip/kanban/stories/S-0017-retire-the-old-three-repository-layout-from-agent-instructions-and-readmes.md
   item: S-0017
-status: open
-participants: [planner-S-0017]
+status: resolved
+participants: [planner-S-0017, alex]
 created: 2026-10-27T22:53:43Z
-updated: 2026-10-27T22:53:43Z
+updated: 2026-11-06T08:22:48Z
 ---
 
 # TH-0014 S-0017 plan: tasks, layers, assumptions, and two questions for the operator
@@ -38,3 +38,6 @@ Assumptions:
 Questions for you:
 1. Cost of delay: neither S-0017 nor E-0002 has inputs, so I set no value. My recommendation: revenue_per_week 0, penalty_per_week 0, time_lost_per_cycle 30m (agents read the contradicting server/CLAUDE.md and admin/CLAUDE.md in every session that touches those folders). Give the inputs with `flai edit S-0017 --time-lost-per-cycle 30m` or tell me different figures.
 2. Criterion 1 is wider than the goal. A tree-wide grep also finds `bytepunx/signet-clients#NN` issue references in source comments (client-*, server), the `signet-admin` ServiceAccount and Service names in the Helm chart, docs, and tests, the Go module path in client-go (S-0011), the buf.gen.yaml comments (S-0020), ADR-0001, and docs/operators/release.md. I recommend reading the criterion as "no file describes the separate repositories", fixing only prose, and having T-0087 list what stays and why. Say if you want it widened instead (which would take the issue references in many source files and a rename of the ServiceAccount), or reword the criterion yourself.
+
+### 2026-11-06T08:22:48Z alex
+Resolved: S-0017 was accepted

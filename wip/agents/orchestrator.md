@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 12.2862
-accrued_seconds: 156636
-tasks_completed: 63
-last_run: 2026-11-06T08:13:37Z
+accrued_cost: 12.7376
+accrued_seconds: 156676
+tasks_completed: 67
+last_run: 2026-11-06T08:21:06Z
 ---
 
 # Orchestrator activity
@@ -453,6 +453,34 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Seconds: 5
 - Cost: 0.0430 USD, estimated
 
+### 2026-11-06T08:18:09Z
+
+- Summary: S-0018 needed no acceptance: the operator (alex) moved it to done at 2026-11-06T08:17:44Z, before this run read it. Its close-out had passed at 7ae55589cef7. No action taken; no permission used.
+- Items: S-0018
+- Seconds: 11
+- Cost: 0.0748 USD, estimated
+
+### 2026-11-06T08:18:12Z
+
+- Summary: I took no action on S-0018. The operator (alex) had already moved it to done at 08:17:44Z, before I read it, so there was nothing left to accept.
+- Items: none
+- Seconds: 3
+- Cost: 0.1194 USD, estimated
+
+### 2026-11-06T08:21:01Z
+
+- Summary: No action taken on S-0017 (review) or the ready column. system-flow.yaml has no orchestration.permissions, so every permission is off. flai guard refused `flai accept S-0017 --dry-run` because accept_reviews is off. Observed: S-0017's last verify passed at b5991500e632, which is the head of story/S-0017. Criterion 1 is unticked and TH-0014 (planner's thread) is open, so the queue lists it as ineligible. Ready column holds 3 (S-0020 and S-0019 held by after; S-0011 free). promote_candidates lists none: all 9 backlog stories are drafts with no forecast or cost of delay. No promote, order, or finalize was done: promote_to_ready, order_ready, and finalize_drafts are off.
+- Items: S-0017
+- Seconds: 21
+- Cost: 0.2102 USD, estimated
+
+### 2026-11-06T08:21:06Z
+
+- Summary: I took no action on S-0017 or the ready column, because every orchestrator permission is off. `system-flow.yaml` has no `orchestration.permissions` section, and the guard refused my acceptance dry-run for `accept_reviews`.
+- Items: none
+- Seconds: 5
+- Cost: 0.0470 USD, estimated
+
 ## Refusals
 
 ### 2026-10-27T22:25:32Z
@@ -514,3 +542,8 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 
 - Call: `flai config get orchestration 2>&1`
 - Needs: none
+
+### 2026-11-06T08:20:56Z
+
+- Call: `flai accept S-0017 --by orchestrator --verified b5991500e63210d1d24061f72882a836fec7f1ff --dry-run 2>&1`
+- Needs: orchestration.permissions.accept_reviews

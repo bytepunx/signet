@@ -25,14 +25,14 @@ usage:
   source: log
   seconds: 177
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 1
-      output: 16
-      cache_read: 136958
-      cache_write: 3643
-      cost: 0.0473
+      input: 3
+      output: 450
+      cache_read: 136718
+      cache_write: 3883
+      cost: 0.0337
 ---
 # T-0074 Move server/CLAUDE.md's protocol facts into server/README.md and delete it
 

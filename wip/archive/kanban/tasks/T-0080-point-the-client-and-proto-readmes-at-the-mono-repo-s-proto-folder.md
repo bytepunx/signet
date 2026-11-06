@@ -25,14 +25,14 @@ usage:
   source: log
   seconds: 184
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 2
-      output: 19
-      cache_read: 164805
-      cache_write: 7986
-      cost: 0.0581
+      input: 4
+      output: 553
+      cache_read: 168019
+      cache_write: 4772
+      cost: 0.0414
 ---
 # T-0080 Point the client and proto READMEs at the mono-repo's proto/ folder
 
