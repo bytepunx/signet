@@ -38,7 +38,8 @@ signet repo add \
 ```
 
 Output:
-```
+
+```text
 Repository registered.
   ID:             550e8400-e29b-41d4-a716-446655440000
   Webhook URL:    https://signet.example.com/webhook/github/550e8400-...
@@ -90,7 +91,8 @@ signet repo sync --id "$REPO_ID"
 ```
 
 Output:
-```
+
+```text
 Sync complete.
   SHA:     a1b2c3d4
   Added:   12

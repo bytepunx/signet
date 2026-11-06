@@ -20,4 +20,3 @@ stubs from that module (see the `inputs:` block). To pick up schema changes, edi
 module reference in `buf.gen.yaml` (pin to a specific `:vX.Y.Z` label once tagged releases
 exist) and run `make proto`. Client implementations live in a third repo,
 [bytepunx/signet-clients](https://github.com/bytepunx/signet-clients).
-

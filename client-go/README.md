@@ -4,7 +4,7 @@ Go client library for [signet](https://github.com/bytepunx/signet), generated fr
 [bytepunx/signet-proto](https://github.com/bytepunx/signet-proto) and pinned
 independently of the server's own release cycle (see `buf.gen.yaml`).
 
-```
+```text
 go get github.com/bytepunx/signet-clients/go
 ```
 
@@ -133,7 +133,7 @@ both of the above — it is **test-only** and deliberately prints secrets to std
 
 ## Regenerating stubs
 
-```
+```text
 buf generate
 ```
 

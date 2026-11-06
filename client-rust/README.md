@@ -9,7 +9,7 @@ reference design this crate mirrors (idiomatically, not mechanically).
 
 ## Install
 
-```
+```text
 cargo add signet-client
 ```
 
@@ -19,7 +19,7 @@ Published to [crates.io](https://crates.io/crates/signet-client) automatically b
 
 ## Regenerating stubs
 
-```
+```text
 buf generate
 ```
 
@@ -62,7 +62,7 @@ than a generic one.
 
 ### Workload access (`SecretsService`, SPIFFE mTLS) — `spiffe-workload` feature
 
-```
+```text
 cargo add signet-client --features spiffe-workload
 ```
 
@@ -223,7 +223,7 @@ deliberately diverges from a literal Go-to-Rust port, and why.
 
 ## Testing
 
-```
+```text
 cargo test
 ```
 
@@ -271,7 +271,7 @@ must fail acquisition clearly).
 To also build/test the `spiffe-workload` feature (pulls in `spiffe`/`spiffe-rustls`/
 `rustls`/`tokio-rustls`):
 
-```
+```text
 cargo test --features spiffe-workload
 cargo build --examples --features spiffe-workload
 ```

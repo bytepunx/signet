@@ -11,7 +11,7 @@ exception types, `IAsyncDisposable`), not a mechanical transliteration of the Go
 
 ## Install
 
-```
+```text
 dotnet add package Signet.Client
 ```
 
@@ -22,7 +22,7 @@ Published to [NuGet](https://www.nuget.org/packages/Signet.Client) automatically
 
 ## Regenerating stubs
 
-```
+```text
 buf generate
 ```
 
@@ -32,7 +32,7 @@ Pulls `signet/v1` and `admin/v1` from `buf.build/bytepunx/signet-proto` and rege
 
 ## Building and testing
 
-```
+```text
 dotnet build      # builds both SignetClient and SignetClient.Tests (via SignetClient.sln)
 dotnet test        # runs the full test suite
 ```
@@ -44,7 +44,7 @@ harness to exercise this library against a real signet + SPIRE cluster; it build
 the same `dotnet build` above. Requires the .NET 8 SDK; if `dotnet`
 isn't already on `PATH`, install it with the official script:
 
-```
+```text
 curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
 chmod +x /tmp/dotnet-install.sh
 /tmp/dotnet-install.sh --channel 8.0 --install-dir /tmp/dotnet-sdk

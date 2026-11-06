@@ -2,11 +2,9 @@
 
 ## [0.6.0](https://github.com/bytepunx/signet-clients/compare/csharp-v0.5.0...csharp-v0.6.0) (2026-09-03)
 
-
 ### Features
 
 * **csharp:** correct stale v0.3.0 pin comment after v0.4.0 bump ([1a06977](https://github.com/bytepunx/signet-clients/commit/1a069771f5c6f278a2861857f1993326934355f7))
-
 
 ### Bug Fixes
 
@@ -15,13 +13,11 @@
 
 ## [0.5.0](https://github.com/bytepunx/signet-clients/compare/csharp-v0.4.0...csharp-v0.5.0) (2026-08-15)
 
-
 ### Features
 
 * **csharp:** add SOPS-compatible client-side secret encryption ([#54](https://github.com/bytepunx/signet-clients/issues/54)) ([2a5444d](https://github.com/bytepunx/signet-clients/commit/2a5444df1c461bcf6ba7f85a3f4d89bc74268097))
 
 ## [0.4.0](https://github.com/bytepunx/signet-clients/compare/csharp-v0.3.0...csharp-v0.4.0) (2026-08-08)
-
 
 ### Features
 
@@ -32,13 +28,11 @@
 
 ## [0.3.0](https://github.com/bytepunx/signet-clients/compare/csharp-v0.2.0...csharp-v0.3.0) (2026-07-20)
 
-
 ### Features
 
 * add automated package publishing for all five clients ([#24](https://github.com/bytepunx/signet-clients/issues/24)) ([1c8dee9](https://github.com/bytepunx/signet-clients/commit/1c8dee93eeac203b91c065420d53ef04ce350ce8))
 
 ## [0.2.0](https://github.com/bytepunx/signet-clients/compare/csharp-v0.1.0...csharp-v0.2.0) (2026-07-19)
-
 
 ### Features
 

@@ -2,11 +2,9 @@
 
 ## [0.7.0](https://github.com/bytepunx/signet-clients/compare/go/v0.6.0...go/v0.7.0) (2026-09-03)
 
-
 ### Features
 
 * **go:** correct stale v0.3.0 pin comment after v0.4.0 bump ([8cd6911](https://github.com/bytepunx/signet-clients/commit/8cd69119d2632618530d8fbb1fbb9712f179fe51))
-
 
 ### Bug Fixes
 
@@ -14,20 +12,17 @@
 
 ## [0.6.0](https://github.com/bytepunx/signet-clients/compare/go/v0.5.0...go/v0.6.0) (2026-08-21)
 
-
 ### Features
 
 * **go:** regenerate for GitOpsService.GetServiceConfig ([033ed73](https://github.com/bytepunx/signet-clients/commit/033ed733d4c54ecf87c96292b72b003381c4dab7))
 
 ## [0.5.0](https://github.com/bytepunx/signet-clients/compare/go/v0.4.0...go/v0.5.0) (2026-08-15)
 
-
 ### Features
 
 * **go:** add EncryptForSecret for client-side SOPS encryption ([#50](https://github.com/bytepunx/signet-clients/issues/50)) ([74ed4dc](https://github.com/bytepunx/signet-clients/commit/74ed4dc72094b712ec5348dd63d5264eb95237b3))
 
 ## [0.4.0](https://github.com/bytepunx/signet-clients/compare/go/v0.3.0...go/v0.4.0) (2026-08-08)
-
 
 ### Features
 
@@ -38,13 +33,11 @@
 
 ## [0.3.0](https://github.com/bytepunx/signet-clients/compare/go-v0.2.0...go/v0.3.0) (2026-07-20)
 
-
 ### Features
 
 * add automated package publishing for all five clients ([#24](https://github.com/bytepunx/signet-clients/issues/24)) ([1c8dee9](https://github.com/bytepunx/signet-clients/commit/1c8dee93eeac203b91c065420d53ef04ce350ce8))
 
 ## [0.2.0](https://github.com/bytepunx/signet-clients/compare/go-v0.1.0...go-v0.2.0) (2026-07-19)
-
 
 ### Features
 

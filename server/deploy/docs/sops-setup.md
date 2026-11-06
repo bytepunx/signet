@@ -18,7 +18,8 @@ signet sops-key rotate
 ```
 
 Output:
-```
+
+```text
 New public key:  age1abc123...
 New fingerprint: a1b2c3d4e5f6a1b2
 ```
@@ -51,12 +52,13 @@ value: the-actual-secret-here
 
 The file path determines how signet stores it:
 
-```
+```text
 secrets/<namespace>/<service>/<name>.yaml
 ```
 
 Examples:
-```
+
+```text
 secrets/payments/api/stripe-key.yaml      → namespace=payments, service=api, name=stripe-key
 secrets/infra/redis/password.yaml         → namespace=infra,    service=redis, name=password
 secrets/platform/auth/jwt-signing-key.yaml→ namespace=platform, service=auth,  name=jwt-signing-key

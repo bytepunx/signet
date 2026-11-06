@@ -12,7 +12,7 @@ below: there is no SPIFFE library for Node as mature as Go's `go-spiffe`, so `di
 mTLS credentials are fetched once at dial time rather than rotated automatically in the
 background.
 
-```
+```text
 npm install @bytepunx/signet-client
 ```
 
@@ -22,7 +22,7 @@ release-please tags a `typescript-v*` release.
 
 ## Regenerating stubs
 
-```
+```text
 buf generate
 ```
 
@@ -361,7 +361,7 @@ same workload identity" above).
 
 ## Testing
 
-```
+```text
 npm run build && npm test
 ```
 

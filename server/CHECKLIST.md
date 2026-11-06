@@ -151,7 +151,7 @@
 
 ---
 
-## Open
+## Open (bootstrap)
 
 ### `signet init` — cluster-native bootstrap and unseal
 

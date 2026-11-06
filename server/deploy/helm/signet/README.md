@@ -13,6 +13,7 @@ configuration and secrets management service for Kubernetes.
 | CockroachDB | ≥ 24 | External cluster recommended for production; in-chart dev instance available |
 
 SPIRE is **not** included in this chart. Deploy it first:
+
 ```bash
 helm install spire oci://ghcr.io/spiffe/helm-charts-hardened/spire \
   --set global.spire.trustDomain=cluster.local \

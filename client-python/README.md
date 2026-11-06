@@ -13,14 +13,14 @@ client, translated to Python's concurrency idioms (`threading.Event` instead of
 
 ## Install
 
-```
+```text
 pip install signet-client
 ```
 
 Workload access (`dial_workload`, SPIFFE mTLS) requires an optional extra — see
 [SPIFFE support](#spiffe-support) below:
 
-```
+```text
 pip install signet-client[workload]
 ```
 
@@ -31,7 +31,7 @@ a `python-v*` release, via [Trusted Publishing](https://docs.pypi.org/trusted-pu
 
 ## Regenerating stubs
 
-```
+```text
 buf generate
 ```
 
@@ -210,7 +210,7 @@ See `examples/restart_on_change` for a complete runnable example. See also `exam
 
 ## Testing
 
-```
+```text
 buf generate
 pip install -e ".[dev,workload]"
 pytest

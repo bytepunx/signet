@@ -2,20 +2,17 @@
 
 ## [0.4.0](https://github.com/bytepunx/signet-proto/compare/v0.3.0...v0.4.0) (2026-09-02)
 
-
 ### Features
 
 * add GitOpsService.PutServiceConfig RPC ([eda091c](https://github.com/bytepunx/signet-proto/commit/eda091c0ad388b41f90a8beec0373e21a218d463))
 
 ## [0.3.0](https://github.com/bytepunx/signet-proto/compare/v0.2.0...v0.3.0) (2026-08-21)
 
-
 ### Features
 
 * add GitOpsService.GetServiceConfig RPC ([831ec89](https://github.com/bytepunx/signet-proto/commit/831ec8920cd4b4b593a3d5b6fc187b46bd4fbdf8))
 
 ## [0.2.0](https://github.com/bytepunx/signet-proto/compare/v0.1.0...v0.2.0) (2026-08-14)
-
 
 ### Features
 

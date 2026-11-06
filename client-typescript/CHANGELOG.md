@@ -2,11 +2,9 @@
 
 ## [0.9.0](https://github.com/bytepunx/signet-clients/compare/typescript-v0.8.0...typescript-v0.9.0) (2026-09-03)
 
-
 ### Features
 
 * **typescript:** correct stale v0.3.0 pin comment after v0.4.0 bump ([5505a10](https://github.com/bytepunx/signet-clients/commit/5505a10b4199147f3d872a3e839960ed4ac440bd))
-
 
 ### Bug Fixes
 
@@ -14,18 +12,15 @@
 
 ## [0.8.0](https://github.com/bytepunx/signet-clients/compare/typescript-v0.7.0...typescript-v0.8.0) (2026-09-01)
 
-
 ### Features
 
 * **typescript:** expose GitOpsService over workload SPIFFE mTLS ([3790225](https://github.com/bytepunx/signet-clients/commit/3790225a8974ad143c61b4e8712f573d6d1cf26e))
 
 ## [0.7.0](https://github.com/bytepunx/signet-clients/compare/typescript-v0.6.0...typescript-v0.7.0) (2026-08-21)
 
-
 ### Features
 
 * **typescript:** regenerate for GitOpsService.GetServiceConfig ([09c8922](https://github.com/bytepunx/signet-clients/commit/09c89225a6066be8f36686f79819ce1b61caee47))
-
 
 ### Bug Fixes
 
@@ -33,13 +28,11 @@
 
 ## [0.6.0](https://github.com/bytepunx/signet-clients/compare/typescript-v0.5.0...typescript-v0.6.0) (2026-08-15)
 
-
 ### Features
 
 * **typescript:** add encryptForSecret for client-side SOPS encryption ([#52](https://github.com/bytepunx/signet-clients/issues/52)) ([8614bf9](https://github.com/bytepunx/signet-clients/commit/8614bf9921da527ed04e1778e4898a00bfab0020))
 
 ## [0.5.0](https://github.com/bytepunx/signet-clients/compare/typescript-v0.4.1...typescript-v0.5.0) (2026-08-14)
-
 
 ### Features
 
@@ -47,13 +40,11 @@
 
 ## [0.4.1](https://github.com/bytepunx/signet-clients/compare/typescript-v0.4.0...typescript-v0.4.1) (2026-08-09)
 
-
 ### Bug Fixes
 
 * **typescript:** add repository field to package.json for npm Trusted Publishing ([#45](https://github.com/bytepunx/signet-clients/issues/45)) ([b051350](https://github.com/bytepunx/signet-clients/commit/b051350e05ac87914623f8780898f7b2a74e727e))
 
 ## [0.4.0](https://github.com/bytepunx/signet-clients/compare/typescript-v0.3.0...typescript-v0.4.0) (2026-08-08)
-
 
 ### Features
 
@@ -64,13 +55,11 @@
 
 ## [0.3.0](https://github.com/bytepunx/signet-clients/compare/typescript-v0.2.0...typescript-v0.3.0) (2026-07-20)
 
-
 ### Features
 
 * add automated package publishing for all five clients ([#24](https://github.com/bytepunx/signet-clients/issues/24)) ([1c8dee9](https://github.com/bytepunx/signet-clients/commit/1c8dee93eeac203b91c065420d53ef04ce350ce8))
 
 ## [0.2.0](https://github.com/bytepunx/signet-clients/compare/typescript-v0.1.0...typescript-v0.2.0) (2026-07-19)
-
 
 ### Features
 

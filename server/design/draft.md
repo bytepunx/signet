@@ -86,7 +86,7 @@ This does not protect against cluster-admin compromise — that is the accepted 
 
 SPIFFE (Secure Production Identity Framework for Everyone) provides workload identity without long-lived credentials. A SPIFFE ID is a URI embedded as a Subject Alternative Name (SAN) in an X.509 certificate:
 
-```
+```text
 spiffe://cluster.local/ns/payments/sa/transaction-service
 ```
 
@@ -99,7 +99,7 @@ SVIDs are short-lived (hours or minutes) and rotated automatically by the SPIRE 
 
 ### Authorization Flow
 
-```
+```text
 Workload presents SVID over mTLS
   → API server verifies certificate chain to trusted SPIRE CA bundle
   → Extracts SPIFFE ID from verified URI SAN (e.g. spiffe://cluster.local/ns/payments/sa/api)
@@ -123,7 +123,7 @@ Policies support prefix/glob matching against a three-segment
 `namespace/service/secret_name` target, enabling coarse or fine-grained control. The service
 segment may itself be a glob (`*`) to grant across every service in a namespace:
 
-```
+```text
 # Entire namespace reads a secret class
 spiffe://cluster.local/ns/payments/*  →  payments/*/db-read-replica-*
 
@@ -150,7 +150,7 @@ Prefer an explicit list (e.g. `["get", "put"]`) unless blanket access is truly i
 
 **Decision: Per-secret DEKs wrapped by a KEK, wrapped by a master key held only in memory.**
 
-```
+```text
 Plaintext Secret
   → Encrypt with DEK (AES-256-GCM, random per secret)
   → Encrypted blob stored in CockroachDB
@@ -287,7 +287,7 @@ It is NOT appropriate when cluster compromise must not imply master key disclosu
 **etcd encryption-at-rest is a prerequisite, not optional.** The master key is stored in the
 Secret's `master.key` field as base64 — not encrypted — and Kubernetes Secrets are themselves
 stored in etcd unencrypted unless the cluster explicitly configures an `EncryptionConfiguration`
-(https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/). Without that, the master
+(<https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/>). Without that, the master
 key is recoverable by anyone with etcd access (backups included), independent of Kubernetes
 RBAC entirely. signetd logs a warning at startup when auto-unseal is enabled, since it cannot
 verify etcd's encryption configuration itself. Exclude the `master.key` Secret from any backup
@@ -297,7 +297,7 @@ or GitOps export tooling.
 
 A single CLI command handles the entire cluster preparation and unseal workflow:
 
-```
+```text
 signet init [flags]
   --namespace      Kubernetes namespace where signet is deployed (default: signet)
   --key-secret     Name of the Kubernetes Secret to create/read (default: signet-master-key)
@@ -310,7 +310,7 @@ signet init [flags]
 
 Execution steps (idempotent):
 
-```
+```text
 1. Load kubeconfig; create Kubernetes API client
 2. Check seal state via admin API
    → If already unsealed: print state and exit 0
@@ -352,7 +352,7 @@ the first time is not destructive).
 To eliminate manual re-unseal after pod restarts, signetd can be configured to fetch the
 master key from the Secret at startup and unseal itself automatically:
 
-```
+```text
 SIGNET_KUBE_UNSEAL_SECRET=signet-master-key
 ```
 
@@ -379,7 +379,7 @@ autoUnseal:
 
 #### Interaction with `signet init`
 
-```
+```text
 Initial setup (once):
   signet init          → generates key, creates Secret, unseals
 
@@ -453,7 +453,7 @@ Rationale:
 - Application-layer envelope encryption (AES-256-GCM per secret) provides the primary
   protection at rest; CockroachDB's native AES-256-GCM encryption provides a second layer
 
-```
+```text
 Physical disk
   → Filesystem (ext4/xfs)
   → CockroachDB data files (AES-256-GCM encrypted at application layer)
@@ -683,7 +683,7 @@ The environment prefix is stripped at sync time; the decrypted `value` field is 
 
 ### Key Lifecycle
 
-```
+```text
 signet sops-key rotate          → generates X25519 keypair; stores encrypted privkey in DB
                                   deactivates previous key (kept for decryption)
 signet sops-key get             → prints active age public key for .sops.yaml
@@ -707,7 +707,7 @@ When operating multiple clusters (prod, staging, dev), each signetd instance is 
 
 **Repository layout:**
 
-```
+```text
 secrets/
 ├── prod/
 │   └── payments/api/stripe-key.yaml   # encrypted with prod age key
@@ -762,7 +762,7 @@ per-secret envelope encryption.
 
 ### Repository Registration
 
-```
+```text
 signet repo add --name infra-secrets \
                 --repo-url git@github.com:org/infra-secrets \
                 --branch main \
@@ -784,7 +784,7 @@ was secret creation — hand-writing the `value: <secret>` YAML at the exact
 path convention above, then running `sops -e -i` directly. `signet secret
 set`/`signet secret rm` remove that step:
 
-```
+```text
 signet secret set <namespace>/<service>/<name> [--value ... | --value-file ... | stdin/prompt]
                                                 [--env <env>] [--secrets-root secrets/] [--sops-config <path>]
 signet secret rm  <namespace>/<service>/<name> [--env <env>] [--secrets-root secrets/] [--sops-config <path>]
@@ -844,7 +844,7 @@ Shamir-sharded across groups.
 
 **On push (webhook-driven):**
 
-```
+```text
 GitHub push event
   → POST /webhook/github/{repo_id}
   → Verify HMAC-SHA256 signature (constant-time)
@@ -932,7 +932,7 @@ For environments where the secrets repository cannot or should not be pushed to 
 
 **Flow:**
 
-```
+```text
 signet bundle push [repo-path] --secrets-path secrets/
 
   1. PlainOpen(repo-path) — requires valid git repo with at least one commit
@@ -1212,7 +1212,7 @@ and `SyncServiceConfig` now wrap every step of their transactions consistently.
 
 ## Architecture Summary
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                       Kubernetes Cluster                          │
 │                                                                  │

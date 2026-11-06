@@ -2,11 +2,9 @@
 
 ## [0.6.0](https://github.com/bytepunx/signet-clients/compare/rust-v0.5.0...rust-v0.6.0) (2026-09-03)
 
-
 ### Features
 
 * **rust:** correct stale v0.3.0 pin comment after v0.4.0 bump ([c94480e](https://github.com/bytepunx/signet-clients/commit/c94480e9d9bd876ad6751bf7770296b79355cafd))
-
 
 ### Bug Fixes
 
@@ -14,13 +12,11 @@
 
 ## [0.5.0](https://github.com/bytepunx/signet-clients/compare/rust-v0.4.0...rust-v0.5.0) (2026-08-15)
 
-
 ### Features
 
 * **rust:** add EncryptForSecret-equivalent for producing SOPS-compatible ciphertext ([#51](https://github.com/bytepunx/signet-clients/issues/51)) ([28e5421](https://github.com/bytepunx/signet-clients/commit/28e54214f8929b8157b0a3881f2a87ed6312d226))
 
 ## [0.4.0](https://github.com/bytepunx/signet-clients/compare/rust-v0.3.0...rust-v0.4.0) (2026-08-08)
-
 
 ### Features
 
@@ -31,18 +27,15 @@
 
 ## [0.3.0](https://github.com/bytepunx/signet-clients/compare/rust-v0.2.0...rust-v0.3.0) (2026-07-20)
 
-
 ### Features
 
 * add automated package publishing for all five clients ([#24](https://github.com/bytepunx/signet-clients/issues/24)) ([1c8dee9](https://github.com/bytepunx/signet-clients/commit/1c8dee93eeac203b91c065420d53ef04ce350ce8))
 
 ## [0.2.0](https://github.com/bytepunx/signet-clients/compare/rust-v0.1.0...rust-v0.2.0) (2026-07-19)
 
-
 ### Features
 
 * **examples:** fetch a second, policy-granted bundle in each echo service ([#16](https://github.com/bytepunx/signet-clients/issues/16)) ([26f58b8](https://github.com/bytepunx/signet-clients/commit/26f58b8d1860aa712c26d93fe48408c2254ec91e))
-
 
 ### Bug Fixes
 

@@ -7,7 +7,7 @@ committed or published from here.
 
 ### What's in here
 
-```
+```text
 proto/
   buf.yaml                  # buf module: buf.build/bytepunx/signet-proto
   proto/signet/v1/secrets.proto   # SecretsService: secret + config retrieval, watch, restart locks
