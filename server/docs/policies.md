@@ -11,7 +11,7 @@ necessary when access crosses the boundaries of a workload's own identity.
 
 When a workload's SPIFFE ID encodes a Kubernetes identity of the form:
 
-```
+```text
 spiffe://<trust-domain>/ns/<namespace>/sa/<service-account>
 ```
 
@@ -142,7 +142,8 @@ signet policy list --token "$TOKEN"
 ```
 
 **Example output:**
-```
+
+```text
 ID           SPIFFE ID                                     NAMESPACE    PATTERN                   PERMISSIONS
 policy-1     spiffe://cluster.local/ns/payments/sa/api      infra        infra/db/*                get
 policy-2     spiffe://cluster.local/ns/infra/sa/*           infra        infra/shared/*            get

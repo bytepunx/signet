@@ -48,7 +48,7 @@ manager must send heartbeats to extend it.
 
 ## Message flow
 
-```
+```text
 process manager                       signet
 ───────────────                       ──────
 AcquireRestartLockRequest             ─→ enter queue
@@ -101,7 +101,7 @@ rpc AcquireRestartLock(stream AcquireRestartLockRequest)
 The intended client is a process manager (supervisor) embedded in the service's
 base image. The service itself does not interact with signet directly.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │  pod                                                    │
 │                                                         │

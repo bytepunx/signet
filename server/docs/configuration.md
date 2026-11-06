@@ -7,7 +7,7 @@ encryption.
 
 ## Overview
 
-```
+```text
 operator                signet                  workload
 ────────                ──────                  ────────
 edit config YAML        ─→ webhook / bundle
@@ -31,7 +31,7 @@ and the gRPC-JSON transcoding gateway serves it as raw JSON.
 Config files live under a separate root from SOPS-encrypted secrets. Both can
 exist in the same repository:
 
-```
+```text
 secrets/
 ├── payments/api/stripe-key.yaml    # SOPS-encrypted
 └── payments/api/db-password.yaml
@@ -43,7 +43,7 @@ config/
 
 The path convention maps directly to namespace and service:
 
-```
+```text
 config/<namespace>/<service>.yaml
 ```
 
@@ -52,7 +52,7 @@ config/<namespace>/<service>.yaml
 Use environment-specific subdirectories the same way secrets do — set
 `--config-path` to point at the environment subdirectory:
 
-```
+```text
 config/
 ├── prod/
 │   └── payments/api.yaml
@@ -123,7 +123,8 @@ signet repo sync --id "$REPO_ID" --token "$TOKEN"
 ```
 
 Output:
-```
+
+```text
 Synced.
   SHA:            a1b2c3d4...
   Secrets added:  0

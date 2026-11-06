@@ -78,6 +78,7 @@ direct-key mode.
 | `signet.shamir.shareTimeout` | `"30m"` | Duration a submitted share remains valid; resets to sealed if not completed |
 
 **Example — 3-of-5 Shamir:**
+
 ```yaml
 signet:
   shamir:
@@ -87,6 +88,7 @@ signet:
 ```
 
 After install, generate shares and distribute them to key holders:
+
 ```bash
 TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 signet unseal generate-shares --shares 5 --threshold 3 --token "$TOKEN"
@@ -94,6 +96,7 @@ signet unseal generate-shares --shares 5 --threshold 3 --token "$TOKEN"
 ```
 
 Each key holder submits their share independently:
+
 ```bash
 signet unseal share --share <hex> --token "$TOKEN"
 ```
@@ -201,6 +204,7 @@ Required when GitHub needs to reach the webhook from the public internet.
 | `ingress.tls` | `[]` | TLS configuration |
 
 **Example — nginx + cert-manager:**
+
 ```yaml
 ingress:
   enabled: true
@@ -327,7 +331,7 @@ automatically. You only need these if running signetd outside Kubernetes.
 Register entries in SPIRE so signet workloads receive SVIDs. The SPIFFE ID
 format used in signet policies is:
 
-```
+```text
 spiffe://<trust-domain>/ns/<namespace>/sa/<service-account>
 ```
 

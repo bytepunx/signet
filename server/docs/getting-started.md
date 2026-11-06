@@ -22,6 +22,7 @@ kubectl rollout status -n spire-system daemonset/spire-agent
 ```
 
 Verify SPIRE is healthy:
+
 ```bash
 kubectl exec -n spire-system daemonset/spire-agent -- \
   /opt/spire/bin/spire-agent healthcheck

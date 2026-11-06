@@ -43,7 +43,7 @@ setups.
 > principal with cluster-admin access can read it. For production
 > multi-operator environments, use Shamir unseal instead.
 
-```
+```text
 Usage: signet init [flags]
 ```
 
@@ -73,7 +73,7 @@ Usage: signet init [flags]
 
 ### Example — fresh cluster (Secret not found)
 
-```
+```text
 $ signet init --server localhost:8444 --token "$TOKEN"
 signet state: sealed
 Secret "signet-master-key" not found in namespace "signet" — generating new 32-byte master key.
@@ -86,7 +86,7 @@ signet unsealed using created key from Secret signet/signet-master-key. State: u
 
 ### Example — re-running when already unsealed
 
-```
+```text
 $ signet init --server localhost:8444 --token "$TOKEN"
 signet is already unsealed.
 ```
@@ -131,7 +131,7 @@ Manage local CLI configuration stored in `~/.config/signet/config.yaml`.
 
 ### `signet config set <key> <value>`
 
-```
+```text
 Usage: signet config set <key> <value>
 ```
 
@@ -142,6 +142,7 @@ Supported keys:
 | `server` | Admin endpoint host:port (no scheme), e.g. `localhost:8444` |
 
 **Example:**
+
 ```bash
 signet config set server localhost:8444
 ```
@@ -152,22 +153,25 @@ signet config set server localhost:8444
 
 Show the server's current seal state.
 
-```
+```text
 Usage: signet status
 ```
 
 **Example output (sealed):**
-```
+
+```text
 state=sealed
 ```
 
 **Example output (unsealing — Shamir mode):**
-```
+
+```text
 state=unsealing shares=1/3
 ```
 
 **Example output (unsealed):**
-```
+
+```text
 state=unsealed
 ```
 
@@ -179,7 +183,7 @@ Unseal the server. Two sub-commands cover the two unseal modes.
 
 ### `signet unseal key` — Direct-key mode
 
-```
+```text
 Usage: signet unseal key --key-file <path> [--token <token>]
 ```
 
@@ -191,6 +195,7 @@ Flags:
 | `--token` | | Admin Bearer token |
 
 **Example:**
+
 ```bash
 TOKEN=$(kubectl create token signet-admin -n signet --duration=1h --audience=signet)
 signet unseal key --key-file master.key --token "$TOKEN"
@@ -199,7 +204,7 @@ signet unseal key --key-file master.key --token "$TOKEN"
 
 ### `signet unseal share` — Shamir mode
 
-```
+```text
 Usage: signet unseal share {--share <hex> | --share-file <path>} [--token <token>]
 ```
 
@@ -215,6 +220,7 @@ Each key holder runs this command independently. The server unseals once the
 threshold is reached.
 
 **Example:**
+
 ```bash
 signet unseal share --share-file /secure/my.share --token "$TOKEN"
 # Key accepted (1/3 shares satisfied).
@@ -227,11 +233,12 @@ signet unseal share --share-file /secure/my.share --token "$TOKEN"
 Seal the server — wipes the master key from memory. All active connections are
 rejected until the server is unsealed again.
 
-```
+```text
 Usage: signet seal [--token <token>]
 ```
 
 **Example:**
+
 ```bash
 signet seal --token "$TOKEN"
 # Server sealed.
@@ -253,12 +260,13 @@ re-wrapped can still be decrypted), and re-wrap every secret's DEK from the
 old KEK to the new one. On a fresh deployment with no active KEK yet, this
 simply provisions the first one — there's no separate "kek init" step.
 
-```
+```text
 Usage: signet kek rotate [--token <token>]
 ```
 
 **Example — rotating an existing KEK:**
-```
+
+```text
 $ signet kek rotate --token "$TOKEN"
 New KEK:             7c3f8e21-...
 Old KEK (retained):  1a2b3c4d-...
@@ -267,7 +275,8 @@ Once confirmed, run 'signet kek prune 1a2b3c4d-...' to remove the old KEK.
 ```
 
 **Example — first KEK on a fresh deployment:**
-```
+
+```text
 $ signet kek rotate --token "$TOKEN"
 New KEK:             7c3f8e21-...
 ```
@@ -279,12 +288,13 @@ rotation succeeded, run `signet kek prune <old-kek-id>` to remove it.
 
 List all KEKs — active and retained-for-decryption.
 
-```
+```text
 Usage: signet kek list [--token <token>]
 ```
 
 **Example output:**
-```
+
+```text
 [active]   7c3f8e21-...  created=2026-06-24T10:00:00Z  deactivated=-
 [inactive] 1a2b3c4d-...  created=2026-01-10T09:00:00Z  deactivated=2026-06-24T10:00:00Z
 ```
@@ -296,7 +306,7 @@ provision one.`
 
 Permanently delete an inactive, unreferenced KEK.
 
-```
+```text
 Usage: signet kek prune --id <id> [--token <token>]
 ```
 
@@ -314,6 +324,7 @@ Refuses to delete:
   every secret before pruning.
 
 **Example:**
+
 ```bash
 signet kek prune --id 1a2b3c4d-... --token "$TOKEN"
 # kek 1a2b3c4d-... pruned
@@ -332,7 +343,7 @@ adopt it as the server's active master key. Secrets and their DEKs are never
 touched directly — only their KEK layer — which is why this is cheap
 regardless of how many secrets are stored.
 
-```
+```text
 Usage: signet master-key rotate [--new-key-file <path>] [--yes] [--token <token>]
 ```
 
@@ -361,7 +372,8 @@ best-effort safeguard, not a substitute for checking `signet status` after
 rotating.
 
 **Example — generating a new key:**
-```
+
+```text
 $ signet master-key rotate --token "$TOKEN"
 WARNING: this rotates the live master key. Every KEK (and the key-check
 value) will be re-wrapped under the new key. You are responsible for
@@ -376,6 +388,7 @@ New master key (shown once — record it securely now):
 ```
 
 **Example — supplying your own key, non-interactively:**
+
 ```bash
 signet master-key rotate --new-key-file ./new-master.key --yes --token "$TOKEN"
 ```
@@ -390,12 +403,13 @@ Manage the age encryption keypair used for SOPS-encrypted secrets.
 
 Print the currently active age public key.
 
-```
+```text
 Usage: signet sops-key get [--token <token>]
 ```
 
 **Example output (environment-scoped instance):**
-```
+
+```text
 Public key:  age1abc123def456...
 Fingerprint: a1b2c3d4e5f6a1b2
 Environment: prod
@@ -403,7 +417,8 @@ Created at:  2026-01-15T09:00:00Z
 ```
 
 **Example output (global, no SIGNET_ENVIRONMENT set):**
-```
+
+```text
 Public key:  age1abc123def456...
 Fingerprint: a1b2c3d4e5f6a1b2
 Environment: (global — add SIGNET_ENVIRONMENT to scope this key to an environment)
@@ -417,12 +432,13 @@ Use the public key value in your `.sops.yaml` creation rules.
 Generate a new age keypair scoped to this instance's environment and deactivate
 the current environment-scoped key.
 
-```
+```text
 Usage: signet sops-key rotate [--token <token>]
 ```
 
 **Example output:**
-```
+
+```text
 New public key:  age1xyz789...
 New fingerprint: f6e5d4c3b2a1f6e5
 Environment:     prod
@@ -438,12 +454,13 @@ re-encryption of SOPS files before the old key is removed.
 List all age keys visible to this instance's environment — both the active key
 and any inactive keys retained for decryption.
 
-```
+```text
 Usage: signet sops-key list [--token <token>]
 ```
 
 **Example output:**
-```
+
+```text
 [active]   age1xyz789...  env=prod      fp=f6e5d4c3b2a1f6e5  created=2026-06-01T09:00:00Z  deactivated=-
 [inactive] age1abc123...  env=prod      fp=a1b2c3d4e5f6a1b2  created=2026-01-15T09:00:00Z  deactivated=2026-06-01T09:00:00Z
 [inactive] age1old000...  env=(global)  fp=deadbeef12345678  created=2025-11-01T14:30:00Z  deactivated=2026-01-15T09:00:00Z
@@ -456,7 +473,7 @@ instance's environment. Run once per environment to build a multi-environment
 `.sops.yaml` incrementally; each invocation only touches its own environment's
 entries and preserves all other content.
 
-```
+```text
 Usage: signet sops-key update-config [--file <path>] [--secrets-path <path>] [--print] [--token <token>]
 ```
 
@@ -469,6 +486,7 @@ Flags:
 | `--print` | false | Print the result to stdout instead of writing to file |
 
 **Example — building a multi-environment config:**
+
 ```bash
 # Run against the prod signet instance
 SIGNET_SERVER=prod.signet:8444 signet sops-key update-config --token "$PROD_TOKEN"
@@ -482,6 +500,7 @@ SIGNET_SERVER=staging.signet:8444 signet sops-key update-config --token "$STAGIN
 ```
 
 **Resulting `.sops.yaml`:**
+
 ```yaml
 environments:
   prod: age1prod111...
@@ -506,7 +525,7 @@ without touching others.
 Permanently delete an inactive age key. Any SOPS files that are still encrypted
 to this key will fail to sync after pruning.
 
-```
+```text
 Usage: signet sops-key prune --public-key <age-public-key> [--token <token>]
 ```
 
@@ -517,6 +536,7 @@ Flags:
 | `--public-key` | Yes | The age public key string of the key to delete |
 
 **Example:**
+
 ```bash
 # Only prune after re-encrypting all SOPS files to the new key.
 signet sops-key prune --public-key age1abc123def456... --token "$TOKEN"
@@ -547,7 +567,7 @@ encryption to call in-process instead.
 Create or update a SOPS-encrypted secret file at the
 `<secrets-root>/[<env>/]<namespace>/<service>/<name>.yaml` path convention.
 
-```
+```text
 Usage: signet secret set <namespace>/<service>/<name> [flags]
 ```
 
@@ -571,6 +591,7 @@ segment), exactly one entry is auto-selected, and more than one requires
 `--env` to disambiguate.
 
 **Example — single-environment repo:**
+
 ```bash
 cd infra-secrets/            # already has a .sops.yaml from update-config
 signet secret set payments/api/stripe-key --value sk_live_...
@@ -582,6 +603,7 @@ signet secret set payments/api/stripe-key --value sk_live_...
 ```
 
 **Example — multi-environment repo, piped value:**
+
 ```bash
 printf '%s' "$STRIPE_KEY" | signet secret set payments/api/stripe-key --env prod
 # Wrote encrypted secret: secrets/prod/payments/api/stripe-key.yaml
@@ -593,11 +615,12 @@ printf '%s' "$STRIPE_KEY" | signet secret set payments/api/stripe-key --env prod
 Delete a secret file at the same path convention. No decryption is
 performed — this is a plain file removal.
 
-```
+```text
 Usage: signet secret rm <namespace>/<service>/<name> [--env <env>] [--secrets-root <path>] [--sops-config <path>]
 ```
 
 **Example:**
+
 ```bash
 signet secret rm payments/api/stripe-key --env prod
 # Removed secrets/prod/payments/api/stripe-key.yaml
@@ -616,7 +639,7 @@ Manage git repository registrations for SOPS-encrypted secret syncing.
 Register a git repository and receive a GitHub webhook URL and secret.
 Optionally creates the webhook in GitHub automatically.
 
-```
+```text
 Usage: signet repo add --name <name> --repo-url <url> [flags]
 ```
 
@@ -634,6 +657,7 @@ Flags:
 | `--token` | | | Admin Bearer token |
 
 **Example — manual webhook setup (default):**
+
 ```bash
 signet repo add \
   --name infra-secrets \
@@ -645,7 +669,8 @@ signet repo add \
 ```
 
 Output:
-```
+
+```text
 Repository registered.
   ID:             550e8400-e29b-41d4-a716-446655440000
   Webhook URL:    https://signet.example.com/webhook/github/550e8400-...
@@ -658,6 +683,7 @@ Run with --setup-webhook to create it automatically.
 ```
 
 **Example — automatic webhook setup with `gh` CLI:**
+
 ```bash
 signet repo add \
   --name infra-secrets \
@@ -668,7 +694,8 @@ signet repo add \
 ```
 
 Output:
-```
+
+```text
 Repository registered.
   ID:             550e8400-e29b-41d4-a716-446655440000
   Webhook URL:    https://signet.example.com/webhook/github/550e8400-...
@@ -683,7 +710,8 @@ Setting up webhook automatically for myorg/infra-secrets...
 ```
 
 **Example — automatic webhook setup without `gh` CLI:**
-```
+
+```text
 Setting up webhook automatically for myorg/infra-secrets...
   Checking for gh CLI... not found.
   gh CLI not available, GITHUB_TOKEN is set in environment, calling GitHub's REST API...
@@ -716,12 +744,13 @@ repository.
 
 List all registered repositories.
 
-```
+```text
 Usage: signet repo list [--token <token>]
 ```
 
 **Example output:**
-```
+
+```text
 ID                                    NAME            BRANCH  LAST SYNC            SHA
 550e8400-e29b-41d4-a716-446655440000  infra-secrets   main    2026-06-24T10:12:00Z a1b2c3d4
 ```
@@ -731,7 +760,7 @@ ID                                    NAME            BRANCH  LAST SYNC         
 Remove a repository registration. This does not delete secrets already synced
 into signet's database.
 
-```
+```text
 Usage: signet repo remove --id <id> [--token <token>]
 ```
 
@@ -746,7 +775,7 @@ Flags:
 Trigger an immediate full sync of a repository, cloning the current HEAD and
 importing all secrets found under the configured `secrets-path`.
 
-```
+```text
 Usage: signet repo sync --id <id> [--token <token>]
 ```
 
@@ -757,7 +786,8 @@ Flags:
 | `--id` | Yes | Repository ID from `signet repo list` |
 
 **Example output:**
-```
+
+```text
 Sync complete.
   SHA:     a1b2c3d4
   Added:   12
@@ -774,7 +804,7 @@ without registering it or going through the webhook/reconciler path. Useful
 for local testing, CI validation, or one-off syncs where wiring up a
 repository registration isn't worth it.
 
-```
+```text
 Usage: signet bundle push [path] [--secrets-path <path>] [--token <token>]
 ```
 
@@ -798,6 +828,7 @@ Usage: signet bundle push [path] [--secrets-path <path>] [--token <token>]
 5. Prints the sync result.
 
 **Example:**
+
 ```bash
 signet bundle push ./infra-secrets \
   --secrets-path secrets/ \
@@ -805,7 +836,7 @@ signet bundle push ./infra-secrets \
   --token "$TOKEN"
 ```
 
-```
+```text
 Bundled 12 file(s) from HEAD a1b2c3d4e5f6
 Sync complete (sha: a1b2c3d4e5f6)
   added:   12
