@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:48:36Z
-updated: 2026-11-06T08:22:49Z
+updated: 2026-11-06T08:31:51Z
 transitions:
   - to: ready
     at: 2026-10-27T23:00:58Z
@@ -40,6 +40,11 @@ usage:
           cache_read: 7958441
           cache_write: 404381
           cost: 4.004
+cost_of_delay:
+  inputs:
+    time_lost_per_cycle: 30m
+    by: alex
+    at: 2026-11-06T08:31:51Z
 forecast:
   duration: 3h
   delivery: 2026-11-06T22:03:00Z
