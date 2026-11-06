@@ -143,6 +143,15 @@ make test             # go test -race ./...
 make lint             # golangci-lint run ./... (needs golangci-lint v1; `go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8`)
 ```
 
+## Protocol
+
+The gRPC/protobuf schema (`SecretsService`, `AdminService`, `GitOpsService`) lives in the
+mono-repo's [`proto/`](../proto/README.md) module, not in `server/`. It is also published to
+the Buf Schema Registry as `buf.build/bytepunx/signet-proto` for external consumers. The
+stubs in `server/gen/` are generated from it with `make proto` (see `buf.gen.yaml`). The
+[admin UI](../admin/README.md) and the [client libraries](../docs/contributors/index.md) live in
+sibling folders of the same repository.
+
 ## Project status
 
 signet is early-stage (`v0.2.x`) and under active development. The core secret-serving,
