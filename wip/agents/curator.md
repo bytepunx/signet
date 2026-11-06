@@ -1,9 +1,9 @@
 ---
 kind: curator
-accrued_cost: 2.6767
-accrued_seconds: 289
-tasks_completed: 10
-last_run: 2026-11-06T07:45:59Z
+accrued_cost: 3.0313
+accrued_seconds: 341
+tasks_completed: 12
+last_run: 2026-11-06T07:50:35Z
 ---
 
 # Curator activity
@@ -91,3 +91,19 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Items: D-0022, D-0023, D-0024
 - Seconds: 43
 - Cost: 0.3148 USD, estimated
+
+### 2026-11-06T07:50:08Z
+
+- Summary: I wrote D-0025 and D-0026, merged none, absorbed none, and `flai digest compact` compacted none.
+- Trigger: accepted S-0029
+- Items: D-0025, D-0026
+- Seconds: 28
+- Cost: 0.2137 USD, estimated
+
+### 2026-11-06T07:50:35Z
+
+- Summary: Found nothing to take in: `flai digest harvest` since 2026-11-06T07:50:08Z returned no candidates. I wrote and merged no entries, absorbed none (no design document, convention or ADR states any active entry's fact), and `flai digest compact` compacted none.
+- Trigger: accepted S-0032
+- Items: none
+- Seconds: 24
+- Cost: 0.1409 USD, estimated

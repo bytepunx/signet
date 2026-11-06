@@ -3,15 +3,36 @@ id: T-0060
 type: task
 nature: feature
 title: Script that writes the tag's version into pyproject.toml
-status: backlog
+status: done
 parent: S-0012
 owner: alex
 created: 2026-10-27T22:52:10Z
-updated: 2026-10-27T22:52:10Z
-transitions: []
+updated: 2026-11-06T07:51:31Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:51:26Z
+    by: agent-S-0012
+  - to: in-progress
+    at: 2026-11-06T07:51:26Z
+    by: agent-S-0012
+  - to: done
+    at: 2026-11-06T07:51:31Z
+    by: agent-S-0012
 stream: S-0012
 tags: [client-python]
 touches: [scripts/set-client-python-version.sh]
+usage:
+  source: log
+  seconds: 5
+  estimated: true
+  priced_by: estimate
+  models:
+    - model: claude-sonnet-5-5
+      input: 4
+      output: 52
+      cache_read: 181237
+      cache_write: 5624
+      cost: 0.0618
 ---
 # T-0060 Script that writes the tag's version into pyproject.toml
 

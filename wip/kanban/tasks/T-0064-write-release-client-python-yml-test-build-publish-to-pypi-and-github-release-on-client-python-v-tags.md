@@ -3,16 +3,37 @@ id: T-0064
 type: task
 nature: feature
 title: "Write release-client-python.yml: test, build, publish to PyPI, and GitHub Release on client-python/v* tags"
-status: backlog
+status: done
 parent: S-0012
 owner: alex
 created: 2026-10-27T22:52:24Z
-updated: 2026-10-27T22:52:24Z
-transitions: []
+updated: 2026-11-06T07:51:36Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:51:33Z
+    by: agent-S-0012
+  - to: in-progress
+    at: 2026-11-06T07:51:33Z
+    by: agent-S-0012
+  - to: done
+    at: 2026-11-06T07:51:36Z
+    by: agent-S-0012
 stream: S-0012
 tags: [client-python]
 touches: [".github/workflows/release-client-python.yml"]
 after: [T-0059, T-0060]
+usage:
+  source: log
+  seconds: 3
+  estimated: true
+  priced_by: estimate
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 3
+      cache_read: 96008
+      cache_write: 4423
+      cost: 0.0332
 ---
 # T-0064 Write release-client-python.yml: test, build, publish to PyPI, and GitHub Release on client-python/v* tags
 

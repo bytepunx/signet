@@ -45,6 +45,17 @@ usage:
       cache_read: 5792555
       cache_write: 124854
       cost: 1.2254
+  strategic:
+    - kind: orchestrator
+      seconds: 18
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 10
+          output: 75
+          cache_read: 274648
+          cache_write: 54884
+          cost: 0.1656
 ---
 # S-0032 system-flow check fails on main: flai is not on PATH, and flai check --strict has findings behind it
 

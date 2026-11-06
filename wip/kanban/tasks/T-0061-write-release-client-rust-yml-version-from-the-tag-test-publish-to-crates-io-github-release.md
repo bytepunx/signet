@@ -3,15 +3,28 @@ id: T-0061
 type: task
 nature: feature
 title: "Write release-client-rust.yml: version from the tag, test, publish to crates.io, GitHub Release"
-status: backlog
+status: done
 parent: S-0014
 owner: alex
 created: 2026-10-27T22:52:11Z
-updated: 2026-10-27T22:52:11Z
-transitions: []
+updated: 2026-11-06T07:53:44Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:53:44Z
+    by: agent-S-0014
+  - to: in-progress
+    at: 2026-11-06T07:53:44Z
+    by: agent-S-0014
+  - to: done
+    at: 2026-11-06T07:53:44Z
+    by: agent-S-0014
 stream: S-0014
 tags: [client-rust]
 touches: [".github/workflows/release-client-rust.yml"]
+usage:
+  source: log
+  seconds: 0
+  models: []
 ---
 # T-0061 Write release-client-rust.yml: version from the tag, test, publish to crates.io, GitHub Release
 

@@ -9,30 +9,13 @@ wip_limits:
 order:
   - S-0020
   - S-0011
-  - S-0012
-  - S-0013
-  - S-0014
   - S-0015
   - S-0016
+  - S-0021
   - S-0017
   - S-0018
   - S-0019
 placed:
-  S-0012:
-    by: arobson
-    at: 2026-10-27T19:47:51Z
-  S-0013:
-    by: arobson
-    at: 2026-10-27T19:47:51Z
-  S-0014:
-    by: arobson
-    at: 2026-10-27T19:47:51Z
-  S-0015:
-    by: arobson
-    at: 2026-10-27T19:47:51Z
-  S-0016:
-    by: arobson
-    at: 2026-10-27T19:47:51Z
   S-0017:
     by: arobson
     at: 2026-10-27T19:47:51Z

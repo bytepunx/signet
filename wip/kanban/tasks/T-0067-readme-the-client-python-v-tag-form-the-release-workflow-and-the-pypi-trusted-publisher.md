@@ -3,16 +3,37 @@ id: T-0067
 type: task
 nature: improvement
 title: "README: the client-python/v tag form, the release workflow, and the PyPI trusted publisher"
-status: backlog
+status: done
 parent: S-0012
 owner: alex
 created: 2026-10-27T22:52:31Z
-updated: 2026-10-27T22:52:31Z
-transitions: []
+updated: 2026-11-06T07:51:43Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:51:38Z
+    by: agent-S-0012
+  - to: in-progress
+    at: 2026-11-06T07:51:38Z
+    by: agent-S-0012
+  - to: done
+    at: 2026-11-06T07:51:43Z
+    by: agent-S-0012
 stream: S-0012
 tags: [client-python]
 touches: [client-python/README.md]
 after: [T-0064]
+usage:
+  source: log
+  seconds: 5
+  estimated: true
+  priced_by: estimate
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 64
+      cache_read: 100431
+      cache_write: 4599
+      cost: 0.0348
 ---
 # T-0067 README: the client-python/v tag form, the release workflow, and the PyPI trusted publisher
 

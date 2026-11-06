@@ -3,12 +3,18 @@ id: S-0012
 type: story
 nature: feature
 title: "Python client: release workflow on client-python/v* tags with PyPI trusted publishing"
-status: backlog
+status: in-progress
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:49:36Z
-transitions: []
+updated: 2026-11-06T07:51:46Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:50:00Z
+    by: alex
+  - to: in-progress
+    at: 2026-11-06T07:50:10Z
+    by: agent-S-0012
 tags: [client-python]
 topics: [release, github]
 touches: [".github/workflows/release-client-python.yml", client-python/pyproject.toml, client-python/README.md, scripts/set-client-python-version.sh]
@@ -16,6 +22,22 @@ after: [S-0007]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+usage:
+  source: log
+  seconds: 98
+  estimated: true
+  priced_by: estimate
+  turns:
+    - day: 2026-11-06
+      ceremony: 1
+      work: 13
+  models:
+    - model: claude-sonnet-5-5
+      input: 32
+      output: 207
+      cache_read: 993820
+      cache_write: 90355
+      cost: 0.3587
 forecast:
   duration: 2h
   delivery: 2026-11-14T15:38:00Z
@@ -30,9 +52,9 @@ forecast:
 A push of `client-python/vX.Y.Z` builds `signet-client` with version `X.Y.Z` taken from the tag (no committed version bump), runs the tests, publishes to PyPI with trusted publishing registered for this repository and `release-client-python.yml`, and creates the GitHub Release. Package metadata names this repository.
 
 ## Acceptance criteria
-- [ ] `pyproject.toml` takes its version from the tag at build time (for example `hatch-vcs` with the `client-python/v` prefix, or an explicit `--version` step) and names `bytepunx/signet` as the repository
-- [ ] `release-client-python.yml` triggers on `client-python/v*` only, tests, builds sdist and wheel, publishes with OIDC, and creates the GitHub Release with notes from the tag annotation
-- [ ] `client-python/README.md` names the tag form, the workflow, and the trusted publisher
+- [x] `pyproject.toml` takes its version from the tag at build time (for example `hatch-vcs` with the `client-python/v` prefix, or an explicit `--version` step) and names `bytepunx/signet` as the repository
+- [x] `release-client-python.yml` triggers on `client-python/v*` only, tests, builds sdist and wheel, publishes with OIDC, and creates the GitHub Release with notes from the tag annotation
+- [x] `client-python/README.md` names the tag form, the workflow, and the trusted publisher
 - [ ] The trusted publisher on pypi.org names this repository and workflow (operator, tracked in the setup story)
 
 ## Tasks

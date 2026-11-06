@@ -3,12 +3,15 @@ id: S-0015
 type: story
 nature: feature
 title: "C# client: release workflow on client-csharp/v* tags with NuGet trusted publishing"
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:49:45Z
-transitions: []
+updated: 2026-11-06T07:50:07Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:50:07Z
+    by: alex
 tags: [client-csharp]
 topics: [release, github]
 touches: [".github/workflows/release-client-csharp.yml", client-csharp/SignetClient.csproj, client-csharp/README.md]

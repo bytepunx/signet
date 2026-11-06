@@ -3,12 +3,15 @@ id: S-0016
 type: story
 nature: feature
 title: "Elixir client: release workflow on client-elixir/v* tags publishing to hex.pm"
-status: backlog
+status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:49:36Z
-transitions: []
+updated: 2026-11-06T07:50:09Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:50:09Z
+    by: alex
 tags: [client-elixir]
 topics: [release, github]
 touches: [".github/workflows/release-client-elixir.yml", client-elixir/mix.exs, client-elixir/README.md, client-elixir/CHANGELOG.md, scripts/publish-client-elixir.sh, scripts/README.md, design/system/release.md]

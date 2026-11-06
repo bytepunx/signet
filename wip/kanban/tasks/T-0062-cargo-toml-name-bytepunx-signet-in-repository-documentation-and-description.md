@@ -3,12 +3,18 @@ id: T-0062
 type: task
 nature: improvement
 title: "Cargo.toml: name bytepunx/signet in repository, documentation, and description"
-status: backlog
+status: in-progress
 parent: S-0014
 owner: alex
 created: 2026-10-27T22:52:14Z
-updated: 2026-10-27T22:52:14Z
-transitions: []
+updated: 2026-11-06T07:53:44Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:53:44Z
+    by: agent-S-0014
+  - to: in-progress
+    at: 2026-11-06T07:53:44Z
+    by: agent-S-0014
 stream: S-0014
 tags: [client-rust]
 touches: [client-rust/Cargo.toml]
