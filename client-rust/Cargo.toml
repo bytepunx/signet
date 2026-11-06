@@ -2,14 +2,15 @@
 name = "signet-client"
 version = "0.6.0"
 edition = "2021"
-description = "Rust client for signet, generated from bytepunx/signet-proto"
+description = "Rust client for signet, generated from the proto/ directory of bytepunx/signet"
 license = "Apache-2.0"
-repository = "https://github.com/bytepunx/signet-clients"
+repository = "https://github.com/bytepunx/signet"
+documentation = "https://docs.rs/signet-client"
 readme = "README.md"
 # `cargo package`/`cargo publish` only include git-tracked files by default
 # (VCS-ignore rules apply even to files that exist on disk), but src/gen is
-# gitignored — regenerated from bytepunx/signet-proto via `buf generate`
-# immediately before packaging, not committed (see ../.gitignore). Without
+# gitignored — regenerated with `buf generate` immediately before
+# packaging, not committed. Without
 # this explicit include, publishing silently ships a crate whose lib.rs
 # include!()s a file that isn't in the tarball at all.
 include = ["src/**", "examples/**", "Cargo.toml", "README.md"]
