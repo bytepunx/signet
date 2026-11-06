@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:54:48Z
+updated: 2026-11-06T08:02:55Z
 transitions: []
 tags: [admin]
 topics: [admin]
@@ -32,10 +32,10 @@ usage:
           cost: 0.1885
 forecast:
   duration: 45m
-  delivery: 2026-11-06T23:45:00Z
-  basis: "Its own forecast of 45m; 6th in the pull order with an in-progress limit of 2, behind S-0014, S-0015, S-0020, S-0011, S-0016, S-0021 and S-0017."
+  delivery: 2026-11-06T19:31:00Z
+  basis: "Its own forecast of 45m; 4th in the pull order with an in-progress limit of 2, behind S-0014, S-0021, S-0020, S-0011 and S-0017."
   by: flai
-  at: 2026-11-06T07:54:48Z
+  at: 2026-11-06T08:02:55Z
 ---
 # S-0018 Decide the admin sub-project's place in the mono-repo
 

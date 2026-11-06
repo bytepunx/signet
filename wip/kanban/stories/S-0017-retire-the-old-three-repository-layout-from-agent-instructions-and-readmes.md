@@ -7,7 +7,7 @@ status: backlog
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:54:48Z
+updated: 2026-11-06T08:02:55Z
 transitions: []
 tags: [server]
 topics: [docs]
@@ -17,10 +17,10 @@ agent:
   model: claude-sonnet-5-5
 forecast:
   duration: 1h30m
-  delivery: 2026-11-06T20:53:00Z
-  basis: "Its own forecast of 1h30m; 5th in the pull order with an in-progress limit of 2, behind S-0014, S-0015, S-0020, S-0011, S-0016 and S-0021."
+  delivery: 2026-11-06T17:00:00Z
+  basis: "Its own forecast of 1h30m; 3rd in the pull order with an in-progress limit of 2, behind S-0014, S-0021, S-0020 and S-0011."
   by: flai
-  at: 2026-11-06T07:54:48Z
+  at: 2026-11-06T08:02:55Z
 ---
 # S-0017 Retire the old three-repository layout from agent instructions and READMEs
 
