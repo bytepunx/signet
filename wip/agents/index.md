@@ -1,13 +1,12 @@
 ---
 title: Active streams
-updated: 2026-11-06T07:49:37Z
+updated: 2026-11-06T07:49:45Z
 ---
 
 # Active streams
 
 | Stream | Title | Status | Last agent | Updated |
 |--------|-------|--------|------------|---------|
-| [S-0032](S-0032.md) | system-flow check fails on main: flai is not on PATH, and flai check --strict has findings behind it | review | agent-S-0032 | 2026-11-06T07:44:35Z |
 
 ## Strategic agents
 

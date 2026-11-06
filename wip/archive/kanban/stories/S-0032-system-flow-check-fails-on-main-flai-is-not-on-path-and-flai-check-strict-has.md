@@ -3,11 +3,11 @@ id: S-0032
 type: story
 nature: remediation
 title: "system-flow check fails on main: flai is not on PATH, and flai check --strict has findings behind it"
-status: review
+status: done
 parent: E-0002
 owner: alex
 created: 2026-11-06T07:19:26Z
-updated: 2026-11-06T07:48:52Z
+updated: 2026-11-06T07:49:45Z
 transitions:
   - to: ready
     at: 2026-11-06T07:19:58Z
@@ -18,6 +18,9 @@ transitions:
   - to: review
     at: 2026-11-06T07:48:52Z
     by: agent-S-0032
+  - to: done
+    at: 2026-11-06T07:49:45Z
+    by: alex
 tags: []
 topics: [github]
 touches: [".github/workflows/system-flow-check.yml", ".claude/agents/analyzer.md", ".claude/agents/curator.md", ".claude/agents/orchestrator.md", ".claude/agents/planner.md", design/issues/I-0009-flai-check-finds-roles-definition-outside-the-story-at-close-out.md, design/issues/summary.md, design/issues/I-0010-flai-check-finds-item-blocked-closed-outside-the-story-at-close-out.md, wip/archive/kanban/stories/S-0010-proto-publish-workflow-bsr-push-from-main-and-label-on-proto-v-tags.md]
