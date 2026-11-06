@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:50:09Z
+updated: 2026-11-06T07:53:47Z
 transitions:
   - to: ready
     at: 2026-11-06T07:50:09Z
@@ -21,10 +21,10 @@ agent:
   model: claude-sonnet-5-5
 forecast:
   duration: 2h
-  delivery: 2026-11-16T21:04:00Z
-  basis: "Its own forecast of 2h; 7th in the pull order with an in-progress limit of 2, behind S-0020, S-0011, S-0012, S-0013, S-0014 and S-0015."
+  delivery: 2026-11-06T16:29:00Z
+  basis: "Its own forecast of 2h; 4th in the pull order with an in-progress limit of 2, behind S-0012, S-0014, S-0020, S-0011 and S-0015."
   by: flai
-  at: 2026-11-06T07:49:36Z
+  at: 2026-11-06T07:53:47Z
 ---
 # S-0016 Elixir client: release workflow on client-elixir/v* tags publishing to hex.pm
 
