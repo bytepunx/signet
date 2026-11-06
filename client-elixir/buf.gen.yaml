@@ -10,9 +10,7 @@ plugins:
     out: lib/gen
     opt:
       - plugins=grpc
-# Pinned independently of the server's own buf.gen.yaml and of the other
-# language clients, to a tagged signet-proto release, so a schema change
-# upstream never changes this client's generated code until it is adopted
-# deliberately.
+# The schema is the one in this repository, so a schema change and the code
+# that uses it land in one pull request; there is no version to bump.
 inputs:
-  - module: buf.build/bytepunx/signet-proto:v0.4.0
+  - directory: ../proto/proto

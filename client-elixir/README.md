@@ -1,8 +1,7 @@
 # signet_client (Elixir)
 
 Elixir client for [signet](https://github.com/bytepunx/signet), generated from
-the mono-repo's [`proto/`](../proto) module and pinned
-independently of the server's own release cycle (see `buf.gen.yaml`). It mirrors the
+the schema in the mono-repo's [`proto/`](../proto), which `buf generate` reads as a directory (see `buf.gen.yaml`). It mirrors the
 [Go client](../client-go)'s connection layer idiomatically: `{:ok, value}` and
 `{:error, reason}` tuples instead of `(value, error)` pairs, a `GenServer` where Go uses a
 goroutine, and the generated `GRPC.Stub` modules where Go has typed clients.
@@ -65,10 +64,10 @@ Erlang client would take the same shape, with
 either [`grpcbox`](https://github.com/tsloughter/grpcbox) or this client's `grpc` package
 (whose stubs are plain modules an Erlang application can call) for the service layer; none
 is scaffolded. The
-first template pulls `signet/v1` and `admin/v1` from `buf.build/bytepunx/signet-proto`
+first template reads `signet/v1` and `admin/v1` from `../proto/proto`
 into `lib/gen/`; the second generates the SPIRE Workload API client from the vendored
-`proto/spiffe/workload/workload.proto` under the `Spiffe.Workload` namespace. Edit the
-module reference in `buf.gen.yaml` to pin a different schema version.
+`proto/spiffe/workload/workload.proto` under the `Spiffe.Workload` namespace. A schema change and
+the code that uses it go in one pull request.
 
 ## Usage
 

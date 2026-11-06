@@ -3,7 +3,8 @@
 # installed on the host. Ensures the toolchain image from client-elixir/Dockerfile
 # exists (scripts/ensure-client-elixir-image.sh builds it only when it is missing
 # or the Dockerfile changed; SIGNET_REBUILD=1 forces a build), then with
-# client-elixir/ mounted at /app:
+# the repository root mounted at /repo and client-elixir/ as the working directory
+# (buf.gen.yaml reads ../proto/proto):
 # generates the stubs, fetches dependencies, compiles with warnings as errors,
 # and runs mix test. deps/, _build/, and lib/gen/ stay on the host, gitignored.
 #
@@ -17,7 +18,8 @@ scripts/ensure-client-elixir-image.sh
 
 run() {
   docker run --rm \
-    -v "$(pwd)/client-elixir:/app" \
+    -v "$(pwd):/repo" \
+    -w /repo/client-elixir \
     -e MIX_ENV="${MIX_ENV:-test}" \
     "${image}" "$@"
 }
