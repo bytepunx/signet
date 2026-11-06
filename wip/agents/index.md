@@ -1,6 +1,6 @@
 ---
 title: Active streams
-updated: 2026-11-06T08:09:38Z
+updated: 2026-11-06T08:10:00Z
 ---
 
 # Active streams
@@ -8,7 +8,6 @@ updated: 2026-11-06T08:09:38Z
 | Stream | Title | Status | Last agent | Updated |
 |--------|-------|--------|------------|---------|
 | [S-0014](S-0014.md) | Rust client: release workflow on client-rust/v* tags publishing to crates.io | in-progress | agent-S-0014 | 2026-11-06T08:09:38Z |
-| [S-0021](S-0021.md) | scripts/test-client-elixir.sh rebuilds the toolchain image on every run and fails when the registry stalls | review | agent-S-0021 | 2026-11-06T08:06:14Z |
 
 ## Strategic agents
 

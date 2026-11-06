@@ -4,10 +4,10 @@ title: "S-0021 plan: skip the toolchain image build when current; hour rate need
 anchor:
   path: wip/kanban/stories/S-0021-scripts-test-client-elixir-sh-rebuilds-the-toolchain-image-on-every-run-and-fails-when-the-registry-stalls.md
   item: S-0021
-status: open
-participants: [planner-S-0021]
+status: resolved
+participants: [planner-S-0021, alex]
 created: 2026-10-27T22:52:34Z
-updated: 2026-10-27T22:53:18Z
+updated: 2026-11-06T08:10:00Z
 ---
 
 # TH-0008 S-0021 plan: skip the toolchain image build when current; hour rate needed
@@ -32,3 +32,6 @@ Assumptions: only Docker, not a registry timeout, is the cost, so no --pull=fals
 
 ### 2026-10-27T22:53:18Z planner-S-0021
 Tasks are created: T-0073 (layer 1), T-0077 (layer 2, after T-0073), T-0083 (layer 3, after T-0077); these are the T-A, T-B, T-C above. Touches and forecast (1h, delivery 2026-10-28T13:00:00Z) are written on S-0021. Still open: `planning.hour_rate` for the cost of delay value.
+
+### 2026-11-06T08:10:00Z alex
+Resolved: S-0021 was accepted
