@@ -1,10 +1,10 @@
 # signet-client (Rust)
 
 Rust client for [signet](https://github.com/bytepunx/signet), generated from
-[bytepunx/signet-proto](https://github.com/bytepunx/signet-proto) via
+the mono-repo's [`proto/`](../proto) module via
 [prost](https://github.com/tokio-rs/prost) + [tonic](https://github.com/hyperium/tonic),
 with the same connection-helper and coordinated-restart layer as the
-[Go client](../go) — see that package's `client.go`/`restart.go`/`README.md` for the
+[Go client](../client-go) — see that package's `client.go`/`restart.go`/`README.md` for the
 reference design this crate mirrors (idiomatically, not mechanically).
 
 ## Install

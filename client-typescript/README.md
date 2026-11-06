@@ -1,7 +1,7 @@
 # @bytepunx/signet-client (TypeScript / Node)
 
 Node.js gRPC client for [signet](https://github.com/bytepunx/signet), generated from
-[bytepunx/signet-proto](https://github.com/bytepunx/signet-proto) via
+the mono-repo's [`proto/`](../proto) module via
 [ts-proto](https://github.com/stephenh/ts-proto), pinned independently of the server's own
 release cycle (see `buf.gen.yaml`).
 

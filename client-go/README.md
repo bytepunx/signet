@@ -1,7 +1,7 @@
 # signet (Go client)
 
 Go client library for [signet](https://github.com/bytepunx/signet), generated from
-[bytepunx/signet-proto](https://github.com/bytepunx/signet-proto) and pinned
+the mono-repo's [`proto/`](../proto) module and pinned
 independently of the server's own release cycle (see `buf.gen.yaml`).
 
 ```text

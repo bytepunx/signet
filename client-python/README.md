@@ -1,10 +1,10 @@
 # signet-client (Python)
 
 Python client for [signet](https://github.com/bytepunx/signet), generated from
-[bytepunx/signet-proto](https://github.com/bytepunx/signet-proto) and pinned
+the mono-repo's [`proto/`](../proto) module and pinned
 independently of the server's own release cycle (see `buf.gen.yaml`).
 
-Mirrors the [Go client](../go)'s design: synchronous `grpc` (not `grpc.aio`), with a
+Mirrors the [Go client](../client-go)'s design: synchronous `grpc` (not `grpc.aio`), with a
 background daemon thread doing the blocking read loop for each of the restart-lock
 stream and the bundle-watch stream — the same one-goroutine-per-stream shape as the Go
 client, translated to Python's concurrency idioms (`threading.Event` instead of

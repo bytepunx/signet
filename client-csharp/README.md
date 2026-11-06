@@ -1,10 +1,10 @@
 # Signet.Client (C#)
 
 C# client for [signet](https://github.com/bytepunx/signet), generated from
-[bytepunx/signet-proto](https://github.com/bytepunx/signet-proto) and pinned independently of
+the mono-repo's [`proto/`](../proto) module and pinned independently of
 the server's own release cycle (see `buf.gen.yaml`).
 
-Mirrors the [Go client](../go)'s design: `SignetConnect.DialWorkloadAsync`/`DialAdmin` for
+Mirrors the [Go client](../client-go)'s design: `SignetConnect.DialWorkloadAsync`/`DialAdmin` for
 connection setup, and `Restart.WatchBundleAsync`/`AcquireLockAsync`/`WaitForRestartAsync` for
 coordinated rolling restarts — expressed idiomatically for .NET (`Task`-based async, specific
 exception types, `IAsyncDisposable`), not a mechanical transliteration of the Go syntax.
