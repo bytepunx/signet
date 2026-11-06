@@ -7,7 +7,7 @@ status: in-progress
 parent: E-0002
 owner: alex
 created: 2026-11-06T07:19:26Z
-updated: 2026-11-06T07:44:34Z
+updated: 2026-11-06T07:45:40Z
 transitions:
   - to: ready
     at: 2026-11-06T07:19:58Z
@@ -49,7 +49,7 @@ The `system-flow check` workflow is green on `main`. Today it fails every push w
 ## Acceptance criteria
 - [x] `.github/workflows/system-flow-check.yml` puts the installed `flai` on `PATH`
 - [x] `flai check --strict` exits 0 on a fresh clone with flai v1.83.0, the version `@latest` installs in CI
-- [ ] The `system-flow check` workflow is green on a pull request or on `main`
+- [x] The `system-flow check` workflow is green on a pull request or on `main`
 - [x] I-0009 and I-0010 are closed with `flai issue close` saying what fixed them
 
 ## Tasks
