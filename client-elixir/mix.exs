@@ -1,7 +1,9 @@
 defmodule SignetClient.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  # The release workflow sets SIGNET_CLIENT_VERSION from the client-elixir/vX.Y.Z tag;
+  # no commit bumps the version.
+  @version System.get_env("SIGNET_CLIENT_VERSION", "0.0.0-dev")
   @source_url "https://github.com/bytepunx/signet"
 
   def project do
@@ -15,7 +17,7 @@ defmodule SignetClient.MixProject do
       description:
         "Elixir client for signet: SPIFFE mTLS workload access and bearer-token admin access",
       package: package(),
-      docs: [main: "readme", extras: ["README.md"], source_ref: "elixir-v#{@version}"]
+      docs: [main: "readme", extras: ["README.md"], source_ref: "client-elixir/v#{@version}"]
     ]
   end
 
@@ -48,7 +50,7 @@ defmodule SignetClient.MixProject do
       name: "signet_client",
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => @source_url},
-      files: ~w(lib proto buf.gen.yaml buf.gen.spiffe.yaml mix.exs README.md CHANGELOG.md)
+      files: ~w(lib proto buf.gen.yaml buf.gen.spiffe.yaml mix.exs README.md)
     ]
   end
 end
