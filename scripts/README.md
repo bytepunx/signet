@@ -28,6 +28,7 @@ Purpose-named shell scripts for common tasks. The `Makefile` calls these; CI cal
 | `set-release-secrets.sh` | `check` (default) lists which release secrets of `bytepunx/signet` are set; `set` sets them from environment variables of the same name (operator) |
 | `protect-main.sh` | Dry run of the branch protection on `main` with the CI jobs as required checks; `--apply` sets it, `--show` prints it (operator) |
 | `archive-old-repos.sh` | Dry run of pointing the three old repositories here and archiving them; `--apply` does it (operator) |
-| `smoke.sh` | End-to-end smoke tests (`make smoke`) |
+| `build-echo-images.sh` | Builds the test-only echo image of one or more clients, `ghcr.io/bytepunx/signet-echo-<language>:<tag>`; `--tag`, `--push`; the smoke-images workflow and `smoke.sh` call it |
+| `smoke.sh` | Builds the echo images tagged `local` (`make smoke`), then runs the external signet-smoke-test harness when `SIGNET_SMOKE_TEST_DIR` names a checkout, or says it did not run |
 
 Docker and network access to the Buf Schema Registry and the package registries are the only prerequisites of the `test-*.sh` scripts. `make test-<component>` runs one of them, such as `make test-client-go`.
