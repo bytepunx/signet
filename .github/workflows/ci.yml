@@ -82,7 +82,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: scripts/test-server.sh
         env:
-          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
 
   proto:
     needs: changes
@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: scripts/test-client-go.sh
         env:
-          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
 
   client-python:
     needs: changes
@@ -112,7 +112,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: scripts/test-client-python.sh
         env:
-          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
 
   client-typescript:
     needs: changes
@@ -122,7 +122,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: scripts/test-client-typescript.sh
         env:
-          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
 
   client-rust:
     needs: changes
@@ -132,7 +132,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: scripts/test-client-rust.sh
         env:
-          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
 
   client-csharp:
     needs: changes
@@ -142,7 +142,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: scripts/test-client-csharp.sh
         env:
-          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
 
   client-elixir:
     needs: changes

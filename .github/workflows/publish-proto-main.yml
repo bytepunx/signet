@@ -31,4 +31,4 @@ jobs:
         working-directory: proto
         run: buf push
         env:
-          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}

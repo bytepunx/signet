@@ -58,7 +58,7 @@ repository `bytepunx/signet`, the environment left empty, and the exact workflow
 |----------|-----------|----------------|
 | GitHub Releases, ghcr.io | `GITHUB_TOKEN` | Nothing; the workflows request `contents: write` and `packages: write` |
 | Docker Hub | Secrets | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (an access token with write scope on `bytepunx/signet`) |
-| Buf Schema Registry | Secret | `BUF_TOKEN`, a token with write access to `buf.build/bytepunx/signet-proto` |
+| Buf Schema Registry | Secret | `BSR_AUTH_TOKEN`, a token with write access to `buf.build/bytepunx/signet-proto` |
 | PyPI | Trusted publisher | Register `bytepunx/signet`, workflow `release-client-python.yml`, on the `signet-client` project |
 | npm | Trusted publisher | Register `bytepunx/signet`, workflow `release-client-typescript.yml`, on `@bytepunx/signet-client` |
 | crates.io | Secret | `CARGO_REGISTRY_TOKEN` with publish scope for `signet-client` |
@@ -74,12 +74,12 @@ is registered again here. S-0008 drives this setup.
 Tick each item in S-0008's notes with the date when it is done. Check the secrets at any
 time with `scripts/set-release-secrets.sh check`; set them with
 `scripts/set-release-secrets.sh set`, which reads each value from the environment variable
-of the same name (for example `BUF_TOKEN=... DOCKERHUB_TOKEN=... scripts/set-release-secrets.sh set`)
+of the same name (for example `BSR_AUTH_TOKEN=... DOCKERHUB_TOKEN=... scripts/set-release-secrets.sh set`)
 and skips any that is empty. Values never go on the command line.
 
 | Done | Item | Created at | Scope | Names workflow |
 |------|------|------------|-------|----------------|
-| [ ] | Secret `BUF_TOKEN` | buf.build, user settings, tokens | write on `bytepunx/signet-proto` | `release-proto.yml`, `publish-proto-main.yml`, `ci.yml` |
+| [ ] | Secret `BSR_AUTH_TOKEN` | buf.build, user settings, tokens | write on `bytepunx/signet-proto` | `release-proto.yml`, `publish-proto-main.yml`, `ci.yml` |
 | [ ] | Secret `DOCKERHUB_USERNAME` | Docker Hub account name | none | `release-server.yml`, `publish-server-main.yml` |
 | [ ] | Secret `DOCKERHUB_TOKEN` | Docker Hub, account settings, security | write on `bytepunx/signet` | `release-server.yml`, `publish-server-main.yml` |
 | [ ] | Secret `CARGO_REGISTRY_TOKEN` | crates.io, account settings, API tokens | publish for `signet-client` | `release-client-rust.yml` |

@@ -58,8 +58,8 @@ case the publisher is registered against this repository and the workflow filena
 |-----------|----------|---------|-----------|----------|------------|
 | server | `release-server.yml` | `server/v*` | `signet-<os>-<arch>` CLI binaries and `sha256sums.txt` on the GitHub Release; `signetd` image tagged `X.Y.Z` and `latest`; Helm chart `signet` at version `X.Y.Z` | GitHub Releases; `ghcr.io/bytepunx/signetd` and `docker.io/bytepunx/signet`; `oci://ghcr.io/bytepunx/charts` | `GITHUB_TOKEN` (`packages: write`) for ghcr.io and the release; `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` for Docker Hub |
 | server | `publish-server-main.yml` | push to `main`, paths `server/**` | `signetd` image tagged `main` | `ghcr.io/bytepunx/signetd`, `docker.io/bytepunx/signet` | As above |
-| proto | `release-proto.yml` | `proto/v*` | BSR module labeled `vX.Y.Z`; GitHub Release | `buf.build/bytepunx/signet-proto`; GitHub Releases | `BUF_TOKEN`; `GITHUB_TOKEN` |
-| proto | `publish-proto-main.yml` | push to `main`, paths `proto/**` | BSR module at the commit | `buf.build/bytepunx/signet-proto` | `BUF_TOKEN` |
+| proto | `release-proto.yml` | `proto/v*` | BSR module labeled `vX.Y.Z`; GitHub Release | `buf.build/bytepunx/signet-proto`; GitHub Releases | `BSR_AUTH_TOKEN`; `GITHUB_TOKEN` |
+| proto | `publish-proto-main.yml` | push to `main`, paths `proto/**` | BSR module at the commit | `buf.build/bytepunx/signet-proto` | `BSR_AUTH_TOKEN` |
 | client-go | `release-client-go.yml` | `client-go/v*` | Go module `github.com/bytepunx/signet/client-go` at `client-go/vX.Y.Z`; GitHub Release | Go module proxy, from the tag itself | `GITHUB_TOKEN` for the release; the proxy needs none |
 | client-python | `release-client-python.yml` | `client-python/v*` | wheel and sdist of `signet-client` | PyPI | Trusted publisher (OIDC) registered for `bytepunx/signet`, workflow `release-client-python.yml` |
 | client-typescript | `release-client-typescript.yml` | `client-typescript/v*` | `@bytepunx/signet-client` package with provenance | npm | Trusted publisher (OIDC) registered for `bytepunx/signet`, workflow `release-client-typescript.yml` |
