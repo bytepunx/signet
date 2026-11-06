@@ -3,15 +3,36 @@ id: T-0031
 type: task
 nature: improvement
 title: "Python client: generate src/ stubs from ../proto/proto and fix the echo image build"
-status: backlog
+status: done
 parent: S-0020
 owner: alex
 created: 2026-10-27T22:25:35Z
-updated: 2026-10-27T22:25:35Z
-transitions: []
+updated: 2026-11-06T08:41:11Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:38:26Z
+    by: agent-S-0020
+  - to: in-progress
+    at: 2026-11-06T08:38:26Z
+    by: agent-S-0020
+  - to: done
+    at: 2026-11-06T08:41:11Z
+    by: agent-S-0020
 stream: S-0020
 tags: [client-python, proto]
 touches: [client-python/buf.gen.yaml, client-python/README.md, client-python/examples/echo/Dockerfile, client-python/examples/echo/Dockerfile.dockerignore]
+usage:
+  source: log
+  seconds: 165
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 4
+      output: 847
+      cache_read: 153090
+      cache_write: 5931
+      cost: 0.0475
 ---
 # T-0031 Python client: generate src/ stubs from ../proto/proto and fix the echo image build
 

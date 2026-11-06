@@ -9,7 +9,7 @@ date: 2026-11-06
 status: active
 absorbed_by: ""
 asked_again: []
-cited: []
+cited: [S-0011]
 ---
 
 # D-0027 T-0065: may I push story/S-0014 and the test tag client-rust/v0.0.0-test to origin: no

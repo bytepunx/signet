@@ -3,26 +3,46 @@ id: S-0020
 type: story
 nature: improvement
 title: Generate in-repo stubs from proto/ by directory instead of the BSR pin
-status: ready
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:48:36Z
-updated: 2026-11-06T08:37:57Z
+updated: 2026-11-06T08:45:32Z
 transitions:
   - to: ready
     at: 2026-10-27T23:00:58Z
     by: alex
+  - to: in-progress
+    at: 2026-11-06T08:38:06Z
+    by: agent-S-0020
+  - to: review
+    at: 2026-11-06T08:43:27Z
+    by: agent-S-0020
+  - to: done
+    at: 2026-11-06T08:45:32Z
+    by: alex
 tags: [server, proto]
 topics: [proto]
-touches: [server/buf.gen.yaml, client-go/buf.gen.yaml, client-go/README.md, client-python/buf.gen.yaml, client-python/README.md, client-python/examples/echo/Dockerfile, client-python/examples/echo/Dockerfile.dockerignore, client-typescript/buf.gen.yaml, client-typescript/README.md, client-rust/buf.gen.yaml, client-rust/README.md, client-rust/examples/echo/Dockerfile, client-csharp/buf.gen.yaml, client-csharp/README.md, client-csharp/examples/echo/Dockerfile, client-csharp/examples/echo/Dockerfile.dockerignore, client-elixir/buf.gen.yaml, client-elixir/README.md, scripts/test-client-elixir.sh, design/tech/buf.md]
+touches: [server/buf.gen.yaml, client-go/buf.gen.yaml, client-go/README.md, client-python/buf.gen.yaml, client-python/README.md, client-python/examples/echo/Dockerfile, client-python/examples/echo/Dockerfile.dockerignore, client-typescript/buf.gen.yaml, client-typescript/README.md, client-rust/buf.gen.yaml, client-rust/README.md, client-rust/examples/echo/Dockerfile, client-csharp/buf.gen.yaml, client-csharp/README.md, client-csharp/examples/echo/Dockerfile, client-csharp/examples/echo/Dockerfile.dockerignore, client-elixir/buf.gen.yaml, client-elixir/README.md, scripts/test-client-elixir.sh, design/tech/buf.md, client-elixir/Dockerfile]
 after: [S-0005, S-0007, S-0011]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
 usage:
-  source: sum
-  seconds: 0
-  models: []
+  source: log
+  seconds: 329
+  priced_by: harness
+  turns:
+    - day: 2026-11-06
+      ceremony: 1
+      work: 27
+  models:
+    - model: claude-sonnet-5-5
+      input: 60
+      output: 12293
+      cache_read: 2222520
+      cache_write: 86109
+      cost: 0.6897
   strategic:
     - kind: planner
       seconds: 179
@@ -40,6 +60,16 @@ usage:
           cache_read: 7958441
           cache_write: 404381
           cost: 4.004
+    - kind: orchestrator
+      seconds: 15
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 8
+          output: 80
+          cache_read: 176537
+          cache_write: 42005
+          cost: 0.1146
 cost_of_delay:
   inputs:
     time_lost_per_cycle: 30m
@@ -59,9 +89,9 @@ forecast:
 Every in-repo consumer of the schema (the server and the six clients) generates its stubs from `../proto/proto` as a directory input in its `buf.gen.yaml`, so a schema change and the code that uses it land in one pull request and the `proto-bump.yml` automation of the old repository is not needed. The BSR pin stays only in documentation for external consumers.
 
 ## Acceptance criteria
-- [ ] Each `buf.gen.yaml` names `directory: ../proto/proto` as its input and `buf generate` produces stubs identical to those from the `v0.4.0` BSR pin at the same schema
-- [ ] `make test` passes for every component
-- [ ] Each component's README no longer tells readers to bump a BSR pin
+- [x] Each `buf.gen.yaml` names `directory: ../proto/proto` as its input and `buf generate` produces stubs identical to those from the `v0.4.0` BSR pin at the same schema
+- [x] `make test` passes for every component
+- [x] Each component's README no longer tells readers to bump a BSR pin
 
 ## Tasks
 - T-0028 Server: generate gen/ from ../proto/proto

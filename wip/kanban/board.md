@@ -7,7 +7,6 @@ wip_limits:
   in-progress: 4
   review: 3
 order:
-  - S-0020
   - S-0019
 ---
 

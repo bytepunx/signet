@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 13.2000
-accrued_seconds: 156735
-tasks_completed: 73
-last_run: 2026-11-06T08:37:26Z
+accrued_cost: 13.6208
+accrued_seconds: 156779
+tasks_completed: 77
+last_run: 2026-11-06T08:44:26Z
 ---
 
 # Orchestrator activity
@@ -523,6 +523,34 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Seconds: 4
 - Cost: 0.0415 USD, estimated
 
+### 2026-11-06T08:38:44Z
+
+- Summary: release-due S-0011: no release published. system-flow.yaml has no orchestration block, so orchestration.permissions.publish is off. The pack showed policy judgement (default), not met, 7 accepted unreleased stories (S-0011 to S-0017), value 0 USD/week, all unvalued. No evaluate or publish beyond the pack, no formula run.
+- Items: S-0011
+- Seconds: 15
+- Cost: 0.1505 USD, estimated
+
+### 2026-11-06T08:38:47Z
+
+- Summary: I did not publish a release. The `publish` permission is off, because `system-flow.yaml` has no `orchestration` block, so no orchestration permission is on. The release policy is `judgement`, the default.
+- Items: none
+- Seconds: 3
+- Cost: 0.0482 USD, estimated
+
+### 2026-11-06T08:44:15Z
+
+- Summary: S-0020 in review (close-out passed at head 9fe2aa9f93cc): not accepted, because flai guard reports orchestration.permissions.accept_reviews is off. Left for the operator; nothing else changed.
+- Items: S-0020
+- Seconds: 15
+- Cost: 0.1146 USD, estimated
+
+### 2026-11-06T08:44:26Z
+
+- Summary: S-0020 is still in review, because `orchestration.permissions.accept_reviews` is off. The guard refused my `flai accept` dry-run for that reason. I opened no thread and didn't run the verifier sub-agent. The decision is logged.
+- Items: none
+- Seconds: 11
+- Cost: 0.1075 USD, estimated
+
 ## Refusals
 
 ### 2026-10-27T22:25:32Z
@@ -593,4 +621,14 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 ### 2026-11-06T08:37:18Z
 
 - Call: `flai accept S-0011 --by orchestrator --verified 9e69a2d9ffc63cc3eb5ac37544855524ebbf261e --dry-run 2>&1`
+- Needs: orchestration.permissions.accept_reviews
+
+### 2026-11-06T08:38:34Z
+
+- Call: `git tag`
+- Needs: none
+
+### 2026-11-06T08:44:12Z
+
+- Call: `flai accept S-0020 --by orchestrator --verified 9fe2aa9f93cca7506f71b156c480be58c5c1a2e7 --dry-run`
 - Needs: orchestration.permissions.accept_reviews

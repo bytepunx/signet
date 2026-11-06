@@ -1,9 +1,9 @@
 ---
 kind: curator
-accrued_cost: 4.4286
-accrued_seconds: 521
-tasks_completed: 20
-last_run: 2026-11-06T08:23:18Z
+accrued_cost: 4.6474
+accrued_seconds: 550
+tasks_completed: 21
+last_run: 2026-11-06T08:38:29Z
 ---
 
 # Curator activity
@@ -171,3 +171,11 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Items: none
 - Seconds: 24
 - Cost: 0.1756 USD, estimated
+
+### 2026-11-06T08:38:29Z
+
+- Summary: Wrote D-0030 (S-0011's decision that old `signet-clients#NN` issue references stay as history). I merged, absorbed and compacted nothing.
+- Trigger: accepted S-0011
+- Items: D-0027, D-0030
+- Seconds: 29
+- Cost: 0.2188 USD, estimated

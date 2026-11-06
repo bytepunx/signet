@@ -3,16 +3,37 @@ id: T-0038
 type: task
 nature: improvement
 title: "Tech record: in-repo consumers generate from the directory, and the final cross-component check"
-status: backlog
+status: done
 parent: S-0020
 owner: alex
 created: 2026-10-27T22:25:54Z
-updated: 2026-10-27T22:25:54Z
-transitions: []
+updated: 2026-11-06T08:41:20Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:41:18Z
+    by: agent-S-0020
+  - to: in-progress
+    at: 2026-11-06T08:41:18Z
+    by: agent-S-0020
+  - to: done
+    at: 2026-11-06T08:41:20Z
+    by: agent-S-0020
 stream: S-0020
 tags: [proto, server]
 touches: [design/tech/buf.md]
 after: [T-0028, T-0029, T-0031, T-0032, T-0034, T-0035, T-0036]
+usage:
+  source: log
+  seconds: 2
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 3
+      output: 524
+      cache_read: 94782
+      cache_write: 3672
+      cost: 0.0294
 ---
 # T-0038 Tech record: in-repo consumers generate from the directory, and the final cross-component check
 

@@ -3,15 +3,36 @@ id: T-0034
 type: task
 nature: improvement
 title: "Rust client: generate src/gen from ../proto/proto and fix the echo image build"
-status: backlog
+status: done
 parent: S-0020
 owner: alex
 created: 2026-10-27T22:25:40Z
-updated: 2026-10-27T22:25:40Z
-transitions: []
+updated: 2026-11-06T08:41:12Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:38:27Z
+    by: agent-S-0020
+  - to: in-progress
+    at: 2026-11-06T08:38:27Z
+    by: agent-S-0020
+  - to: done
+    at: 2026-11-06T08:41:12Z
+    by: agent-S-0020
 stream: S-0020
 tags: [client-rust, proto]
 touches: [client-rust/buf.gen.yaml, client-rust/README.md, client-rust/examples/echo/Dockerfile]
+usage:
+  source: log
+  seconds: 165
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 5
+      output: 967
+      cache_read: 174860
+      cache_write: 6775
+      cost: 0.0543
 ---
 # T-0034 Rust client: generate src/gen from ../proto/proto and fix the echo image build
 

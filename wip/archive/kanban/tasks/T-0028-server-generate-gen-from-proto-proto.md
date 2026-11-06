@@ -3,15 +3,36 @@ id: T-0028
 type: task
 nature: improvement
 title: "Server: generate gen/ from ../proto/proto"
-status: backlog
+status: done
 parent: S-0020
 owner: alex
 created: 2026-10-27T22:25:29Z
-updated: 2026-10-27T22:25:29Z
-transitions: []
+updated: 2026-11-06T08:41:08Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:38:26Z
+    by: agent-S-0020
+  - to: in-progress
+    at: 2026-11-06T08:38:26Z
+    by: agent-S-0020
+  - to: done
+    at: 2026-11-06T08:41:08Z
+    by: agent-S-0020
 stream: S-0020
 tags: [server, proto]
-touches: [server/buf.gen.yaml]
+touches: [server/buf.gen.yaml, client-elixir/Dockerfile]
+usage:
+  source: log
+  seconds: 162
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 4
+      output: 847
+      cache_read: 153090
+      cache_write: 5931
+      cost: 0.0475
 ---
 # T-0028 Server: generate gen/ from ../proto/proto
 
