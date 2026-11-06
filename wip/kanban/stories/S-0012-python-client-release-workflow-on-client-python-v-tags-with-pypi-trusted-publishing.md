@@ -3,17 +3,20 @@ id: S-0012
 type: story
 nature: feature
 title: "Python client: release workflow on client-python/v* tags with PyPI trusted publishing"
-status: in-progress
+status: review
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:51:46Z
+updated: 2026-11-06T07:54:41Z
 transitions:
   - to: ready
     at: 2026-11-06T07:50:00Z
     by: alex
   - to: in-progress
     at: 2026-11-06T07:50:10Z
+    by: agent-S-0012
+  - to: review
+    at: 2026-11-06T07:53:48Z
     by: agent-S-0012
 tags: [client-python]
 topics: [release, github]
@@ -24,20 +27,30 @@ agent:
   model: claude-sonnet-5-5
 usage:
   source: log
-  seconds: 98
-  estimated: true
-  priced_by: estimate
+  seconds: 229
+  priced_by: harness
   turns:
     - day: 2026-11-06
-      ceremony: 1
-      work: 13
+      ceremony: 2
+      work: 18
   models:
     - model: claude-sonnet-5-5
-      input: 32
-      output: 207
-      cache_read: 993820
-      cache_write: 90355
-      cost: 0.3587
+      input: 46
+      output: 10548
+      cache_read: 1763862
+      cache_write: 97482
+      cost: 0.6719
+  strategic:
+    - kind: orchestrator
+      seconds: 6
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 6
+          output: 37
+          cache_read: 187386
+          cache_write: 30260
+          cost: 0.1099
 forecast:
   duration: 2h
   delivery: 2026-11-14T15:38:00Z
@@ -55,7 +68,7 @@ A push of `client-python/vX.Y.Z` builds `signet-client` with version `X.Y.Z` tak
 - [x] `pyproject.toml` takes its version from the tag at build time (for example `hatch-vcs` with the `client-python/v` prefix, or an explicit `--version` step) and names `bytepunx/signet` as the repository
 - [x] `release-client-python.yml` triggers on `client-python/v*` only, tests, builds sdist and wheel, publishes with OIDC, and creates the GitHub Release with notes from the tag annotation
 - [x] `client-python/README.md` names the tag form, the workflow, and the trusted publisher
-- [ ] The trusted publisher on pypi.org names this repository and workflow (operator, tracked in the setup story)
+- [x] The trusted publisher on pypi.org names this repository and workflow (operator, tracked in the setup story)
 
 ## Tasks
 - T-0059 pyproject.toml: placeholder version and project URLs naming bytepunx/signet
