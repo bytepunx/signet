@@ -17,9 +17,21 @@ mkdir -p "${cache}"
 echo "test-client-csharp.sh: generating stubs"
 scripts/buf-generate.sh client-csharp
 
+# dotnet's first-run setup crashes (NuGet-Migrations IOException) when the uid
+# has no /etc/passwd entry, as on CI (uid 1001). Name the caller in a passwd
+# and group file mounted read-only over the image's, so --user can stay.
+uid="$(id -u)"
+gid="$(id -g)"
+ids=".cache/dotnet-ids"
+mkdir -p "${ids}"
+printf 'root:x:0:0:root:/root:/bin/sh\ncaller:x:%s:%s::/cache:/bin/sh\n' "${uid}" "${gid}" > "${ids}/passwd"
+printf 'root:x:0:\ncaller:x:%s:\n' "${gid}" > "${ids}/group"
+
 run() {
   docker run --rm \
-    --user "$(id -u):$(id -g)" \
+    --user "${uid}:${gid}" \
+    -v "$(pwd)/${ids}/passwd:/etc/passwd:ro" \
+    -v "$(pwd)/${ids}/group:/etc/group:ro" \
     -e HOME=/cache \
     -e DOTNET_CLI_HOME=/cache \
     -e NUGET_PACKAGES=/cache/nuget \
