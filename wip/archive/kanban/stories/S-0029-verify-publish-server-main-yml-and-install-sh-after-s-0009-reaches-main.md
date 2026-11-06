@@ -3,11 +3,11 @@ id: S-0029
 type: story
 nature: research
 title: Verify publish-server-main.yml and install.sh after S-0009 reaches main
-status: in-progress
+status: done
 parent: E-0002
 owner: alex
 created: 2026-11-05T21:28:47Z
-updated: 2026-11-06T07:43:48Z
+updated: 2026-11-06T07:49:36Z
 transitions:
   - to: ready
     at: 2026-11-05T21:29:01Z
@@ -15,6 +15,12 @@ transitions:
   - to: in-progress
     at: 2026-11-05T22:45:50Z
     by: agent-S-0029
+  - to: review
+    at: 2026-11-06T07:47:49Z
+    by: agent-S-0029
+  - to: done
+    at: 2026-11-06T07:49:36Z
+    by: alex
 blocked:
   - from: 2026-11-05T22:46:15Z
     until: 2026-11-06T07:32:23Z
@@ -24,7 +30,7 @@ blocked:
     reason: awaiting the operator on TH-0022
 tags: [server]
 topics: [release, github]
-touches: [".github/workflows/publish-server-main.yml", install.sh, ".github/workflows/release-server.yml", design/system/release.md, docs/operators/release.md, design/issues/I-0011-flai-release-pending-tagged-server-v0-11-1-on-a-commit-that-is-on-no-branch-so.md, design/issues/summary.md, design/issues/I-0007-the-bsr-rate-limit-resource-exhausted-too-many-requests-fails-the-buf-generate.md]
+touches: [".github/workflows/publish-server-main.yml", install.sh, ".github/workflows/release-server.yml", design/system/release.md, docs/operators/release.md, design/issues/I-0011-flai-release-pending-tagged-server-v0-11-1-on-a-commit-that-is-on-no-branch-so.md, design/issues/summary.md, design/issues/I-0007-the-bsr-rate-limit-resource-exhausted-too-many-requests-fails-the-buf-generate.md, design/issues/I-0009-flai-check-finds-roles-definition-outside-the-story-at-close-out.md, design/issues/I-0010-flai-check-finds-item-blocked-closed-outside-the-story-at-close-out.md]
 after: [S-0009]
 agent:
   harness: claude-code
@@ -33,22 +39,22 @@ agent:
     effort: high
 usage:
   source: log
-  seconds: 454
+  seconds: 684
   priced_by: harness
   turns:
     - day: 2026-11-05
       work: 15
     - day: 2026-11-06
-      ceremony: 2
+      ceremony: 4
       hand_edits: 1
-      work: 50
+      work: 78
   models:
     - model: claude-sonnet-5-5
-      input: 154
-      output: 29031
-      cache_read: 8347167
-      cache_write: 249568
-      cost: 2.1236
+      input: 224
+      output: 34409
+      cache_read: 14344455
+      cache_write: 276926
+      cost: 2.8867
   strategic:
     - kind: planner
       seconds: 93
@@ -61,15 +67,15 @@ usage:
           cache_write: 75407
           cost: 0.4905
     - kind: orchestrator
-      seconds: 86
+      seconds: 99
       estimated: true
       models:
         - model: claude-sonnet-5-5
-          input: 50
-          output: 332
-          cache_read: 1247011
-          cache_write: 274300
-          cost: 0.6965
+          input: 58
+          output: 392
+          cache_read: 1479320
+          cache_write: 290591
+          cost: 0.8204
 forecast:
   duration: 1h
   delivery: 2026-11-06T10:00:00Z

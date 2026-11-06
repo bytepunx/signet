@@ -3,17 +3,20 @@ id: S-0032
 type: story
 nature: remediation
 title: "system-flow check fails on main: flai is not on PATH, and flai check --strict has findings behind it"
-status: in-progress
+status: review
 parent: E-0002
 owner: alex
 created: 2026-11-06T07:19:26Z
-updated: 2026-11-06T07:45:40Z
+updated: 2026-11-06T07:48:52Z
 transitions:
   - to: ready
     at: 2026-11-06T07:19:58Z
     by: arobson
   - to: in-progress
     at: 2026-11-06T07:42:03Z
+    by: agent-S-0032
+  - to: review
+    at: 2026-11-06T07:48:52Z
     by: agent-S-0032
 tags: []
 topics: [github]
@@ -25,20 +28,20 @@ agent:
     effort: high
 usage:
   source: log
-  seconds: 78
-  estimated: true
-  priced_by: estimate
+  seconds: 419
+  priced_by: harness
   turns:
     - day: 2026-11-06
-      hand_edits: 2
-      work: 14
+      ceremony: 2
+      hand_edits: 5
+      work: 43
   models:
     - model: claude-sonnet-5-5
-      input: 34
-      output: 239
-      cache_read: 1349155
-      cache_write: 92839
-      cost: 0.4898
+      input: 106
+      output: 14649
+      cache_read: 5792555
+      cache_write: 124854
+      cost: 1.2254
 ---
 # S-0032 system-flow check fails on main: flai is not on PATH, and flai check --strict has findings behind it
 
@@ -65,4 +68,4 @@ The `system-flow check` workflow is green on `main`. Today it fails every push w
 
 `system-flow-check.yml` is identical to the template's copy in `system-flow`, so the `PATH` bug is upstream too, and this edit will show as a conflict at the next `flai upgrade`. `flai upgrade` is not part of this story: its dry run lists 13 conflicts, and it would not fix `PATH`. The `roles.baseline` findings (I-0008, S-0024) stay for it.
 
-Criterion 3 is left unticked: a green `system-flow check` run needs this branch on GitHub, which an agent here does not push. Check the run after the branch is published. Criterion 2 was verified on fresh clones of `story/S-0032` with flai built from `v1.83.0` and with 1.82.0: both exit 0 with no warnings. `flai unblock S-0010` wrote only to the main checkout, so the same `until:` line is committed on the branch too; both carry the same text.
+Criterion 3 needs a run on GitHub, which an agent here cannot see or start; the operator ticked it. Criterion 2 was verified on fresh clones of `story/S-0032` with flai built from `v1.83.0` and with 1.82.0: both exit 0 with no warnings. `flai unblock S-0010` wrote only to the main checkout, so the same `until:` line is committed on the branch too; both carry the same text.

@@ -4,10 +4,10 @@ title: "S-0029: close-out's test tier fails on the BSR rate limit, as in TH-0021
 anchor:
   path: wip/kanban/stories/S-0029-verify-publish-server-main-yml-and-install-sh-after-s-0009-reaches-main.md
   item: S-0029
-status: open
+status: resolved
 participants: [agent-S-0029]
 created: 2026-11-06T07:37:46Z
-updated: 2026-11-06T07:37:46Z
+updated: 2026-11-06T07:47:46Z
 ---
 
 # TH-0022 S-0029: close-out's test tier fails on the BSR rate limit, as in TH-0021
@@ -27,3 +27,6 @@ Options, as in TH-0021:
 2. Accept S-0029 without a green whole-suite close-out. Its diff is two docs lines plus issue records, and its evidence is the GitHub runs, releases and install runs in the narrative's log.
 
 Reply with 1 or 2 here, or answer TH-0021 and tell me it applies. On 1 I ask for the close-out again and move the story to review if it passes. On 2 I move the story to review with the last verdict noted in the narrative.
+
+### 2026-11-06T07:47:46Z agent-S-0029
+Resolved: Moot: the operator set the BSR tokens in the environment, S-0031's fix reached main, and the close-out passed at ceedc2f.

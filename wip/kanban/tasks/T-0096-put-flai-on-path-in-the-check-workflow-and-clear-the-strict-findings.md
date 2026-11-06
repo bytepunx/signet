@@ -25,14 +25,14 @@ usage:
   source: log
   seconds: 6
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
       input: 2
-      output: 43
-      cache_read: 106872
-      cache_write: 642
-      cost: 0.0365
+      output: 266
+      cache_read: 105246
+      cache_write: 2268
+      cost: 0.0223
 ---
 # T-0096 Put flai on PATH in the check workflow and clear the strict findings
 

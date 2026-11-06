@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 9.4897
-accrued_seconds: 156319
-tasks_completed: 41
-last_run: 2026-11-06T07:42:53Z
+accrued_cost: 9.6678
+accrued_seconds: 156337
+tasks_completed: 43
+last_run: 2026-11-06T07:48:40Z
 ---
 
 # Orchestrator activity
@@ -299,6 +299,20 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Seconds: 4
 - Cost: 0.0526 USD, estimated
 
+### 2026-11-06T07:48:35Z
+
+- Summary: S-0029 in review at ceedc2f (last verify passed, matches branch head); not accepted: flai guard refused flai accept because orchestration.permissions.accept_reviews is off. Left for the operator.
+- Items: S-0029
+- Seconds: 13
+- Cost: 0.1239 USD, estimated
+
+### 2026-11-06T07:48:40Z
+
+- Summary: I did not accept S-0029. `flai guard` refused `flai accept` because `orchestration.permissions.accept_reviews` is off, so I couldn't read its dry-run blockers either.
+- Items: none
+- Seconds: 5
+- Cost: 0.0542 USD, estimated
+
 ## Refusals
 
 ### 2026-10-27T22:25:32Z
@@ -319,4 +333,9 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 ### 2026-11-06T07:42:45Z
 
 - Call: `flai accept S-0031 --by orchestrator --verified 9c2c23a82e9597f8e958fc0fa8070bedecd4e48e --dry-run 2>&1`
+- Needs: orchestration.permissions.accept_reviews
+
+### 2026-11-06T07:48:33Z
+
+- Call: `flai accept S-0029 --by orchestrator --verified ceedc2f93ee4c7b11f175a45331d03558097bdff --dry-run 2>&1`
 - Needs: orchestration.permissions.accept_reviews

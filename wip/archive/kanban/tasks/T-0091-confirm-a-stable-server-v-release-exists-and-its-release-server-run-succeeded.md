@@ -29,10 +29,10 @@ usage:
   models:
     - model: claude-sonnet-5-5
       input: 2
-      output: 408
-      cache_read: 117286
-      cache_write: 3507
-      cost: 0.0298
+      output: 288
+      cache_read: 120123
+      cache_write: 2319
+      cost: 0.0242
 ---
 # T-0091 Confirm a stable server/v* release exists and its Release server run succeeded
 

@@ -28,11 +28,11 @@ usage:
   priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 17
-      output: 3129
-      cache_read: 899758
-      cache_write: 26901
-      cost: 0.2289
+      input: 14
+      output: 2211
+      cache_read: 921521
+      cache_write: 17790
+      cost: 0.1854
 ---
 # T-0092 Verify publish-server-main.yml publishes only when server/ changed
 

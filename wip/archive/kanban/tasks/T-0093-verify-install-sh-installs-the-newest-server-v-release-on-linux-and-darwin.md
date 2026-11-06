@@ -29,11 +29,11 @@ usage:
   priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 10
-      output: 1909
-      cache_read: 548934
-      cache_write: 16412
-      cost: 0.1397
+      input: 9
+      output: 1349
+      cache_read: 562211
+      cache_write: 10854
+      cost: 0.1131
 ---
 # T-0093 Verify install.sh installs the newest server/v* release on linux and darwin
 
