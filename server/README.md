@@ -149,8 +149,8 @@ The gRPC/protobuf schema (`SecretsService`, `AdminService`, `GitOpsService`) liv
 mono-repo's [`proto/`](../proto/README.md) module, not in `server/`. It is also published to
 the Buf Schema Registry as `buf.build/bytepunx/signet-proto` for external consumers. The
 stubs in `server/gen/` are generated from it with `make proto` (see `buf.gen.yaml`). The
-[admin UI](../admin/README.md) and the [client libraries](../docs/contributors/index.md) live in
-sibling folders of the same repository.
+[client libraries](../docs/contributors/index.md) live in sibling folders of the same
+repository.
 
 ## Project status
 

@@ -6,7 +6,7 @@ status: active
 
 # signet for contributors
 
-signet is one mono-repo of nine components. Each is a folder with its own build, and each has a `make` target that runs its tests the same way CI does. Docker, plus network access to the Buf Schema Registry and the package registries, are the only prerequisites; every test script runs its toolchain in a container.
+signet is one mono-repo of eight components. Each is a folder with its own build, and each has a `make` target that runs its tests the same way CI does. Docker, plus network access to the Buf Schema Registry and the package registries, are the only prerequisites; every test script runs its toolchain in a container.
 
 Run `make test` for every component, or `make test-<component>` for one. [`scripts/README.md`](../../scripts/README.md) lists every script.
 
@@ -16,7 +16,6 @@ Run `make test` for every component, or `make test-<component>` for one. [`scrip
 |-----------|-----------|----------------|------|
 | `server/` | `signetd` and the `signet` CLI, in Go | `make test-server`: `go test -race`, `golangci-lint`, build, stub drift, Helm chart checks. From `server/`, `make build`, `make test`, `make lint` | [README](../../server/README.md) |
 | `proto/` | The gRPC schema and buf configuration, no generated code | `make test-proto`: `buf lint`, and `buf breaking` against the last `proto/v*` tag | [README](../../proto/README.md) |
-| `admin/` | Read-only SvelteKit admin UI, not yet implemented | No build or tests yet | [README](../../admin/README.md) |
 | `client-go/` | Go client | `make test-client-go`: stub drift, `go vet`, `go test -race` | [README](../../client-go/README.md) |
 | `client-python/` | Python client | `make test-client-python`: stub generation, `pytest` | [README](../../client-python/README.md) |
 | `client-typescript/` | TypeScript client for Node | `make test-client-typescript`: stub drift, `npm ci`, build, tests | [README](../../client-typescript/README.md) |
