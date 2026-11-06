@@ -3,11 +3,11 @@ id: S-0031
 type: story
 nature: remediation
 title: scripts/test-client-csharp.sh crashes in dotnet when the caller's uid has no passwd entry in the SDK image
-status: in-progress
+status: review
 parent: E-0002
 owner: alex
 created: 2026-11-06T07:19:26Z
-updated: 2026-11-06T07:41:47Z
+updated: 2026-11-06T07:44:57Z
 transitions:
   - to: ready
     at: 2026-11-06T07:19:30Z
@@ -15,6 +15,9 @@ transitions:
   - to: in-progress
     at: 2026-11-06T07:19:33Z
     by: agent
+  - to: review
+    at: 2026-11-06T07:41:54Z
+    by: agent-S-0031
 blocked:
   - from: 2026-11-06T07:35:32Z
     until: 2026-11-06T07:36:38Z
@@ -35,32 +38,32 @@ agent:
     effort: high
 usage:
   source: log
-  seconds: 981
+  seconds: 1123
   priced_by: harness
   empty_wakes: 1
   turns:
     - day: 2026-11-06
-      ceremony: 2
+      ceremony: 4
       empty_wakes: 1
-      work: 58
+      work: 68
   models:
     - model: claude-sonnet-5-5
-      input: 140
-      output: 15350
-      cache_read: 5483647
-      cache_write: 113075
-      cost: 1.1544
+      input: 170
+      output: 18572
+      cache_read: 7176492
+      cache_write: 122461
+      cost: 1.3936
   strategic:
     - kind: orchestrator
-      seconds: 20
+      seconds: 37
       estimated: true
       models:
         - model: claude-sonnet-5-5
-          input: 10
-          output: 70
-          cache_read: 223058
-          cache_write: 31571
-          cost: 0.1241
+          input: 20
+          output: 140
+          cache_read: 504893
+          cache_write: 87171
+          cost: 0.2902
 ---
 # S-0031 scripts/test-client-csharp.sh crashes in dotnet when the caller's uid has no passwd entry in the SDK image
 
@@ -70,7 +73,7 @@ usage:
 
 ## Acceptance criteria
 - [x] `scripts/test-client-csharp.sh` passes with `.cache/dotnet` removed first, as a uid with no entry in the image's `/etc/passwd`
-- [ ] The `client-csharp` job in `ci.yml` is green on a run that exercises it
+- [x] The `client-csharp` job in `ci.yml` is green on a run that exercises it
 - [x] `bin/`, `obj/`, and the cache stay owned by the caller, as the script's header says
 
 ## Tasks
