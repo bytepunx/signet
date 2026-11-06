@@ -1,8 +1,7 @@
 # signet (Go client)
 
 Go client library for [signet](https://github.com/bytepunx/signet), generated from
-the `signet-proto` BSR module published from the mono-repo's [`proto/`](../proto) and pinned
-independently of the server's own release cycle (see `buf.gen.yaml`).
+the schema in the mono-repo's [`proto/`](../proto), which `buf generate` reads as a directory (see `buf.gen.yaml`).
 
 ```text
 go get github.com/bytepunx/signet/client-go@vX.Y.Z
@@ -147,5 +146,5 @@ both of the above — it is **test-only** and deliberately prints secrets to std
 buf generate
 ```
 
-Pulls `signet/v1` and `admin/v1` from `buf.build/bytepunx/signet-proto` and regenerates
-`gen/`. Edit the module reference in `buf.gen.yaml` to pin a different schema version.
+Reads `signet/v1` and `admin/v1` from `../proto/proto` and regenerates `gen/`. A schema change
+and the code that uses it go in one pull request.

@@ -30,14 +30,7 @@ plugins:
     out: gen
     opt:
       - paths=source_relative
-# Pinned independently of signet's own buf.gen.yaml — this client can track a
-# different signet-proto version than the server — to a tagged signet-proto
-# release (bytepunx/signet-clients#64, bumped to v0.4.0 by #67's automation
-# for GitOpsService.PutServiceConfig). An
-# unpinned module reference floats on signet-proto's latest commit, so CI's
-# "gen/ must match a fresh buf generate" check could break for reasons
-# entirely unrelated to any change in this repo. Bump deliberately when a
-# newer signet-proto release is ready to adopt, and commit the regenerated
-# gen/ in the same change.
+# The schema is the one in this repository, so a schema change and the code
+# that uses it land in one pull request; there is no version to bump.
 inputs:
-  - module: buf.build/bytepunx/signet-proto:v0.4.0
+  - directory: ../proto/proto
