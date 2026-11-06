@@ -7,7 +7,7 @@ status: in-progress
 parent: E-0002
 owner: alex
 created: 2026-11-06T07:19:26Z
-updated: 2026-11-06T07:30:28Z
+updated: 2026-11-06T07:41:47Z
 transitions:
   - to: ready
     at: 2026-11-06T07:19:30Z
@@ -15,9 +15,19 @@ transitions:
   - to: in-progress
     at: 2026-11-06T07:19:33Z
     by: agent
+blocked:
+  - from: 2026-11-06T07:35:32Z
+    until: 2026-11-06T07:36:38Z
+    reason: awaiting the operator on TH-0021
+  - from: 2026-11-06T07:37:00Z
+    until: 2026-11-06T07:37:41Z
+    reason: awaiting the operator on TH-0021
+  - from: 2026-11-06T07:37:50Z
+    until: 2026-11-06T07:39:34Z
+    reason: awaiting the operator on TH-0021
 tags: [client-csharp]
 topics: [github]
-touches: [scripts/test-client-csharp.sh, design/issues/I-0007-the-bsr-rate-limit-resource-exhausted-too-many-requests-fails-the-buf-generate.md, design/issues/summary.md]
+touches: [scripts/test-client-csharp.sh, design/issues/I-0007-the-bsr-rate-limit-resource-exhausted-too-many-requests-fails-the-buf-generate.md, design/issues/summary.md, design/issues/I-0008-flai-check-finds-roles-baseline-outside-the-story-at-close-out.md, design/issues/I-0009-flai-check-finds-roles-definition-outside-the-story-at-close-out.md, design/issues/I-0010-flai-check-finds-item-blocked-closed-outside-the-story-at-close-out.md]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
@@ -25,20 +35,32 @@ agent:
     effort: high
 usage:
   source: log
-  seconds: 60
-  estimated: true
-  priced_by: estimate
+  seconds: 981
+  priced_by: harness
+  empty_wakes: 1
   turns:
     - day: 2026-11-06
-      ceremony: 1
-      work: 12
+      ceremony: 2
+      empty_wakes: 1
+      work: 58
   models:
     - model: claude-sonnet-5-5
-      input: 30
-      output: 173
-      cache_read: 665849
-      cache_write: 51486
-      cost: 0.2561
+      input: 140
+      output: 15350
+      cache_read: 5483647
+      cache_write: 113075
+      cost: 1.1544
+  strategic:
+    - kind: orchestrator
+      seconds: 20
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 10
+          output: 70
+          cache_read: 223058
+          cache_write: 31571
+          cost: 0.1241
 ---
 # S-0031 scripts/test-client-csharp.sh crashes in dotnet when the caller's uid has no passwd entry in the SDK image
 
@@ -71,3 +93,9 @@ Reproduced in `mcr.microsoft.com/dotnet/sdk:8.0` (SDK 8.0.427, digest `sha256:34
 | uid 1001, with a passwd file naming uid 1001 mounted on `/etc/passwd` | passes |
 
 The cause is the missing passwd entry, not `/tmp` permissions: an strace as uid 1001 shows no attempt on `/tmp/.dotnet`. The fix gives the container a passwd entry for the caller and keeps `--user`, so files stay owned by the caller. A warm `.cache/dotnet` may hide this, because the crash is in first-run setup, so test from an empty cache.
+
+Agent, S-0031:
+
+- Criterion 2 is unticked: it needs a CI run on `main` after this branch is accepted and pushed, which cannot be seen here.
+- Criteria 1 and 3 were verified on a Mac through Docker Desktop with `id` shimmed to uid 1001, from an empty `.cache/dotnet`, 56 of 56 tests passing. Files came out owned by the host user, uid 501; a Linux host with a real uid 1001 was not available.
+- The fix writes `.cache/dotnet-ids/passwd` and `group` (gitignored under `.cache`) and mounts them read-only over `/etc/passwd` and `/etc/group`.
