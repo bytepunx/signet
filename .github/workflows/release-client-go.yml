@@ -1,0 +1,104 @@
+name: Release client-go
+
+# A push of client-go/vX.Y.Z verifies the Go client as CI does (regenerated
+# stubs match gen/, go vet, go test -race), asks proxy.golang.org to index
+# github.com/bytepunx/signet/client-go@vX.Y.Z, and creates a GitHub Release
+# named by the tag, with the tag annotation and the commits since the previous
+# client-go/ tag as its notes.
+#
+# Nothing is written or published by hand: client-go/vX.Y.Z is the tag form Go
+# requires for a module in a subdirectory, so the tag alone is the module
+# version, and the proxy serves it from this repository. A tag with a
+# pre-release suffix (client-go/v0.0.0-test) makes a pre-release GitHub Release.
+
+on:
+  push:
+    tags:
+      - "client-go/v*"
+
+permissions:
+  contents: write   # create the GitHub release
+
+jobs:
+  release:
+    name: Verify, index on the Go proxy, and release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history for the notes
+
+      - name: Fetch tags
+        run: git fetch --force --tags origin
+
+      - name: Resolve version
+        id: v
+        run: |
+          VERSION="${GITHUB_REF_NAME#client-go/v}"
+          if ! [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "tag ${GITHUB_REF_NAME} is not client-go/vX.Y.Z[-suffix]" >&2
+            exit 1
+          fi
+          {
+            echo "version=${VERSION}"
+            if [[ -n "${BASH_REMATCH[4]}" ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: client-go/go.mod
+          cache: false   # the tests run in Docker; Go here only queries the proxy
+
+      # Regenerates the stubs in Docker and fails if client-go/gen differs, then
+      # go vet and go test -race, as CI runs them.
+      - name: Verify
+        run: scripts/test-client-go.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
+
+      - name: Index on proxy.golang.org
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+          GOPROXY: https://proxy.golang.org   # no `direct` fallback: the request must reach the proxy
+          GONOSUMDB: ""
+          GOFLAGS: -mod=mod
+        run: |
+          # Asking the proxy for the version makes it fetch the tag from this
+          # repository; it may need a moment to see a tag pushed just now.
+          module="github.com/bytepunx/signet/client-go"
+          cd "$(mktemp -d)"
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if go list -m "${module}@v${VERSION}"; then
+              exit 0
+            fi
+            echo "attempt ${attempt}: ${module}@v${VERSION} not yet on the proxy; retrying in 30s" >&2
+            sleep 30
+          done
+          echo "${module}@v${VERSION} was not indexed by proxy.golang.org after 10 attempts" >&2
+          exit 1
+
+      - name: Generate release notes
+        run: |
+          # The tag annotation, then the commits since the previous client-go/ tag.
+          {
+            git for-each-ref --format='%(contents)' "refs/tags/${GITHUB_REF_NAME}"
+            echo
+            echo "## Changes"
+          } > release_notes.md
+          PREV_TAG=$(git tag -l 'client-go/v*' --sort=-v:refname | grep -vxF "${GITHUB_REF_NAME}" | grep -v -- '-' | head -n1 || true)
+          if [[ -n "$PREV_TAG" ]]; then
+            git log --oneline "${PREV_TAG}..${GITHUB_REF_NAME}" -- client-go >> release_notes.md
+          else
+            git log --oneline "${GITHUB_REF_NAME}" -- client-go >> release_notes.md
+          fi
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ steps.v.outputs.prerelease }}
+        run: |
+          args=()
+          if [[ "$PRERELEASE" == "true" ]]; then args+=(--prerelease); fi
+          gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" \
+            --notes-file release_notes.md "${args[@]}"
