@@ -20,9 +20,6 @@ projects:
   - name: proto
     path: proto
     kind: buf
-  - name: admin
-    path: admin
-    kind: sveltekit
   - name: client-csharp
     path: client-csharp
     kind: csharp
