@@ -8,6 +8,7 @@ This repository follows the [system-flow](https://github.com/bytepunx/system-flo
 |-------|------|
 | [`design/`](design/README.md) | Internal design: decisions, living system design, technology |
 | [`docs/`](docs/README.md) | Documentation for users, operators, and contributors |
+| [Contributors guide](docs/contributors/index.md) | How each component is built and tested |
 | [`wip/`](wip/README.md) | Work in process: board, items, agent narratives |
 | `CLAUDE.md` | How agents work in this repo |
 
