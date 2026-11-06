@@ -3,10 +3,10 @@ id: E-0002
 type: epic
 nature: feature
 title: Release process for the mono-repo with GitHub CI
-status: in-progress
+status: done
 owner: arobson
 created: 2026-10-27T19:44:30Z
-updated: 2026-11-06T07:19:26Z
+updated: 2026-11-06T08:51:03Z
 transitions:
   - to: ready
     at: 2026-10-27T19:47:51Z
@@ -14,11 +14,17 @@ transitions:
   - to: in-progress
     at: 2026-10-27T20:53:09Z
     by: agent-S-0004
+  - to: review
+    at: 2026-11-06T08:50:03Z
+    by: agent-S-0019
+  - to: done
+    at: 2026-11-06T08:51:03Z
+    by: alex
 tags: []
 topics: [release, ci, github]
 usage:
   source: sum
-  seconds: 17101
+  seconds: 17372
   priced_by: harness
   empty_wakes: 3
   turns:
@@ -44,10 +50,11 @@ usage:
       empty_wakes: 2
       work: 41
     - day: 2026-11-06
-      ceremony: 23
+      ceremony: 25
+      test_runs: 1
       empty_wakes: 1
       hand_edits: 7
-      work: 407
+      work: 423
   models:
     - model: claude-fable-5-1
       input: 2222
@@ -62,11 +69,11 @@ usage:
       cache_write: 109675
       cost: 1.2577
     - model: claude-sonnet-5-5
-      input: 1644
-      output: 256593
-      cache_read: 70548565
-      cache_write: 2483787
-      cost: 18.9528
+      input: 1686
+      output: 265618
+      cache_read: 71906306
+      cache_write: 2553899
+      cost: 19.4594
   strategic:
     - kind: planner
       seconds: 403
@@ -85,15 +92,15 @@ usage:
           cache_write: 517166
           cost: 4.683
     - kind: orchestrator
-      seconds: 519
+      seconds: 537
       estimated: true
       models:
         - model: claude-sonnet-5-5
-          input: 296
-          output: 2916
-          cache_read: 7492493
-          cache_write: 1387492
-          cost: 4.2944
+          input: 312
+          output: 3035
+          cache_read: 7826617
+          cache_write: 1455307
+          cost: 4.5055
 ---
 # E-0002 Release process for the mono-repo with GitHub CI
 
@@ -156,3 +163,5 @@ The migration imported each repository's files and history into a folder but dro
 5. Conventional commit subjects stay (`<type>: [S-nnnn] ...`) for readable history, but do not drive versions.
 - 2026-10-27T19:47:51Z: moved to ready: follows S-0004, which moved to ready
 - 2026-10-27T20:53:09Z: moved to in-progress: follows S-0004, which moved to in-progress
+- 2026-11-06T08:50:03Z: moved to review: follows S-0019, which moved to review
+- 2026-11-06T08:51:03Z: moved to done: follows S-0019, which moved to done

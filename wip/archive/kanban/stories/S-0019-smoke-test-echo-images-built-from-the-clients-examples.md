@@ -3,14 +3,23 @@ id: S-0019
 type: story
 nature: feature
 title: Smoke-test echo images built from the clients' examples
-status: ready
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:45:33Z
+updated: 2026-11-06T08:51:02Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:34Z
+    by: alex
+  - to: in-progress
+    at: 2026-11-06T08:45:38Z
+    by: agent-S-0019
+  - to: review
+    at: 2026-11-06T08:50:03Z
+    by: agent-S-0019
+  - to: done
+    at: 2026-11-06T08:51:02Z
     by: alex
 tags: []
 topics: [ci, github]
@@ -19,6 +28,33 @@ after: [S-0020]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+usage:
+  source: log
+  seconds: 271
+  priced_by: harness
+  turns:
+    - day: 2026-11-06
+      ceremony: 2
+      test_runs: 1
+      work: 16
+  models:
+    - model: claude-sonnet-5-5
+      input: 42
+      output: 9025
+      cache_read: 1357741
+      cache_write: 70112
+      cost: 0.5066
+  strategic:
+    - kind: orchestrator
+      seconds: 10
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 8
+          output: 65
+          cache_read: 174969
+          cache_write: 41000
+          cost: 0.1135
 cost_of_delay:
   inputs:
     revenue_per_week: 0
@@ -39,8 +75,8 @@ forecast:
 The external signet-smoke-test harness pulls `ghcr.io/bytepunx/signet-echo-<language>:latest` images built from each client's `examples/echo`. The old signet-clients `smoke-images.yml` built them on every push; the mono-repo rebuilds each image when its client folder changes on `main`, and `scripts/smoke.sh` documents how to run the harness against them.
 
 ## Acceptance criteria
-- [ ] `smoke-images.yml` builds and pushes the image for each client whose folder changed on `main`, with the Elixir client added once it has an echo example
-- [ ] `scripts/smoke.sh` runs or points at the harness and says what it needs
+- [x] `smoke-images.yml` builds and pushes the image for each client whose folder changed on `main`, with the Elixir client added once it has an echo example
+- [x] `scripts/smoke.sh` runs or points at the harness and says what it needs
 
 ## Tasks
 - T-0071 Script that builds the echo image of a client

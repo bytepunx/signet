@@ -3,16 +3,37 @@ id: T-0081
 type: task
 nature: feature
 title: scripts/smoke.sh builds the echo images and runs or points at the harness
-status: backlog
+status: done
 parent: S-0019
 owner: alex
 created: 2026-10-27T22:52:56Z
-updated: 2026-10-27T22:52:56Z
-transitions: []
+updated: 2026-11-06T08:48:00Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:47:55Z
+    by: agent-S-0019
+  - to: in-progress
+    at: 2026-11-06T08:47:55Z
+    by: agent-S-0019
+  - to: done
+    at: 2026-11-06T08:48:00Z
+    by: agent-S-0019
 stream: S-0019
 tags: [ci]
 touches: [scripts/smoke.sh, scripts/README.md]
 after: [T-0071]
+usage:
+  source: log
+  seconds: 5
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 423
+      cache_read: 63606
+      cache_write: 3285
+      cost: 0.0237
 ---
 # T-0081 scripts/smoke.sh builds the echo images and runs or points at the harness
 

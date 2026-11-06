@@ -3,16 +3,37 @@ id: T-0078
 type: task
 nature: feature
 title: "smoke-images.yml: build and push each client's echo image when its folder changes on main"
-status: backlog
+status: done
 parent: S-0019
 owner: alex
 created: 2026-10-27T22:52:50Z
-updated: 2026-10-27T22:52:50Z
-transitions: []
+updated: 2026-11-06T08:48:00Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:47:55Z
+    by: agent-S-0019
+  - to: in-progress
+    at: 2026-11-06T08:47:55Z
+    by: agent-S-0019
+  - to: done
+    at: 2026-11-06T08:48:00Z
+    by: agent-S-0019
 stream: S-0019
 tags: [ci]
 touches: [".github/workflows/smoke-images.yml"]
 after: [T-0071]
+usage:
+  source: log
+  seconds: 5
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 423
+      cache_read: 63606
+      cache_write: 3285
+      cost: 0.0237
 ---
 # T-0078 smoke-images.yml: build and push each client's echo image when its folder changes on main
 

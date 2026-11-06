@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 13.6208
-accrued_seconds: 156779
-tasks_completed: 77
-last_run: 2026-11-06T08:44:26Z
+accrued_cost: 13.9090
+accrued_seconds: 156811
+tasks_completed: 81
+last_run: 2026-11-06T08:51:02Z
 ---
 
 # Orchestrator activity
@@ -551,6 +551,34 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Seconds: 11
 - Cost: 0.1075 USD, estimated
 
+### 2026-11-06T08:46:13Z
+
+- Summary: release-due S-0020: no action. system-flow.yaml has no orchestration section, so the publish permission is off. The pack's evaluation (judgement policy, 8 accepted stories unreleased, 0 USD/week, not met) was not acted on.
+- Items: S-0020
+- Seconds: 8
+- Cost: 0.0976 USD, estimated
+
+### 2026-11-06T08:46:17Z
+
+- Summary: I did not publish. The `publish` permission is off, so I took no release action for S-0020.
+- Items: none
+- Seconds: 4
+- Cost: 0.0303 USD, estimated
+
+### 2026-11-06T08:50:52Z
+
+- Summary: S-0019 in review left unaccepted: flai guard refused `flai accept --dry-run` because orchestration.permissions.accept_reviews is off. Last verify passed at 12f50e8491cc (branch head). No retry until the permission changes.
+- Items: S-0019
+- Seconds: 10
+- Cost: 0.1135 USD, estimated
+
+### 2026-11-06T08:51:02Z
+
+- Summary: I did not accept S-0019. `flai guard` refused `flai accept S-0019 --by orchestrator --dry-run` because `orchestration.permissions.accept_reviews` is off.
+- Items: none
+- Seconds: 10
+- Cost: 0.0468 USD, estimated
+
 ## Refusals
 
 ### 2026-10-27T22:25:32Z
@@ -631,4 +659,9 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 ### 2026-11-06T08:44:12Z
 
 - Call: `flai accept S-0020 --by orchestrator --verified 9fe2aa9f93cca7506f71b156c480be58c5c1a2e7 --dry-run`
+- Needs: orchestration.permissions.accept_reviews
+
+### 2026-11-06T08:50:48Z
+
+- Call: `flai accept S-0019 --by orchestrator --verified 12f50e8491cc319994bc8642306d7af8239e0d6d --dry-run`
 - Needs: orchestration.permissions.accept_reviews

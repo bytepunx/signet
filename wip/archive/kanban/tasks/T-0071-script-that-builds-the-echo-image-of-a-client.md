@@ -3,15 +3,30 @@ id: T-0071
 type: task
 nature: feature
 title: Script that builds the echo image of a client
-status: backlog
+status: done
 parent: S-0019
 owner: alex
 created: 2026-10-27T22:52:40Z
-updated: 2026-10-27T22:52:40Z
-transitions: []
+updated: 2026-11-06T08:47:53Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:47:49Z
+    by: agent-S-0019
+  - to: in-progress
+    at: 2026-11-06T08:47:49Z
+    by: agent-S-0019
+  - to: done
+    at: 2026-11-06T08:47:53Z
+    by: agent-S-0019
 stream: S-0019
 tags: [ci]
 touches: [scripts/build-echo-images.sh]
+usage:
+  source: log
+  seconds: 4
+  estimated: true
+  priced_by: harness
+  models: []
 ---
 # T-0071 Script that builds the echo image of a client
 

@@ -3,16 +3,37 @@ id: T-0086
 type: task
 nature: feature
 title: Operator guide for the smoke-test images and the harness
-status: backlog
+status: done
 parent: S-0019
 owner: alex
 created: 2026-10-27T22:53:05Z
-updated: 2026-10-27T22:53:05Z
-transitions: []
+updated: 2026-11-06T08:48:02Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:47:55Z
+    by: agent-S-0019
+  - to: in-progress
+    at: 2026-11-06T08:47:56Z
+    by: agent-S-0019
+  - to: done
+    at: 2026-11-06T08:48:02Z
+    by: agent-S-0019
 stream: S-0019
 tags: [ci]
 touches: [docs/operators/smoke-tests.md, docs/operators/index.md]
 after: [T-0078, T-0081]
+usage:
+  source: log
+  seconds: 6
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 1
+      output: 169
+      cache_read: 25496
+      cache_write: 1317
+      cost: 0.0095
 ---
 # T-0086 Operator guide for the smoke-test images and the harness
 
