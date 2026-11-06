@@ -1,4 +1,4 @@
-module github.com/bytepunx/signet-clients/go
+module github.com/bytepunx/signet/client-go
 
 go 1.26.0
 

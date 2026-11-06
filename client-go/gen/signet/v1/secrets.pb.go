@@ -1300,7 +1300,7 @@ const file_signet_v1_secrets_proto_rawDesc = "" +
 	"\x12WatchServiceConfig\x12$.signet.v1.WatchServiceConfigRequest\x1a%.signet.v1.WatchServiceConfigResponse0\x01\x12[\n" +
 	"\x10GetServiceBundle\x12\".signet.v1.GetServiceBundleRequest\x1a#.signet.v1.GetServiceBundleResponse\x12c\n" +
 	"\x12WatchServiceBundle\x12$.signet.v1.WatchServiceBundleRequest\x1a%.signet.v1.WatchServiceBundleResponse0\x01\x12e\n" +
-	"\x12AcquireRestartLock\x12$.signet.v1.AcquireRestartLockRequest\x1a%.signet.v1.AcquireRestartLockResponse(\x010\x01B>Z<github.com/bytepunx/signet-clients/go/gen/signet/v1;signetv1b\x06proto3"
+	"\x12AcquireRestartLock\x12$.signet.v1.AcquireRestartLockRequest\x1a%.signet.v1.AcquireRestartLockResponse(\x010\x01B=Z;github.com/bytepunx/signet/client-go/gen/signet/v1;signetv1b\x06proto3"
 
 var (
 	file_signet_v1_secrets_proto_rawDescOnce sync.Once

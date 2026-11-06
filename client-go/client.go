@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	adminv1 "github.com/bytepunx/signet-clients/go/gen/admin/v1"
-	signetv1 "github.com/bytepunx/signet-clients/go/gen/signet/v1"
+	adminv1 "github.com/bytepunx/signet/client-go/gen/admin/v1"
+	signetv1 "github.com/bytepunx/signet/client-go/gen/signet/v1"
 	grpccredentials "github.com/spiffe/go-spiffe/v2/spiffegrpc/grpccredentials"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"

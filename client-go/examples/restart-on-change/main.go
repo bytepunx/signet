@@ -25,8 +25,8 @@ import (
 	"syscall"
 	"time"
 
-	signet "github.com/bytepunx/signet-clients/go"
-	signetv1 "github.com/bytepunx/signet-clients/go/gen/signet/v1"
+	signet "github.com/bytepunx/signet/client-go"
+	signetv1 "github.com/bytepunx/signet/client-go/gen/signet/v1"
 )
 
 func main() {

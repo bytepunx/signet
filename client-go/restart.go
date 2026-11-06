@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	signetv1 "github.com/bytepunx/signet-clients/go/gen/signet/v1"
+	signetv1 "github.com/bytepunx/signet/client-go/gen/signet/v1"
 )
 
 const (

@@ -70,7 +70,7 @@ type sopsDocument struct {
 // abstraction unconditionally pulls in every backend it supports (PGP, AWS
 // KMS, GCP KMS, Azure Key Vault, HashiCorp Vault) even though we only ever
 // use age, which is a large, unjustifiable dependency footprint for a
-// client library. Every other bytepunx/signet-clients language has to
+// client library. Every other client in bytepunx/signet has to
 // hand-roll this same logic (no other ecosystem has a trustworthy
 // SOPS-format library either), so this keeps one consistent approach
 // across all of them instead of Go being the odd one out. The algorithm

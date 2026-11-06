@@ -15,7 +15,7 @@ managed:
     - file_option: cc_enable_arenas
   override:
     - file_option: go_package_prefix
-      value: github.com/bytepunx/signet-clients/go/gen
+      value: github.com/bytepunx/signet/client-go/gen
 plugins:
   # Plugin versions pinned to what gen/ was last generated and verified
   # against (bytepunx/signet-clients#64) — an unpinned `remote:` reference

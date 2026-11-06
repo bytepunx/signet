@@ -25,8 +25,8 @@ import (
 	"log"
 	"time"
 
-	signet "github.com/bytepunx/signet-clients/go"
-	adminv1 "github.com/bytepunx/signet-clients/go/gen/admin/v1"
+	signet "github.com/bytepunx/signet/client-go"
+	adminv1 "github.com/bytepunx/signet/client-go/gen/admin/v1"
 )
 
 func main() {

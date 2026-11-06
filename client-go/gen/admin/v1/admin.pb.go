@@ -3441,7 +3441,7 @@ const file_admin_v1_admin_proto_rawDesc = "" +
 	"SyncBundle\x12\x19.admin.v1.SyncBundleChunk\x1a\x1c.admin.v1.SyncBundleResponse(\x01\x12_\n" +
 	"\x12PatchServiceConfig\x12#.admin.v1.PatchServiceConfigRequest\x1a$.admin.v1.PatchServiceConfigResponse\x12Y\n" +
 	"\x10GetServiceConfig\x12!.admin.v1.GetServiceConfigRequest\x1a\".admin.v1.GetServiceConfigResponse\x12Y\n" +
-	"\x10PutServiceConfig\x12!.admin.v1.PutServiceConfigRequest\x1a\".admin.v1.PutServiceConfigResponseB<Z:github.com/bytepunx/signet-clients/go/gen/admin/v1;adminv1b\x06proto3"
+	"\x10PutServiceConfig\x12!.admin.v1.PutServiceConfigRequest\x1a\".admin.v1.PutServiceConfigResponseB;Z9github.com/bytepunx/signet/client-go/gen/admin/v1;adminv1b\x06proto3"
 
 var (
 	file_admin_v1_admin_proto_rawDescOnce sync.Once
