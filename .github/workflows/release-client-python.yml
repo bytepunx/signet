@@ -1,0 +1,126 @@
+name: Release client-python
+
+# A push of client-python/vX.Y.Z tests the client, builds signet-client with
+# version X.Y.Z taken from the tag (scripts/set-client-python-version.sh; no
+# commit bumps the version), publishes it to PyPI with Trusted Publishing, and
+# creates the GitHub Release named by the tag.
+
+on:
+  push:
+    tags:
+      - "client-python/v*"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/test-client-python.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
+
+  build:
+    name: Build sdist and wheel
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The generated stubs are gitignored; a wheel built without them installs
+      # but cannot import.
+      - name: Generate stubs
+        run: scripts/buf-generate.sh client-python
+        env:
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
+
+      - name: Set version from the tag
+        run: scripts/set-client-python-version.sh "$GITHUB_REF_NAME"
+
+      - name: Build
+        working-directory: client-python
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check dist/*
+
+      - name: Check the wheel holds the stubs
+        working-directory: client-python
+        run: |
+          python -m zipfile -l dist/*.whl > wheel.txt
+          for p in signet/v1/ admin/v1/ signet_client/; do
+            grep -q " $p" wheel.txt || { echo "wheel lacks $p" >&2; exit 1; }
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-python-dist
+          path: client-python/dist
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # No `environment`: the trusted publisher registered on pypi.org names the
+    # repository and this workflow's filename only.
+    permissions:
+      id-token: write   # OIDC token for Trusted Publishing; no PyPI secret
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: client-python-dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+
+  github-release:
+    name: GitHub Release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the GitHub release
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: client-python-dist
+          path: dist
+
+      - name: Release notes
+        run: |
+          # checkout may leave an annotated tag as a lightweight ref.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          prev=$(git describe --tags --abbrev=0 --match 'client-python/v*' "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          range="${GITHUB_REF_NAME}"
+          if [ -n "$prev" ]; then range="${prev}..${GITHUB_REF_NAME}"; fi
+          {
+            git for-each-ref --format='%(contents)' "refs/tags/${GITHUB_REF_NAME}"
+            echo
+            echo "## Changes"
+            git log --format='- %s (%h)' "$range" -- client-python
+          } > release_notes.md
+          cat release_notes.md
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flag=""
+          case "${GITHUB_REF_NAME}" in
+            *[0-9]a[0-9]*|*[0-9]b[0-9]*|*[0-9]rc[0-9]*) flag="--prerelease" ;;
+          esac
+          gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" \
+            --notes-file release_notes.md ${flag} dist/*
