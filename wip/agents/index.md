@@ -1,13 +1,13 @@
 ---
 title: Active streams
-updated: 2026-11-06T08:31:51Z
+updated: 2026-11-06T08:33:05Z
 ---
 
 # Active streams
 
 | Stream | Title | Status | Last agent | Updated |
 |--------|-------|--------|------------|---------|
-| [S-0011](S-0011.md) | Go client: module path for the mono-repo and release workflow on client-go/v* tags | in-progress | agent-S-0011 | 2026-11-06T08:28:32Z |
+| [S-0011](S-0011.md) | Go client: module path for the mono-repo and release workflow on client-go/v* tags | in-progress | agent-S-0011 | 2026-11-06T08:32:26Z |
 
 ## Strategic agents
 

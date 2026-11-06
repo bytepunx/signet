@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:22:49Z
+updated: 2026-11-06T08:33:05Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:34Z
@@ -19,6 +19,12 @@ after: [S-0020]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+cost_of_delay:
+  inputs:
+    revenue_per_week: 0
+    penalty_per_week: 0
+    by: alex
+    at: 2026-11-06T08:33:05Z
 forecast:
   duration: 2h
   delivery: 2026-11-07T01:13:00Z
