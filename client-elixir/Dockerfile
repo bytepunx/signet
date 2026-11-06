@@ -1,8 +1,8 @@
 # Toolchain image for building and testing the Elixir client. Nothing is
 # installed on the host: scripts/test-client-elixir.sh builds this image and
 # runs buf generate, mix deps.get, mix compile, and mix test inside it with
-# client-elixir/ mounted at /app, so deps/, _build/, and lib/gen/ land in the
-# (gitignored) folders on the host and survive between runs.
+# the repository root mounted at /repo (working directory client-elixir/), so
+# deps/, _build/, and lib/gen/ land in the (gitignored) folders on the host and survive between runs.
 #
 # Versions are pinned here and recorded in design/tech/.
 FROM hexpm/elixir:1.19.6-erlang-28.5.0.8-debian-bookworm-20261020-slim

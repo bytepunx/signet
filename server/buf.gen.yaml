@@ -1,7 +1,7 @@
 version: v2
 managed:
   enabled: true
-  # Only go_package is managed here — the proto schema (bytepunx/signet-proto)
+  # Only go_package is managed here — the proto schema
   # doesn't hard-code any per-language options, so leave every other language's
   # defaults untouched; each consumer of that schema manages its own.
   disable:
@@ -20,7 +20,7 @@ managed:
     - file_option: go_package_prefix
       value: github.com/bytepunx/signet/server/gen
 plugins:
-  # Pinned to specific plugin versions, not just the schema module below —
+  # Pinned to specific plugin versions, not just the schema —
   # an unpinned `remote:` reference resolves to whatever the BSR currently
   # serves as latest, so a plugin release with no schema change at all can
   # still change generated output and fail CI's proto-check job on a PR that
@@ -34,11 +34,7 @@ plugins:
     out: gen
     opt:
       - paths=source_relative
-# Pinned to a tagged signet-proto release so schema upgrades are an
-# explicit, reviewable one-line bump rather than always tracking HEAD — the
-# same determinism problem this repo's own client libraries (see
-# bytepunx/signet-clients#64) hit before their buf.gen.yaml files were
-# pinned the same way. Bump deliberately when a newer signet-proto release
-# is ready to adopt, alongside a `buf generate` + review of the diff.
+# The schema is the one in this repository, so a schema change and the code
+# that uses it land in one pull request; there is no version to bump.
 inputs:
-  - module: buf.build/bytepunx/signet-proto:v0.4.0
+  - directory: ../proto/proto
