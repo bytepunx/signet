@@ -24,10 +24,23 @@ Workload access (`dial_workload`, SPIFFE mTLS) requires an optional extra — se
 pip install signet-client[workload]
 ```
 
-Published to [PyPI](https://pypi.org/project/signet-client/) automatically by
-[`publish-python.yml`](../.github/workflows/publish-python.yml) whenever release-please tags
-a `python-v*` release, via [Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
-(OIDC — no long-lived API token stored in this repo).
+### Releases
+
+A release is the tag `client-python/vX.Y.Z`, created by `flai release --pending`. The
+version is the tag with `client-python/v` removed, written into `pyproject.toml` at build
+time by `scripts/set-client-python-version.sh`. The checked-in `version` is a placeholder
+and no commit bumps it.
+
+[`release-client-python.yml`](../.github/workflows/release-client-python.yml) runs on that
+tag only. It runs the tests, builds the sdist and wheel, publishes to
+[PyPI](https://pypi.org/project/signet-client/), and creates the GitHub Release
+`client-python/vX.Y.Z` with the tag annotation and the commits since the previous tag as
+its notes. `CHANGELOG.md` is not maintained any more; the releases are the changelog.
+
+Publishing uses [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (OIDC, no
+stored token). The publisher registered on pypi.org for `signet-client` names repository
+`bytepunx/signet`, workflow `release-client-python.yml`, and no environment;
+[`docs/operators/release.md`](../docs/operators/release.md) has the steps.
 
 ## Regenerating stubs
 
@@ -73,10 +86,10 @@ is intentionally still plaintext-behind-bearer-token, not TLS-terminated. Withou
 ("wrong version number") against a server that never speaks TLS on that listener. Per-RPC
 bearer-token authentication is unaffected either way. `plaintext` is mutually exclusive
 with `force_tls` and with a non-empty `ca_pem` — `dial_admin` raises `ValueError` for
-either combination. See [bytepunx/signet-clients#32](https://github.com/bytepunx/signet-clients/issues/32).
+either combination. See issue #32 of the retired clients repository.
 
 This fix applies to `dial_admin` only. Python's `dial_workload` (SPIFFE mTLS) remains
-separately broken per [#14](https://github.com/bytepunx/signet-clients/issues/14) — see
+separately broken per issue #14 of the retired clients repository — see
 [SPIFFE support](#spiffe-support) below — and is unaffected by this change.
 
 Implementation note: the bearer token is injected via a `grpc` client interceptor
@@ -110,7 +123,7 @@ See `examples/getsecret` for a complete runnable example.
 
 **Status: `dial_workload` does not work against a real signet server.** This is a hard
 upstream limitation, confirmed live, not a bug in this client's code — see
-[bytepunx/signet-clients#14](https://github.com/bytepunx/signet-clients/issues/14) for
+issue #14 of the retired clients repository for
 the full writeup and tracking.
 
 SVID/trust-bundle fetching uses [`spiffe`](https://pypi.org/project/spiffe/) (source:
@@ -143,7 +156,7 @@ SPIFFE-ID check beyond trust-domain-scoped CA validation, matters only under
 federation") — that description assumed the connection succeeds at all, which it does
 not. `dial_admin` (bearer-token access) is unaffected, since it doesn't use SPIFFE mTLS.
 
-See [#14](https://github.com/bytepunx/signet-clients/issues/14) for what's being
+See issue #14 of the retired clients repository for what's being
 explored (including whether this is worth contributing upstream to `grpc-python`,
 which is Apache-2.0 OSS) and to track resolution.
 
