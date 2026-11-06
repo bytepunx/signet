@@ -1,0 +1,113 @@
+name: Release client-rust
+
+# A push of client-rust/vX.Y.Z writes X.Y.Z into client-rust/Cargo.toml, tests,
+# publishes the signet-client crate to crates.io, and creates a GitHub Release
+# named by the tag, with the tag annotation and the commits since the previous
+# client-rust/ tag as its notes.
+#
+# crates.io cannot delete a published version, so a tag with a pre-release
+# suffix (client-rust/v0.0.0-test) only runs `cargo publish --dry-run` and
+# makes a pre-release GitHub Release.
+
+on:
+  push:
+    tags:
+      - "client-rust/v*"
+
+permissions:
+  contents: write   # create the GitHub release
+
+jobs:
+  release:
+    name: Test, publish to crates.io, and release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history for the notes
+
+      - name: Fetch tags
+        run: git fetch --force --tags origin
+
+      - name: Resolve version
+        id: v
+        run: |
+          VERSION="${GITHUB_REF_NAME#client-rust/v}"
+          if ! [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "tag ${GITHUB_REF_NAME} is not client-rust/vX.Y.Z[-suffix]" >&2
+            exit 1
+          fi
+          {
+            echo "version=${VERSION}"
+            if [[ -n "${BASH_REMATCH[4]}" ]]; then echo "prerelease=true"; else echo "prerelease=false"; fi
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write the version into Cargo.toml
+        working-directory: client-rust
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          before=$(cat Cargo.toml)
+          # Only the first `version = ` line, which is the [package] one.
+          sed -i '0,/^version = ".*"$/s//version = "'"${VERSION}"'"/' Cargo.toml
+          if [[ "$before" == "$(cat Cargo.toml)" ]]; then
+            echo "Cargo.toml did not change; is the placeholder already ${VERSION}?" >&2
+            exit 1
+          fi
+          grep -m1 '^version = ' Cargo.toml
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up buf
+        uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test
+        run: scripts/test-client-rust.sh
+
+      - name: Generate stubs
+        working-directory: client-rust
+        run: buf generate
+
+      - name: Publish to crates.io
+        working-directory: client-rust
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          PRERELEASE: ${{ steps.v.outputs.prerelease }}
+        run: |
+          # --allow-dirty: src/gen is gitignored and Cargo.toml was edited above,
+          # so the tree is dirty by design. Cargo.toml's `include` decides what ships.
+          if [[ "$PRERELEASE" == "true" ]]; then
+            # A published version cannot be deleted: a pre-release tag only dry-runs.
+            cargo publish --dry-run --allow-dirty
+          else
+            cargo publish --allow-dirty
+          fi
+
+      - name: Generate release notes
+        run: |
+          # The tag annotation, then the commits since the previous client-rust/ tag.
+          {
+            git for-each-ref --format='%(contents)' "refs/tags/${GITHUB_REF_NAME}"
+            echo
+            echo "## Changes"
+          } > release_notes.md
+          PREV_TAG=$(git tag -l 'client-rust/v*' --sort=-v:refname | grep -vxF "${GITHUB_REF_NAME}" | grep -v -- '-' | head -n1 || true)
+          if [[ -n "$PREV_TAG" ]]; then
+            git log --oneline "${PREV_TAG}..${GITHUB_REF_NAME}" -- client-rust >> release_notes.md
+          else
+            git log --oneline "${GITHUB_REF_NAME}" -- client-rust >> release_notes.md
+          fi
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ steps.v.outputs.prerelease }}
+        run: |
+          args=()
+          if [[ "$PRERELEASE" == "true" ]]; then args+=(--prerelease); fi
+          gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" \
+            --notes-file release_notes.md "${args[@]}"
