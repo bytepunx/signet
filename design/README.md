@@ -7,5 +7,9 @@ Internal documentation for signet. Outward-facing documentation lives in `docs/`
 | `adrs/` | Architecture Decision Records, one decision at one point in time per file | Immutable once accepted, superseded by newer ADRs |
 | `system/` | The living design of the system as it is right now | Edited whenever a conversation resolves new details, direction, standards, or decisions |
 | `tech/` | Every active technology: version, where used, why | Edited whenever a dependency changes |
+| `experiments/` | What each experiment found: hypothesis, success measure, what was done, results, and a recommendation | One per `experiment` story, written before it is accepted; kept as the record of what was tried |
+| `analysis/` | What the analyzer found: one report per run, its focus, the window its metrics cover, and each finding with its evidence, severity, and estimated impact | Written by the analyzer alone, one per run, and listed in its `README.md`; kept as the record of what was found |
+| `digest/` | What past stories learned: one fact per file, `D-nnnn-<slug>.md`, a decision, an operator's answer, a confirmed or overruled recommendation, or an issue's cause and fix, with its sources, topics, and paths, for priming | Written only through `flai digest`, by the digest's keeper; no index, since `flai digest list` is one; never deleted, only absorbed or compacted by a change of status |
+| `components/` | Supporting files for the project's components: one examples file per component, `<sub-project>/<path>.examples.json`, its named sets of props | Written by the Components page's save and by the stories that change a component; `flai check` keeps each in step with its component's props |
 
-Markdown only, YAML front matter on every file, Mermaid for diagrams. When an ADR changes a decision, update `system/` and `tech/` in the same change.
+Markdown only, YAML front matter on every file, Mermaid for diagrams, but for the two JSON exceptions `conventions/documentation.md` names: the design token file and the examples files under `components/`. When an ADR changes a decision, update `system/` and `tech/` in the same change.

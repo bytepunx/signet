@@ -3,15 +3,62 @@ id: E-0001
 type: epic
 nature: feature
 title: Complete the signet mono-repo migration
-status: ready
+status: in-progress
 owner: alex
 created: 2026-10-24T22:31:44Z
-updated: 2026-10-24T22:33:47Z
+updated: 2026-11-03T18:12:15Z
 transitions:
   - to: ready
     at: 2026-10-24T22:33:47Z
     by: claude
+  - to: in-progress
+    at: 2026-11-03T18:12:15Z
+    by: agent-S-0004
 tags: []
+usage:
+  source: sum
+  seconds: 3077
+  priced_by: harness
+  turns:
+    - day: 2026-11-03
+      ceremony: 7
+      test_runs: 7
+      hand_edits: 8
+      work: 168
+  models:
+    - model: claude-haiku-5-5
+      input: 18
+      output: 8859
+      cache_read: 298491
+      cache_write: 56926
+      cost: 0.0145
+    - model: claude-opus-5-5
+      input: 786
+      output: 253644
+      cache_read: 51679817
+      cache_write: 921887
+      cost: 21.762
+  strategic:
+    - kind: planner
+      seconds: 1572
+      estimated: true
+      models:
+        - model: claude-fable-5-1
+          input: 1730
+          output: 1349
+          cache_read: 4725904
+          cache_write: 201483
+          cost: 6.9792
+    - kind: orchestrator
+      seconds: 127
+      estimated: true
+      models:
+        - model: claude-opus-5-5
+          input: 76
+          output: 569
+          cache_read: 2136816
+          cache_write: 311703
+          cost: 1.4005
 ---
 # E-0001 Complete the signet mono-repo migration
 
@@ -47,3 +94,4 @@ What the import (commits `db3b802`..`9b60c6c`) left behind, found by survey on 2
 - The repository has no root `LICENSE`; signet-clients was Apache-2.0, signet-proto carries its own, the server never had one.
 - `admin/` and `client-erlang/` are documentation-only stubs; nothing to migrate beyond references.
 - 2026-10-24T22:33:47Z: moved to ready: follows S-0001, which moved to ready
+- 2026-11-03T18:12:15Z: moved to in-progress: follows S-0004, which moved to in-progress
