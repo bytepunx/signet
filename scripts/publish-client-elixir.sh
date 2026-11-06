@@ -35,8 +35,7 @@ if [ "${dry_run}" -eq 0 ] && [ -z "${HEX_API_KEY:-}" ]; then
 fi
 
 image="signet-client-elixir:toolchain"
-echo "publish-client-elixir.sh: building ${image}"
-docker build -q -t "${image}" client-elixir >/dev/null
+scripts/ensure-client-elixir-image.sh
 
 run() {
   docker run --rm \
