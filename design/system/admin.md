@@ -2,7 +2,7 @@
 title: Admin web interface (planned)
 updated: 2026-11-06
 status: draft
-topics: [admin, sveltekit]
+topics: [admin]
 ---
 
 # Admin web interface (planned)
