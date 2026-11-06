@@ -16,6 +16,7 @@ Purpose-named shell scripts for common tasks. The `Makefile` calls these; CI cal
 | `test-client-rust.sh` | Rust client stub generation and `cargo test`, inside Docker |
 | `test-client-csharp.sh` | C# client stub generation and `dotnet test`, inside Docker |
 | `test-client-elixir.sh` | Builds the Elixir client's toolchain image and runs stub generation, compile, and `mix test` inside Docker; any other `mix` or `buf` command can be passed as arguments |
+| `publish-client-elixir.sh` | Publishes `signet_client` to hex.pm from the Elixir toolchain image with the version of a `client-elixir/v*` tag (release workflow); `--dry-run` builds the package and publishes nothing |
 | `integration.sh` | Integration tests against real adapters (`make integration`); runs every component's integration script |
 | `integration-client-elixir.sh` | Builds the Elixir client's toolchain image and runs `client-elixir/tests/integration/` inside Docker, where the real `sops` binary decrypts what `Signet.SopsEncrypt` produces |
 | `set-release-secrets.sh` | `check` (default) lists which release secrets of `bytepunx/signet` are set; `set` sets them from environment variables of the same name (operator) |
