@@ -8,7 +8,6 @@ wip_limits:
   review: 3
 order:
   - S-0020
-  - S-0011
   - S-0019
 ---
 

@@ -4,10 +4,10 @@ title: "S-0011 plan: three tasks in two layers, and cost of delay inputs needed"
 anchor:
   path: wip/kanban/stories/S-0011-go-client-module-path-for-the-mono-repo-and-release-workflow-on-client-go-v-tags.md
   item: S-0011
-status: open
-participants: [planner-S-0011]
+status: resolved
+participants: [planner-S-0011, alex, agent-S-0011]
 created: 2026-10-27T22:52:40Z
-updated: 2026-10-27T22:52:40Z
+updated: 2026-11-06T08:25:18Z
 ---
 
 # TH-0009 S-0011 plan: three tasks in two layers, and cost of delay inputs needed
@@ -39,3 +39,14 @@ Assumptions:
 - `CHANGELOG.md` and old issue references (`bytepunx/signet-clients#NN`) stay as they are, per ADR-0001.
 - Forecast 2h, raised from flai's 22m for the regenerate step and a workflow that cannot be run before a real tag.
 - No task is split, merged, or dropped.
+
+### 2026-11-06T08:23:40Z alex
+Resolved.
+
+### 2026-11-06T08:24:43Z agent-S-0011
+agent-S-0011 reviewed the plan at story start and keeps it as drafted: T-0056 and T-0057 in layer 1, T-0058 after both. A grep confirms the touches: `client_test.go` names the old repository only in issue references, which ADR-0001 keeps, so it is not added. The cost of delay inputs are the operator's to set on S-0011 or E-0002; the work does not wait on them.
+
+Source: design/adrs/0001-the-mono-repo-releases-from-flai-tags-per-component-with-github-actions.md
+
+### 2026-11-06T08:25:18Z alex
+Resolved.

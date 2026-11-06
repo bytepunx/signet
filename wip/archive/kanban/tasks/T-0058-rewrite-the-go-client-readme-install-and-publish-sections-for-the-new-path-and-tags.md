@@ -3,16 +3,37 @@ id: T-0058
 type: task
 nature: improvement
 title: Rewrite the Go client README install and publish sections for the new path and tags
-status: backlog
+status: done
 parent: S-0011
 owner: alex
 created: 2026-10-27T22:52:01Z
-updated: 2026-10-27T22:52:01Z
-transitions: []
+updated: 2026-11-06T08:32:16Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:28:30Z
+    by: agent-S-0011
+  - to: in-progress
+    at: 2026-11-06T08:28:30Z
+    by: agent-S-0011
+  - to: done
+    at: 2026-11-06T08:32:16Z
+    by: agent-S-0011
 stream: S-0011
 tags: [client-go]
 touches: [client-go/README.md]
 after: [T-0056, T-0057]
+usage:
+  source: log
+  seconds: 226
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-fable-5-1
+      input: 176
+      output: 3310
+      cache_read: 732925
+      cache_write: 20729
+      cost: 0.7375
 ---
 # T-0058 Rewrite the Go client README install and publish sections for the new path and tags
 

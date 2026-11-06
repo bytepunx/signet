@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 12.7376
-accrued_seconds: 156676
-tasks_completed: 67
-last_run: 2026-11-06T08:21:06Z
+accrued_cost: 13.2000
+accrued_seconds: 156735
+tasks_completed: 73
+last_run: 2026-11-06T08:37:26Z
 ---
 
 # Orchestrator activity
@@ -481,6 +481,48 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Seconds: 5
 - Cost: 0.0470 USD, estimated
 
+### 2026-11-06T08:23:42Z
+
+- Summary: release-due S-0017: no action. system-flow.yaml has no orchestration.permissions, so publish is off; release_evaluate (judgement) is unmet with 6 accepted, unreleased stories (S-0012 to S-0017), 0 USD/week. Nothing evaluated further or published.
+- Items: S-0017
+- Seconds: 17
+- Cost: 0.1216 USD, estimated
+
+### 2026-11-06T08:23:45Z
+
+- Summary: I did not publish anything for the S-0017 release-due reason. `system-flow.yaml` has no `orchestration.permissions`, so every permission is off, including `publish`.
+- Items: none
+- Seconds: 3
+- Cost: 0.0255 USD, estimated
+
+### 2026-11-06T08:25:29Z
+
+- Summary: TH-0009 (S-0011 plan) is already resolved by the operator, who wrote "Resolved." twice and set no cost of delay inputs. Took no action: set_cost_of_delay needs an input the operator decided, and none was given.
+- Items: TH-0009, S-0011
+- Seconds: 7
+- Cost: 0.0776 USD, estimated
+
+### 2026-11-06T08:25:40Z
+
+- Summary: I took no action on TH-0009. The operator has already resolved it, with "Resolved." written twice and no cost of delay inputs given.
+- Items: none
+- Seconds: 11
+- Cost: 0.0463 USD, estimated
+
+### 2026-11-06T08:37:22Z
+
+- Summary: S-0011 in review (verify passed at branch head 9e69a2d9ffc6): not accepted, flai guard refused flai accept because orchestration.permissions.accept_reviews is off. Left for the operator; no thread opened.
+- Items: S-0011
+- Seconds: 17
+- Cost: 0.1499 USD, estimated
+
+### 2026-11-06T08:37:26Z
+
+- Summary: S-0011 stays in review. I didn't accept it, because `orchestration.permissions.accept_reviews` is off. `flai guard` refused the `flai accept` dry-run.
+- Items: none
+- Seconds: 4
+- Cost: 0.0415 USD, estimated
+
 ## Refusals
 
 ### 2026-10-27T22:25:32Z
@@ -546,4 +588,9 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 ### 2026-11-06T08:20:56Z
 
 - Call: `flai accept S-0017 --by orchestrator --verified b5991500e63210d1d24061f72882a836fec7f1ff --dry-run 2>&1`
+- Needs: orchestration.permissions.accept_reviews
+
+### 2026-11-06T08:37:18Z
+
+- Call: `flai accept S-0011 --by orchestrator --verified 9e69a2d9ffc63cc3eb5ac37544855524ebbf261e --dry-run 2>&1`
 - Needs: orchestration.permissions.accept_reviews

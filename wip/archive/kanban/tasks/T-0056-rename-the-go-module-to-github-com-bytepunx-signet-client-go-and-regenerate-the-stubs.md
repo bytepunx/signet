@@ -3,15 +3,36 @@ id: T-0056
 type: task
 nature: improvement
 title: Rename the Go module to github.com/bytepunx/signet/client-go and regenerate the stubs
-status: backlog
+status: done
 parent: S-0011
 owner: alex
 created: 2026-10-27T22:51:51Z
-updated: 2026-10-27T22:51:51Z
-transitions: []
+updated: 2026-11-06T08:28:16Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:24:46Z
+    by: agent-S-0011
+  - to: in-progress
+    at: 2026-11-06T08:24:46Z
+    by: agent-S-0011
+  - to: done
+    at: 2026-11-06T08:28:16Z
+    by: agent-S-0011
 stream: S-0011
 tags: [client-go]
 touches: [client-go/go.mod, client-go/buf.gen.yaml, client-go/client.go, client-go/restart.go, client-go/restart_test.go, client-go/sops_encrypt.go, client-go/examples/echo/main.go, client-go/examples/getsecret/main.go, client-go/examples/gitops-workload/main.go, client-go/examples/restart-on-change/main.go, client-go/gen/admin/v1/admin.pb.go, client-go/gen/admin/v1/admin_grpc.pb.go, client-go/gen/signet/v1/secrets.pb.go, client-go/gen/signet/v1/secrets_grpc.pb.go]
+usage:
+  source: log
+  seconds: 210
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-fable-5-1
+      input: 277
+      output: 5202
+      cache_read: 1151772
+      cache_write: 32575
+      cost: 1.1589
 ---
 # T-0056 Rename the Go module to github.com/bytepunx/signet/client-go and regenerate the stubs
 

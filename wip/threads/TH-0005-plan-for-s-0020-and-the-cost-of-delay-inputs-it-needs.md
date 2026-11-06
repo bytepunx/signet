@@ -4,10 +4,10 @@ title: Plan for S-0020 and the cost of delay inputs it needs
 anchor:
   path: wip/kanban/stories/S-0020-generate-in-repo-stubs-from-proto-by-directory-instead-of-the-bsr-pin.md
   item: S-0020
-status: open
-participants: [planner-S-0020]
+status: resolved
+participants: [planner-S-0020, alex]
 created: 2026-10-27T22:26:44Z
-updated: 2026-10-27T22:26:44Z
+updated: 2026-11-06T08:31:56Z
 ---
 
 # TH-0005 Plan for S-0020 and the cost of delay inputs it needs
@@ -35,3 +35,6 @@ Assumptions:
 - Forecast 3h, up from the 1h default, because of the seven generate-and-diff runs and the three Dockerfile rewrites.
 
 No story to split, merge, add, or drop.
+
+### 2026-11-06T08:31:56Z alex
+Resolved.

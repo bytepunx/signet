@@ -3,15 +3,36 @@ id: T-0057
 type: task
 nature: feature
 title: "Release workflow release-client-go.yml on client-go/v* tags"
-status: backlog
+status: done
 parent: S-0011
 owner: alex
 created: 2026-10-27T22:51:54Z
-updated: 2026-10-27T22:51:54Z
-transitions: []
+updated: 2026-11-06T08:28:21Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:24:46Z
+    by: agent-S-0011
+  - to: in-progress
+    at: 2026-11-06T08:24:46Z
+    by: agent-S-0011
+  - to: done
+    at: 2026-11-06T08:28:21Z
+    by: agent-S-0011
 stream: S-0011
 tags: [client-go, ci]
 touches: [".github/workflows/release-client-go.yml"]
+usage:
+  source: log
+  seconds: 215
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-fable-5-1
+      input: 187
+      output: 3501
+      cache_read: 775124
+      cache_write: 21922
+      cost: 0.7799
 ---
 # T-0057 Release workflow release-client-go.yml on client-go/v* tags
 
