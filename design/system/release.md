@@ -56,7 +56,7 @@ case the publisher is registered against this repository and the workflow filena
 
 | Component | Workflow | Trigger | Artifacts | Registry | Credential |
 |-----------|----------|---------|-----------|----------|------------|
-| server | `release-server.yml` | `server/v*` | `signet-<os>-<arch>` CLI binaries and `sha256sums.txt` on the GitHub Release; `signetd` image tagged `X.Y.Z` and `latest`; Helm chart `signet` at version `X.Y.Z` | GitHub Releases; `ghcr.io/bytepunx/signetd` and `docker.io/bytepunx/signet`; `oci://ghcr.io/bytepunx/charts` | `GITHUB_TOKEN` (`packages: write`) for ghcr.io and the release; `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` for Docker Hub |
+| server | `release-server.yml` | `server/v*` | `signet-<os>-<arch>` CLI binaries and `sha256sums.txt` on the GitHub Release; `signetd` image tagged `vX.Y.Z`, `vX.Y`, and `latest`; Helm chart `signet` at version `X.Y.Z` | GitHub Releases; `ghcr.io/bytepunx/signetd` and `docker.io/bytepunx/signet`; `oci://ghcr.io/bytepunx/charts` | `GITHUB_TOKEN` (`packages: write`) for ghcr.io and the release; `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` for Docker Hub |
 | server | `publish-server-main.yml` | push to `main`, paths `server/**` | `signetd` image tagged `main` | `ghcr.io/bytepunx/signetd`, `docker.io/bytepunx/signet` | As above |
 | proto | `release-proto.yml` | `proto/v*` | BSR module labeled `vX.Y.Z`; GitHub Release | `buf.build/bytepunx/signet-proto`; GitHub Releases | `BSR_AUTH_TOKEN`; `GITHUB_TOKEN` |
 | proto | `publish-proto-main.yml` | push to `main`, paths `proto/**` | BSR module at the commit | `buf.build/bytepunx/signet-proto` | `BSR_AUTH_TOKEN` |

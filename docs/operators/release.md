@@ -34,7 +34,7 @@ Never rebase or force-push accepted history.
 
 | Component | Tag | Produces | Find it at |
 |-----------|-----|----------|------------|
-| server | `server/vX.Y.Z` | CLI binaries `signet-<os>-<arch>` with checksums; `signetd` image tagged `X.Y.Z` and `latest`; Helm chart `signet` version `X.Y.Z` | GitHub Release `server/vX.Y.Z`; `ghcr.io/bytepunx/signetd` and `docker.io/bytepunx/signet`; `oci://ghcr.io/bytepunx/charts/signet` |
+| server | `server/vX.Y.Z` | CLI binaries `signet-<os>-<arch>` with checksums; `signetd` image tagged `vX.Y.Z`, `vX.Y`, and `latest`; Helm chart `signet` version `X.Y.Z` | GitHub Release `server/vX.Y.Z`; `ghcr.io/bytepunx/signetd` and `docker.io/bytepunx/signet`; `oci://ghcr.io/bytepunx/charts/signet` |
 | proto | `proto/vX.Y.Z` | BSR module labeled `vX.Y.Z` | `buf.build/bytepunx/signet-proto`; GitHub Release `proto/vX.Y.Z` |
 | client-go | `client-go/vX.Y.Z` | Go module version `vX.Y.Z` | `go get github.com/bytepunx/signet/client-go@vX.Y.Z`; GitHub Release |
 | client-python | `client-python/vX.Y.Z` | `signet-client` wheel and sdist | PyPI; GitHub Release |
