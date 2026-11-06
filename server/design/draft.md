@@ -1097,7 +1097,7 @@ admin-listener-only.
 
 This closes the last reason authstar's `keep`/`herald`/`tower` needed an admin token at all
 — each drops it entirely once its client library can dial the workload listener with its
-own SPIFFE identity for `GitOpsService` calls (see `bytepunx/signet-clients`), using
+own SPIFFE identity for `GitOpsService` calls (see the `client-*/` folders), using
 `CreatePolicy`-granted `"put"` scope only for the specific cross-service writes each
 actually performs (`herald` → `tower`/`keep`/`portcullis`; `tower` → `portcullis`; `keep` is
 self-only and needs no policy grants at all).
