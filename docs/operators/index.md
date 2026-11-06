@@ -35,3 +35,4 @@ A release of flai with the published dashboard image needs no allowance and show
 | Guide | What it covers |
 |-------|----------------|
 | [release.md](release.md) | Publishing a release, what each component's release produces, and the credentials and trusted publishers the workflows need |
+| [smoke-tests.md](smoke-tests.md) | The echo images the smoke-test harness pulls, when they are rebuilt, what to set on ghcr.io, and how to run the harness |
