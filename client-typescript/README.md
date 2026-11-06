@@ -16,9 +16,12 @@ background.
 npm install @bytepunx/signet-client
 ```
 
-Published to [npm](https://www.npmjs.com/package/@bytepunx/signet-client) automatically by
-[`publish-typescript.yml`](../.github/workflows/publish-typescript.yml) whenever
-release-please tags a `typescript-v*` release.
+Published to [npm](https://www.npmjs.com/package/@bytepunx/signet-client) with provenance by
+[`release-client-typescript.yml`](../.github/workflows/release-client-typescript.yml) when a
+tag of the form `client-typescript/vX.Y.Z` is pushed (`client-typescript/vX.Y.Z-suffix` makes a
+pre-release, published under the `next` dist-tag). The workflow sets the package version from
+the tag, builds, tests, publishes, and creates the GitHub Release with the tag annotation as
+its notes.
 
 ## Regenerating stubs
 

@@ -5,9 +5,13 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bytepunx/signet-clients.git",
-    "directory": "typescript"
+    "url": "git+https://github.com/bytepunx/signet.git",
+    "directory": "client-typescript"
   },
+  "bugs": {
+    "url": "https://github.com/bytepunx/signet/issues"
+  },
+  "homepage": "https://github.com/bytepunx/signet/tree/main/client-typescript#readme",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

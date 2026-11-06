@@ -1,0 +1,96 @@
+name: Release client-typescript
+
+# A push of client-typescript/vX.Y.Z sets the package version from the tag,
+# builds, tests, publishes @bytepunx/signet-client to npm with provenance from
+# this repository (OIDC trusted publishing, no stored token), and creates a
+# GitHub Release named by the tag, with the tag annotation as its notes. A
+# pre-release tag (client-typescript/vX.Y.Z-suffix) publishes under the
+# `next` dist-tag and makes a pre-release.
+
+on:
+  push:
+    tags:
+      - "client-typescript/v*"
+
+permissions:
+  contents: write   # create the GitHub release
+  id-token: write   # npm provenance and trusted publishing (OIDC)
+
+jobs:
+  release:
+    name: Build, test, publish to npm, and release
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client-typescript
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history for the notes
+
+      - name: Resolve version
+        id: v
+        working-directory: .
+        run: |
+          VERSION="${GITHUB_REF_NAME#client-typescript/v}"
+          if ! [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "tag ${GITHUB_REF_NAME} is not client-typescript/vX.Y.Z[-suffix]" >&2
+            exit 1
+          fi
+          {
+            echo "version=${VERSION}"
+            if [[ -n "${BASH_REMATCH[4]}" ]]; then
+              echo "prerelease=true"
+              echo "disttag=next"
+            else
+              echo "prerelease=false"
+              echo "disttag=latest"
+            fi
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: client-typescript/package-lock.json
+
+      - name: Set version from the tag
+        run: npm version "${{ steps.v.outputs.version }}" --no-git-tag-version
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public --tag "${{ steps.v.outputs.disttag }}"
+
+      - name: Generate release notes
+        working-directory: .
+        run: |
+          # The tag annotation, then the commits since the previous client-typescript/ tag.
+          # checkout may leave an annotated tag as a lightweight ref, so fetch it.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          {
+            git tag -l --format='%(contents)' "${GITHUB_REF_NAME}"
+            echo
+            echo "## Changes"
+          } > release_notes.md
+          PREV_TAG=$(git tag -l 'client-typescript/v*' --sort=-v:refname | grep -vxF "${GITHUB_REF_NAME}" | grep -v -- '-' | head -n1 || true)
+          if [[ -n "$PREV_TAG" ]]; then
+            git log --oneline "${PREV_TAG}..${GITHUB_REF_NAME}" -- client-typescript >> release_notes.md
+          else
+            git log --oneline "${GITHUB_REF_NAME}" -- client-typescript >> release_notes.md
+          fi
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release_notes.md
+          prerelease: ${{ steps.v.outputs.prerelease == 'true' }}
