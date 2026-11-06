@@ -1,17 +1,29 @@
-# Applies only to `docker build -f examples/echo/Dockerfile` (BuildKit
-# convention: a <dockerfile>.dockerignore next to the referenced Dockerfile
-# takes precedence over a root .dockerignore). Keeps the build context lean
-# and avoids shadowing the stub packages this build regenerates itself via
+# Applies only to `docker build -f client-python/examples/echo/Dockerfile .` run
+# from the repository root (BuildKit convention: a <dockerfile>.dockerignore next
+# to the referenced Dockerfile takes precedence over a root .dockerignore). Keeps
+# the build context to what the build copies: proto/proto and client-python/. It
+# also avoids shadowing the stub packages this build regenerates itself via
 # `buf generate` in its "proto" stage.
+.git/
+.flai-cache/
+wip/
+design/
+docs/
+server/
+client-go/
+client-typescript/
+client-rust/
+client-csharp/
+client-elixir/
 **/__pycache__/
 **/*.py[cod]
-*.egg-info/
-.pytest_cache/
-.venv/
-build/
-dist/
-tests/
-src/signet/
-src/admin/
-examples/getsecret/
-examples/restart_on_change/
+**/*.egg-info/
+client-python/.pytest_cache/
+client-python/.venv/
+client-python/build/
+client-python/dist/
+client-python/tests/
+client-python/src/signet/
+client-python/src/admin/
+client-python/examples/getsecret/
+client-python/examples/restart_on_change/

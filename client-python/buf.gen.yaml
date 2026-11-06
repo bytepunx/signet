@@ -11,13 +11,7 @@ plugins:
     out: src
   - remote: buf.build/grpc/python:v1.83.1
     out: src
-# Pinned independently of signet's own buf.gen.yaml and the other language
-# clients in this repo, to a tagged signet-proto release
-# (bytepunx/signet-clients#64, bumped to v0.4.0 by #67's automation for
-# GitOpsService.PutServiceConfig). An unpinned
-# module reference floats on signet-proto's latest commit, so every
-# `buf generate` here silently picked up upstream schema changes —
-# including ones not yet released/tested. Bump deliberately when a newer
-# signet-proto release is ready to adopt.
+# The schema is the one in this repository, so a schema change and the code
+# that uses it land in one pull request; there is no version to bump.
 inputs:
-  - module: buf.build/bytepunx/signet-proto:v0.4.0
+  - directory: ../proto/proto

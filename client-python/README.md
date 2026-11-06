@@ -1,8 +1,7 @@
 # signet-client (Python)
 
 Python client for [signet](https://github.com/bytepunx/signet), generated from
-the mono-repo's [`proto/`](../proto) module and pinned
-independently of the server's own release cycle (see `buf.gen.yaml`).
+the schema in the mono-repo's [`proto/`](../proto), which `buf generate` reads as a directory (see `buf.gen.yaml`).
 
 Mirrors the [Go client](../client-go)'s design: synchronous `grpc` (not `grpc.aio`), with a
 background daemon thread doing the blocking read loop for each of the restart-lock
@@ -48,11 +47,9 @@ stored token). The publisher registered on pypi.org for `signet-client` names re
 buf generate
 ```
 
-Requires the `buf` CLI. Pulls `signet/v1` and `admin/v1` from
-`buf.build/bytepunx/signet-proto` and regenerates `src/signet/v1` and `src/admin/v1`
+Requires the `buf` CLI. Reads `signet/v1` and `admin/v1` from `../proto/proto` and regenerates `src/signet/v1` and `src/admin/v1`
 (messages, type stubs, and gRPC service stubs) as PEP 420 namespace packages — no
-`__init__.py` needed. Edit the module reference in `buf.gen.yaml` to pin a different
-schema version. Generated output is gitignored; both local development and CI run
+`__init__.py` needed. Generated output is gitignored; both local development and CI run
 `buf generate` before building or testing.
 
 ## Usage
