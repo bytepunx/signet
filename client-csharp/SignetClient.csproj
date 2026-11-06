@@ -5,11 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Signet.Client</PackageId>
-    <Version>0.6.0</Version>
-    <Description>C# client for signet, generated from bytepunx/signet-proto</Description>
+    <Description>C# client for signet, generated from the proto/ module of bytepunx/signet</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/bytepunx/signet-clients</RepositoryUrl>
+    <RepositoryUrl>https://github.com/bytepunx/signet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/bytepunx/signet</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
