@@ -6,6 +6,11 @@ set -eu
 cd "$(dirname "$0")/.."
 
 failed=""
+echo "test.sh: ensure-client-elixir-image"
+if ! scripts/test-ensure-client-elixir-image.sh; then
+  echo "test.sh: ensure-client-elixir-image FAILED" >&2
+  failed="${failed} ensure-client-elixir-image"
+fi
 for component in server proto client-go client-python client-typescript client-rust client-csharp client-elixir; do
   echo "test.sh: ${component}"
   if "scripts/test-${component}.sh"; then
