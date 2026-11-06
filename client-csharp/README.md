@@ -1,8 +1,7 @@
 # Signet.Client (C#)
 
 C# client for [signet](https://github.com/bytepunx/signet), generated from
-the mono-repo's [`proto/`](../proto) module and pinned independently of
-the server's own release cycle (see `buf.gen.yaml`).
+the schema in the mono-repo's [`proto/`](../proto), which `buf generate` reads as a directory (see `buf.gen.yaml`).
 
 Mirrors the [Go client](../client-go)'s design: `SignetConnect.DialWorkloadAsync`/`DialAdmin` for
 connection setup, and `Restart.WatchBundleAsync`/`AcquireLockAsync`/`WaitForRestartAsync` for
@@ -32,9 +31,8 @@ registered for repository `bytepunx/signet` and workflow `release-client-csharp.
 buf generate
 ```
 
-Pulls `signet/v1` and `admin/v1` from `buf.build/bytepunx/signet-proto` and regenerates `gen/`
-(gitignored — regenerate locally; CI regenerates fresh too). Edit the module reference in
-`buf.gen.yaml` to pin a different schema version.
+Reads `signet/v1` and `admin/v1` from `../proto/proto` and regenerates `gen/`
+(gitignored — regenerate locally; CI regenerates fresh too).
 
 ## Building and testing
 

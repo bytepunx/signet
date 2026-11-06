@@ -5,23 +5,24 @@
 
 # syntax=docker/dockerfile:1
 #
-# Build context is csharp/ (this Dockerfile lives under examples/echo/, two levels down from
-# it, so it can COPY the whole SignetClient project tree that EchoExample.csproj references).
+# Build context is the repository root, so `buf generate` can read ../proto/proto and the build
+# can COPY the SignetClient project tree that EchoExample.csproj references from client-csharp/.
 # Self-contained: the "proto" stage below runs `buf generate` itself, so there's no
-# prerequisite step — just run, from inside csharp/:
+# prerequisite step — just run, from the repository root:
 #
-#   docker build -f examples/echo/Dockerfile -t signet-echo-csharp:local .
+#   docker build -f client-csharp/examples/echo/Dockerfile -t signet-echo-csharp:local .
 #
-# (If csharp/gen/ already exists locally from a prior `buf generate`, this still works — the
+# (If client-csharp/gen/ already exists locally from a prior `buf generate`, this still works — the
 # proto stage's freshly generated gen/ simply overwrites it in the build stage.)
 
 # ---------------------------------------------------------------------------
-# Regenerate gRPC/protobuf stubs from the bytepunx/signet-proto BSR module.
+# Regenerate gRPC/protobuf stubs from the schema in proto/proto.
 # ---------------------------------------------------------------------------
 FROM bufbuild/buf:latest AS proto
 
-WORKDIR /src
-COPY buf.gen.yaml ./
+WORKDIR /src/client-csharp
+COPY proto/proto /src/proto/proto
+COPY client-csharp/buf.gen.yaml ./
 RUN buf generate
 
 # ---------------------------------------------------------------------------
@@ -33,17 +34,17 @@ WORKDIR /src
 
 # Restore first, separately from the rest of the source, so a source-only change doesn't
 # invalidate the NuGet restore layer.
-COPY SignetClient.csproj ./
-COPY examples/echo/EchoExample.csproj examples/echo/
+COPY client-csharp/SignetClient.csproj ./
+COPY client-csharp/examples/echo/EchoExample.csproj examples/echo/
 RUN dotnet restore examples/echo/EchoExample.csproj
 
 # Copy source explicitly (rather than `COPY . .`) so a local `dotnet build`/`buf generate`
 # already having been run in this checkout — e.g. because the "before finishing" build/test
 # steps in this repo's workflow ran here first — can't leak host-specific bin/obj/gen
 # artifacts into the image.
-COPY AdminConnection.cs Exceptions.cs Lock.cs Restart.cs Watch.cs WorkloadConnection.cs ./
-COPY examples/echo/Program.cs examples/echo/
-COPY --from=proto /src/gen ./gen
+COPY client-csharp/AdminConnection.cs client-csharp/Exceptions.cs client-csharp/Lock.cs client-csharp/Restart.cs client-csharp/Watch.cs client-csharp/WorkloadConnection.cs ./
+COPY client-csharp/examples/echo/Program.cs examples/echo/
+COPY --from=proto /src/client-csharp/gen ./gen
 
 RUN dotnet publish examples/echo/EchoExample.csproj \
     --configuration Release \

@@ -1,9 +1,19 @@
-# Applies only to examples/echo/Dockerfile (Docker's per-Dockerfile ignore-file convention),
-# even though the build context root is csharp/. Keeps host-local build artifacts and version
-# control metadata out of the build context — the Dockerfile COPYs its inputs explicitly, so
-# none of this is actually needed, but excluding it keeps `docker build`'s context-upload step
-# fast regardless of what's lying around in a given checkout.
-**/bin/
-**/obj/
-gen/
+# Applies only to client-csharp/examples/echo/Dockerfile (Docker's per-Dockerfile ignore-file
+# convention). The build context root is the repository root, so this keeps the context to what
+# the build copies: proto/proto and client-csharp/. Host-local build artifacts and other
+# components stay out; the Dockerfile COPYs its inputs explicitly, so none of this is needed,
+# but excluding it keeps `docker build`'s context-upload step fast.
 .git/
+.flai-cache/
+wip/
+design/
+docs/
+server/
+client-go/
+client-python/
+client-typescript/
+client-rust/
+client-elixir/
+client-csharp/**/bin/
+client-csharp/**/obj/
+client-csharp/gen/
