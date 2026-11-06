@@ -3,11 +3,11 @@ id: T-0079
 type: task
 nature: remediation
 title: Describe admin/ as part of the mono-repo and delete admin/CLAUDE.md
-status: in-progress
+status: done
 parent: S-0017
 owner: alex
 created: 2026-10-27T22:52:51Z
-updated: 2026-11-06T08:12:48Z
+updated: 2026-11-06T08:15:51Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:48Z
@@ -15,9 +15,24 @@ transitions:
   - to: in-progress
     at: 2026-11-06T08:12:48Z
     by: agent-S-0017
+  - to: done
+    at: 2026-11-06T08:15:51Z
+    by: agent-S-0017
 stream: S-0017
 tags: [admin, docs]
 touches: [admin/CLAUDE.md, admin/README.md]
+usage:
+  source: log
+  seconds: 183
+  estimated: true
+  priced_by: estimate
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 19
+      cache_read: 164805
+      cache_write: 7986
+      cost: 0.0581
 ---
 # T-0079 Describe admin/ as part of the mono-repo and delete admin/CLAUDE.md
 

@@ -7,7 +7,7 @@ status: in-progress
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:12:29Z
+updated: 2026-11-06T08:16:10Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:22Z
@@ -21,6 +21,22 @@ touches: [server/CLAUDE.md, admin/CLAUDE.md, server/README.md, admin/README.md, 
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
+usage:
+  source: log
+  seconds: 213
+  estimated: true
+  priced_by: estimate
+  turns:
+    - day: 2026-11-06
+      ceremony: 1
+      work: 18
+  models:
+    - model: claude-sonnet-5-5
+      input: 40
+      output: 199
+      cache_read: 1263273
+      cache_write: 94594
+      cost: 0.4567
 forecast:
   duration: 1h30m
   delivery: 2026-11-06T13:57:00Z
@@ -36,8 +52,8 @@ No file in the repository describes signet, signet-proto, signet-clients, and si
 
 ## Acceptance criteria
 - [ ] `grep -r "signet-clients\|signet-proto\|signet-admin"` finds only the BSR module name `buf.build/bytepunx/signet-proto` and historical changelog entries
-- [ ] `server/CLAUDE.md` and `admin/CLAUDE.md` are gone and `docs/contributors/index.md` tells a contributor how each component is built and tested
-- [ ] `design/system/overview.md` shows the real parts (server, proto, admin, the clients) and how they relate
+- [x] `server/CLAUDE.md` and `admin/CLAUDE.md` are gone and `docs/contributors/index.md` tells a contributor how each component is built and tested
+- [x] `design/system/overview.md` shows the real parts (server, proto, admin, the clients) and how they relate
 
 ## Tasks
 - T-0070 Replace the placeholder diagram in design/system/overview.md with the real parts

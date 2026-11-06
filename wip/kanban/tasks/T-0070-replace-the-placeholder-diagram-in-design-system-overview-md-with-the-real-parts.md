@@ -3,11 +3,11 @@ id: T-0070
 type: task
 nature: improvement
 title: Replace the placeholder diagram in design/system/overview.md with the real parts
-status: in-progress
+status: done
 parent: S-0017
 owner: alex
 created: 2026-10-27T22:52:40Z
-updated: 2026-11-06T08:12:48Z
+updated: 2026-11-06T08:15:44Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:48Z
@@ -15,9 +15,24 @@ transitions:
   - to: in-progress
     at: 2026-11-06T08:12:48Z
     by: agent-S-0017
+  - to: done
+    at: 2026-11-06T08:15:44Z
+    by: agent-S-0017
 stream: S-0017
 tags: [docs]
 touches: [design/system/overview.md]
+usage:
+  source: log
+  seconds: 176
+  estimated: true
+  priced_by: estimate
+  models:
+    - model: claude-sonnet-5-5
+      input: 0
+      output: 14
+      cache_read: 116438
+      cache_write: 3277
+      cost: 0.0403
 ---
 # T-0070 Replace the placeholder diagram in design/system/overview.md with the real parts
 

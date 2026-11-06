@@ -3,11 +3,11 @@ id: S-0018
 type: story
 nature: research
 title: Decide the admin sub-project's place in the mono-repo
-status: in-progress
+status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:12:51Z
+updated: 2026-11-06T08:17:44Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:31Z
@@ -15,8 +15,15 @@ transitions:
   - to: in-progress
     at: 2026-11-06T08:12:37Z
     by: agent-S-0018
+  - to: review
+    at: 2026-11-06T08:17:24Z
+    by: agent-S-0018
+  - to: done
+    at: 2026-11-06T08:17:44Z
+    by: alex
 blocked:
   - from: 2026-11-06T08:12:51Z
+    until: 2026-11-06T08:14:17Z
     reason: awaiting the operator on TH-0007
 tags: [admin]
 topics: [admin]
@@ -26,18 +33,19 @@ agent:
   model: claude-sonnet-5-5
 usage:
   source: log
-  seconds: 17
+  seconds: 203
   priced_by: harness
   turns:
     - day: 2026-11-06
-      work: 5
+      ceremony: 1
+      work: 30
   models:
     - model: claude-sonnet-5-5
-      input: 12
-      output: 1551
-      cache_read: 209718
-      cache_write: 33963
-      cost: 0.1724
+      input: 70
+      output: 6635
+      cache_read: 1912564
+      cache_write: 57077
+      cost: 0.4861
   strategic:
     - kind: planner
       seconds: 131
@@ -49,6 +57,21 @@ usage:
           cache_read: 278085
           cache_write: 37378
           cost: 0.1885
+    - kind: orchestrator
+      seconds: 14
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 7
+          output: 45
+          cache_read: 220880
+          cache_write: 28641
+          cost: 0.1283
+cost_of_delay:
+  inputs:
+    time_lost_per_cycle: 5m
+    by: agent-S-0018
+    at: 2026-11-06T08:14:33Z
 forecast:
   duration: 45m
   delivery: 2026-11-06T14:56:00Z
@@ -63,10 +86,12 @@ forecast:
 `admin/` holds a README and nothing else but is registered as a SvelteKit project, so `flai check` warns about missing examples and a release could tag an empty component. The operator decides whether to scaffold the SvelteKit app now (as a story under its own epic) or remove `admin` from `system-flow.yaml` and keep the README as a design note under `design/system/` until the work starts.
 
 ## Acceptance criteria
-- [ ] The decision is recorded in `design/system/overview.md` and, if the project is removed, `system-flow.yaml` and the folder reflect it
-- [ ] `flai check --strict` reports nothing about `admin`
+- [x] The decision is recorded in `design/system/overview.md` and, if the project is removed, `system-flow.yaml` and the folder reflect it
+- [x] `flai check --strict` reports nothing about `admin`
 
 ## Tasks
+- T-0098 Write the admin design note and record the decision in the overview
+- T-0099 Remove admin from system-flow.yaml and delete admin/
 
 ## Notes
 

@@ -4,10 +4,10 @@ title: "S-0018 plan: admin decision and cost of delay inputs needed"
 anchor:
   path: wip/kanban/stories/S-0018-decide-the-admin-sub-project-s-place-in-the-mono-repo.md
   item: S-0018
-status: open
-participants: [planner-S-0018, agent-S-0018]
+status: resolved
+participants: [planner-S-0018, agent-S-0018, alex]
 created: 2026-10-27T22:52:03Z
-updated: 2026-11-06T08:12:49Z
+updated: 2026-11-06T08:15:15Z
 ---
 
 # TH-0007 S-0018 plan: admin decision and cost of delay inputs needed
@@ -38,3 +38,11 @@ S-0018 is in progress, but this thread has no answer yet and the decision is you
 When you answer, I will write the two tasks and work them.
 
 Source: design/system/overview.md
+
+### 2026-11-06T08:14:16Z alex
+Confirmed the recommendation of 2026-11-06T08:12:49Z agent-S-0018.
+
+Source: design/system/overview.md
+
+### 2026-11-06T08:15:15Z agent-S-0018
+Resolved.

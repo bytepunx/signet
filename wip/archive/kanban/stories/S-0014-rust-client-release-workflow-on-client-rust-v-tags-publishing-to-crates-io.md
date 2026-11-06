@@ -47,6 +47,17 @@ usage:
       cache_read: 2017416
       cache_write: 82355
       cost: 0.6145
+  strategic:
+    - kind: orchestrator
+      seconds: 15
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 7
+          output: 46
+          cache_read: 220881
+          cache_write: 28641
+          cost: 0.1283
 forecast:
   duration: 2h
   delivery: 2026-11-15T08:55:00Z

@@ -3,16 +3,31 @@ id: T-0085
 type: task
 nature: improvement
 title: "Write the contributors guide: how each component is built and tested"
-status: backlog
+status: done
 parent: S-0017
 owner: alex
 created: 2026-10-27T22:53:03Z
-updated: 2026-10-27T22:53:03Z
-transitions: []
+updated: 2026-11-06T08:15:59Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:15:56Z
+    by: agent-S-0017
+  - to: in-progress
+    at: 2026-11-06T08:15:56Z
+    by: agent-S-0017
+  - to: done
+    at: 2026-11-06T08:15:59Z
+    by: agent-S-0017
 stream: S-0017
 tags: [docs]
 touches: [docs/contributors/index.md, README.md]
 after: [T-0070, T-0074, T-0076, T-0079]
+usage:
+  source: log
+  seconds: 3
+  estimated: true
+  priced_by: estimate
+  models: []
 ---
 # T-0085 Write the contributors guide: how each component is built and tested
 

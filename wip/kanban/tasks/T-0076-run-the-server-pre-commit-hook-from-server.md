@@ -3,11 +3,11 @@ id: T-0076
 type: task
 nature: remediation
 title: Run the server pre-commit hook from server/
-status: in-progress
+status: done
 parent: S-0017
 owner: alex
 created: 2026-10-27T22:52:47Z
-updated: 2026-11-06T08:12:48Z
+updated: 2026-11-06T08:15:50Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:48Z
@@ -15,9 +15,24 @@ transitions:
   - to: in-progress
     at: 2026-11-06T08:12:48Z
     by: agent-S-0017
+  - to: done
+    at: 2026-11-06T08:15:50Z
+    by: agent-S-0017
 stream: S-0017
 tags: [server]
 touches: [server/githooks/pre-commit, server/Makefile]
+usage:
+  source: log
+  seconds: 182
+  estimated: true
+  priced_by: estimate
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 19
+      cache_read: 164805
+      cache_write: 7986
+      cost: 0.0581
 ---
 # T-0076 Run the server pre-commit hook from server/
 

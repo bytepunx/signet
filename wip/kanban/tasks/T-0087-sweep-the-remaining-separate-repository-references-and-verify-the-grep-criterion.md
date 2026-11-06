@@ -3,16 +3,37 @@ id: T-0087
 type: task
 nature: remediation
 title: Sweep the remaining separate-repository references and verify the grep criterion
-status: backlog
+status: done
 parent: S-0017
 owner: alex
 created: 2026-10-27T22:53:09Z
-updated: 2026-10-27T22:53:09Z
-transitions: []
+updated: 2026-11-06T08:16:04Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:15:56Z
+    by: agent-S-0017
+  - to: in-progress
+    at: 2026-11-06T08:15:56Z
+    by: agent-S-0017
+  - to: done
+    at: 2026-11-06T08:16:04Z
+    by: agent-S-0017
 stream: S-0017
 tags: [server, docs]
 touches: [server/design/draft.md, server/CHECKLIST.md]
 after: [T-0074, T-0079, T-0080]
+usage:
+  source: log
+  seconds: 3
+  estimated: true
+  priced_by: estimate
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 24
+      cache_read: 108997
+      cache_write: 272
+      cost: 0.0368
 ---
 # T-0087 Sweep the remaining separate-repository references and verify the grep criterion
 
