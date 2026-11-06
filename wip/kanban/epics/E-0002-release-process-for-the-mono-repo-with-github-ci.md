@@ -6,7 +6,7 @@ title: Release process for the mono-repo with GitHub CI
 status: in-progress
 owner: arobson
 created: 2026-10-27T19:44:30Z
-updated: 2026-11-05T21:28:47Z
+updated: 2026-11-06T07:19:26Z
 transitions:
   - to: ready
     at: 2026-10-27T19:47:51Z
@@ -18,8 +18,9 @@ tags: []
 topics: [release, ci, github]
 usage:
   source: sum
-  seconds: 12102
-  priced_by: harness
+  seconds: 12162
+  estimated: true
+  priced_by: estimate
   empty_wakes: 2
   turns:
     - day: 2026-10-27
@@ -44,7 +45,8 @@ usage:
       empty_wakes: 2
       work: 41
     - day: 2026-11-06
-      work: 9
+      ceremony: 1
+      work: 21
   models:
     - model: claude-fable-5-1
       input: 770
@@ -59,11 +61,11 @@ usage:
       cache_write: 109675
       cost: 1.2577
     - model: claude-sonnet-5-5
-      input: 762
-      output: 129694
-      cache_read: 29355285
-      cache_write: 1490233
-      cost: 9.5883
+      input: 792
+      output: 129867
+      cache_read: 30021134
+      cache_write: 1541719
+      cost: 9.8444
   strategic:
     - kind: planner
       seconds: 403
@@ -117,6 +119,8 @@ Every component of the mono-repo (server, proto, and the six clients) is tested 
 - S-0019 Smoke-test echo images built from the clients' examples
 - S-0020 Generate in-repo stubs from proto/ by directory instead of the BSR pin
 - S-0029 Verify publish-server-main.yml and install.sh after S-0009 reaches main
+- S-0031 scripts/test-client-csharp.sh crashes in dotnet when the caller's uid has no passwd entry in the SDK image
+- S-0032 system-flow check fails on main: flai is not on PATH, and flai check --strict has findings behind it
 
 ## Notes
 
