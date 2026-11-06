@@ -15,10 +15,16 @@ exception types, `IAsyncDisposable`), not a mechanical transliteration of the Go
 dotnet add package Signet.Client
 ```
 
-Published to [NuGet](https://www.nuget.org/packages/Signet.Client) automatically by
-[`publish-csharp.yml`](../.github/workflows/publish-csharp.yml) whenever release-please tags a
-`csharp-v*` release, via [Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing)
-(OIDC — no long-lived API key stored in this repo).
+Published to [NuGet](https://www.nuget.org/packages/Signet.Client) by
+[`release-client-csharp.yml`](../.github/workflows/release-client-csharp.yml) when a
+`client-csharp/vX.Y.Z` tag is pushed (a suffix, as in `client-csharp/vX.Y.Z-rc.1`, makes a
+pre-release). The workflow tests, runs `dotnet pack -p:Version=X.Y.Z` with the version from the
+tag (the project file holds none), pushes the package, and creates the GitHub Release.
+
+Publishing uses NuGet [Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing)
+(OIDC — no long-lived API key stored in this repo): the trusted publisher on nuget.org is
+registered for repository `bytepunx/signet` and workflow `release-client-csharp.yml`, and the
+`NUGET_USER` secret names the nuget.org account.
 
 ## Regenerating stubs
 
