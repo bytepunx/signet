@@ -1,0 +1,73 @@
+name: Release client-elixir
+
+# A push of client-elixir/vX.Y.Z tests the client, publishes signet_client
+# X.Y.Z to hex.pm (scripts/publish-client-elixir.sh; mix.exs reads the version
+# from SIGNET_CLIENT_VERSION, so no commit bumps it), and creates the GitHub
+# Release named by the tag. Needs the HEX_API_KEY secret.
+
+on:
+  push:
+    tags:
+      - "client-elixir/v*"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/test-client-elixir.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
+
+  publish:
+    name: Publish to hex.pm
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/publish-client-elixir.sh "$GITHUB_REF_NAME"
+        env:
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+
+  github-release:
+    name: GitHub Release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the GitHub release
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Release notes
+        run: |
+          # checkout may leave an annotated tag as a lightweight ref.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          prev=$(git describe --tags --abbrev=0 --match 'client-elixir/v*' "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          range="${GITHUB_REF_NAME}"
+          if [ -n "$prev" ]; then range="${prev}..${GITHUB_REF_NAME}"; fi
+          {
+            git for-each-ref --format='%(contents)' "refs/tags/${GITHUB_REF_NAME}"
+            echo
+            echo "## Changes"
+            git log --format='- %s (%h)' "$range" -- client-elixir
+          } > release_notes.md
+          cat release_notes.md
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flag=""
+          case "${GITHUB_REF_NAME}" in
+            *-*) flag="--prerelease" ;;
+          esac
+          gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" \
+            --notes-file release_notes.md ${flag}
