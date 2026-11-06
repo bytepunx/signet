@@ -3,15 +3,21 @@ id: S-0029
 type: story
 nature: research
 title: Verify publish-server-main.yml and install.sh after S-0009 reaches main
-status: ready
+status: in-progress
 parent: E-0002
 owner: alex
 created: 2026-11-05T21:28:47Z
-updated: 2026-11-05T21:29:01Z
+updated: 2026-11-05T22:46:15Z
 transitions:
   - to: ready
     at: 2026-11-05T21:29:01Z
     by: agent
+  - to: in-progress
+    at: 2026-11-05T22:45:50Z
+    by: agent-S-0029
+blocked:
+  - from: 2026-11-05T22:46:15Z
+    reason: "waiting on operator (TH-0018): publish S-0009 to origin/main and cut a stable server/vX.Y.Z release"
 tags: [server]
 topics: [release, github]
 touches: [".github/workflows/publish-server-main.yml", install.sh]
@@ -21,6 +27,31 @@ agent:
   model: claude-sonnet-5-5
   config:
     effort: high
+usage:
+  source: log
+  seconds: 57
+  priced_by: harness
+  turns:
+    - day: 2026-11-05
+      work: 15
+  models:
+    - model: claude-sonnet-5-5
+      input: 42
+      output: 6208
+      cache_read: 1134522
+      cache_write: 78426
+      cost: 0.4893
+  strategic:
+    - kind: orchestrator
+      seconds: 21
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 18
+          output: 104
+          cache_read: 452760
+          cache_write: 105984
+          cost: 0.2426
 ---
 # S-0029 Verify publish-server-main.yml and install.sh after S-0009 reaches main
 

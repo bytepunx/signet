@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 7.8687
-accrued_seconds: 156145
-tasks_completed: 25
-last_run: 2026-11-05T20:47:50Z
+accrued_cost: 8.2129
+accrued_seconds: 156176
+tasks_completed: 29
+last_run: 2026-11-05T23:45:56Z
 ---
 
 # Orchestrator activity
@@ -186,6 +186,34 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Items: none
 - Seconds: 5
 - Cost: 0.0830 USD, estimated
+
+### 2026-11-05T22:46:56Z
+
+- Summary: TH-0018 (S-0029 needs S-0009 published and a stable server/v* release): no action. system-flow.yaml has no orchestration.permissions, so answer_threads and publish are off. The thread stays with the operator, who must publish origin/main and cut the release.
+- Items: TH-0018, S-0029
+- Seconds: 12
+- Cost: 0.1409 USD, estimated
+
+### 2026-11-05T22:47:02Z
+
+- Summary: I took no action on TH-0018, because `system-flow.yaml` has no `orchestration.permissions` block, so `answer_threads` and `publish` are both off.
+- Items: none
+- Seconds: 6
+- Cost: 0.0674 USD, estimated
+
+### 2026-11-05T23:45:52Z
+
+- Summary: TH-0018 left alone: system-flow.yaml has no orchestration.permissions, so answer_threads and publish are off. The thread asks the operator to publish S-0009 and cut a server/v* release, which is also the operator's call. No action taken.
+- Items: TH-0018, S-0029
+- Seconds: 9
+- Cost: 0.1017 USD, estimated
+
+### 2026-11-05T23:45:56Z
+
+- Summary: I took no action on TH-0018. `system-flow.yaml` has no `orchestration.permissions` block, so every permission is off, including `answer_threads` and `publish`.
+- Items: none
+- Seconds: 4
+- Cost: 0.0342 USD, estimated
 
 ## Refusals
 
