@@ -1,18 +1,28 @@
 # signet (Go client)
 
 Go client library for [signet](https://github.com/bytepunx/signet), generated from
-the mono-repo's [`proto/`](../proto) module and pinned
+the `signet-proto` BSR module published from the mono-repo's [`proto/`](../proto) and pinned
 independently of the server's own release cycle (see `buf.gen.yaml`).
 
 ```text
-go get github.com/bytepunx/signet-clients/go
+go get github.com/bytepunx/signet/client-go@vX.Y.Z
 ```
 
-Go modules need no separate publish step — pushing a `go/vX.Y.Z` tag (which release-please
-does automatically) already makes that version resolvable via `go get`.
-[`publish-go.yml`](../.github/workflows/publish-go.yml) additionally pings the module proxy
-so it's indexed on [pkg.go.dev](https://pkg.go.dev/github.com/bytepunx/signet-clients/go)
-immediately rather than on first request.
+The module path is `github.com/bytepunx/signet/client-go`. It changed from
+`github.com/bytepunx/signet-clients/go` when the client moved into the mono-repo; that
+breaks importers of the old path, which must update their imports to the new one.
+
+## Releasing
+
+Go modules need no separate publish step. The operator runs `flai release --pending`, which
+pushes the tag `client-go/vX.Y.Z`, the tag form Go requires for a module in a subdirectory
+of its repository, so the tag alone makes that version resolvable via `go get`.
+[`release-client-go.yml`](../.github/workflows/release-client-go.yml) runs on that tag:
+it regenerates the stubs and tests, asks `proxy.golang.org` to index the version so it
+appears on [pkg.go.dev](https://pkg.go.dev/github.com/bytepunx/signet/client-go)
+immediately rather than on first request, and creates the GitHub Release named by the tag,
+which is this client's changelog. The operator's steps are in
+[docs/operators/release.md](../docs/operators/release.md).
 
 ## Usage
 
