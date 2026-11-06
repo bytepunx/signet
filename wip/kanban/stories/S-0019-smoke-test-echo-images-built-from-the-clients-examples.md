@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:12:58Z
+updated: 2026-11-06T08:17:45Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:34Z
@@ -21,10 +21,10 @@ agent:
   model: claude-sonnet-5-5
 forecast:
   duration: 2h
-  delivery: 2026-11-07T01:48:00Z
-  basis: "Its own forecast of 2h; 3rd in the pull order with an in-progress limit of 2, behind S-0017, S-0018, S-0020 and S-0011."
+  delivery: 2026-11-07T01:08:00Z
+  basis: "Its own forecast of 2h; 3rd in the pull order with an in-progress limit of 4, behind S-0017, S-0020 and S-0011."
   by: flai
-  at: 2026-11-06T08:12:58Z
+  at: 2026-11-06T08:17:45Z
 ---
 # S-0019 Smoke-test echo images built from the clients' examples
 
