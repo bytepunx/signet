@@ -7,7 +7,7 @@ status: ready
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T08:37:57Z
+updated: 2026-11-06T08:45:33Z
 transitions:
   - to: ready
     at: 2026-11-06T08:12:34Z
@@ -27,10 +27,10 @@ cost_of_delay:
     at: 2026-11-06T08:33:05Z
 forecast:
   duration: 2h
-  delivery: 2026-11-07T01:28:00Z
-  basis: "Its own forecast of 2h; 2nd in the pull order with an in-progress limit of 4, behind S-0020."
+  delivery: 2026-11-06T11:56:00Z
+  basis: "Its own forecast of 2h; 1st in the pull order with an in-progress limit of 4, with nothing ahead of it."
   by: flai
-  at: 2026-11-06T08:37:57Z
+  at: 2026-11-06T08:45:33Z
 ---
 # S-0019 Smoke-test echo images built from the clients' examples
 
