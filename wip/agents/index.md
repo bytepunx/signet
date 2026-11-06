@@ -1,6 +1,6 @@
 ---
 title: Active streams
-updated: 2026-11-06T07:44:57Z
+updated: 2026-11-06T07:45:09Z
 ---
 
 # Active streams
@@ -8,7 +8,6 @@ updated: 2026-11-06T07:44:57Z
 | Stream | Title | Status | Last agent | Updated |
 |--------|-------|--------|------------|---------|
 | [S-0029](S-0029.md) | Verify publish-server-main.yml and install.sh after S-0009 reaches main | in-progress | agent-S-0029 | 2026-11-06T07:37:48Z |
-| [S-0031](S-0031.md) | scripts/test-client-csharp.sh crashes in dotnet when the caller's uid has no passwd entry in the SDK image | review | agent-S-0031 | 2026-11-06T07:41:51Z |
 | [S-0032](S-0032.md) | system-flow check fails on main: flai is not on PATH, and flai check --strict has findings behind it | in-progress | agent-S-0032 | 2026-11-06T07:44:35Z |
 
 ## Strategic agents

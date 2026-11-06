@@ -4,10 +4,10 @@ title: "S-0029: server/v0.11.1 sits on a stray commit and started no release; au
 anchor:
   path: wip/kanban/stories/S-0029-verify-publish-server-main-yml-and-install-sh-after-s-0009-reaches-main.md
   item: S-0029
-status: open
-participants: [agent-S-0029]
+status: resolved
+participants: [agent-S-0029, alex]
 created: 2026-11-06T06:58:24Z
-updated: 2026-11-06T06:58:24Z
+updated: 2026-11-06T07:32:09Z
 ---
 
 # TH-0019 S-0029: server/v0.11.1 sits on a stray commit and started no release; authorize retag and a push for the path-filter check
@@ -33,3 +33,9 @@ Decisions:
 2. Path-filter check. May I push a docs-only commit that touches no `server/` path, such as a note in this story's narrative, to main? Alternative: skip the extra push. The next publish after S-0029 is accepted will touch only `wip/`, and I confirm no run starts then. That means criterion 1 is ticked only after acceptance, so I would leave it unticked at review and say why in the notes.
 
 Reply with your choice for each. Once a stable `server/v*` release exists and its workflow has succeeded, I will run `install.sh` on darwin and on linux through a container, tick criterion 2, and move the story to review.
+
+### 2026-11-06T07:32:06Z alex
+I have verified both of these
+
+### 2026-11-06T07:32:09Z alex
+Resolved.

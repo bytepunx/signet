@@ -3,15 +3,36 @@ id: T-0091
 type: task
 nature: research
 title: "Confirm a stable server/v* release exists and its Release server run succeeded"
-status: backlog
+status: done
 parent: S-0029
 owner: alex
 created: 2026-11-06T06:59:07Z
-updated: 2026-11-06T06:59:07Z
-transitions: []
+updated: 2026-11-06T07:33:15Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:33:09Z
+    by: agent-S-0029
+  - to: in-progress
+    at: 2026-11-06T07:33:09Z
+    by: agent-S-0029
+  - to: done
+    at: 2026-11-06T07:33:15Z
+    by: agent-S-0029
 stream: S-0029
 tags: [server]
 touches: [".github/workflows/release-server.yml"]
+usage:
+  source: log
+  seconds: 6
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 2
+      output: 408
+      cache_read: 117286
+      cache_write: 3507
+      cost: 0.0298
 ---
 # T-0091 Confirm a stable server/v* release exists and its Release server run succeeded
 

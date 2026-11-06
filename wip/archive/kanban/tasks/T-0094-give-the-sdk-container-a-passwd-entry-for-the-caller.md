@@ -25,14 +25,14 @@ usage:
   source: log
   seconds: 29
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 12
-      output: 62
-      cache_read: 307500
-      cache_write: 4602
-      cost: 0.1114
+      input: 7
+      output: 794
+      cache_read: 306870
+      cache_write: 5236
+      cost: 0.0596
 ---
 # T-0094 Give the SDK container a passwd entry for the caller
 

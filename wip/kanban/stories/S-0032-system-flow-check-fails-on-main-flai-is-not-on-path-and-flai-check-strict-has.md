@@ -3,23 +3,42 @@ id: S-0032
 type: story
 nature: remediation
 title: "system-flow check fails on main: flai is not on PATH, and flai check --strict has findings behind it"
-status: ready
+status: in-progress
 parent: E-0002
 owner: alex
 created: 2026-11-06T07:19:26Z
-updated: 2026-11-06T07:19:58Z
+updated: 2026-11-06T07:44:34Z
 transitions:
   - to: ready
     at: 2026-11-06T07:19:58Z
     by: arobson
+  - to: in-progress
+    at: 2026-11-06T07:42:03Z
+    by: agent-S-0032
 tags: []
 topics: [github]
-touches: [".github/workflows/system-flow-check.yml", ".claude/agents/analyzer.md", ".claude/agents/curator.md", ".claude/agents/orchestrator.md", ".claude/agents/planner.md"]
+touches: [".github/workflows/system-flow-check.yml", ".claude/agents/analyzer.md", ".claude/agents/curator.md", ".claude/agents/orchestrator.md", ".claude/agents/planner.md", design/issues/I-0009-flai-check-finds-roles-definition-outside-the-story-at-close-out.md, design/issues/summary.md, design/issues/I-0010-flai-check-finds-item-blocked-closed-outside-the-story-at-close-out.md, wip/archive/kanban/stories/S-0010-proto-publish-workflow-bsr-push-from-main-and-label-on-proto-v-tags.md]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
   config:
     effort: high
+usage:
+  source: log
+  seconds: 78
+  estimated: true
+  priced_by: estimate
+  turns:
+    - day: 2026-11-06
+      hand_edits: 2
+      work: 14
+  models:
+    - model: claude-sonnet-5-5
+      input: 34
+      output: 239
+      cache_read: 1349155
+      cache_write: 92839
+      cost: 0.4898
 ---
 # S-0032 system-flow check fails on main: flai is not on PATH, and flai check --strict has findings behind it
 
@@ -28,12 +47,13 @@ agent:
 The `system-flow check` workflow is green on `main`. Today it fails every push with `flai: command not found` (exit 127, run 42178552069): `go install` puts `flai` in `$(go env GOPATH)/bin`, which nothing adds to `PATH` on the runner. That hides a second failure, because `flai check --strict` also exits 1 on a fresh clone.
 
 ## Acceptance criteria
-- [ ] `.github/workflows/system-flow-check.yml` puts the installed `flai` on `PATH`
-- [ ] `flai check --strict` exits 0 on a fresh clone with flai v1.83.0, the version `@latest` installs in CI
+- [x] `.github/workflows/system-flow-check.yml` puts the installed `flai` on `PATH`
+- [x] `flai check --strict` exits 0 on a fresh clone with flai v1.83.0, the version `@latest` installs in CI
 - [ ] The `system-flow check` workflow is green on a pull request or on `main`
-- [ ] I-0009 and I-0010 are closed with `flai issue close` saying what fixed them
+- [x] I-0009 and I-0010 are closed with `flai issue close` saying what fixed them
 
 ## Tasks
+- T-0096 Put flai on PATH in the check workflow and clear the strict findings
 
 ## Notes
 
@@ -44,3 +64,5 @@ The `system-flow check` workflow is green on `main`. Today it fails every push w
 - `wip.after-reason` (1): S-0013 names S-0007 in `after` with no reason in its Notes.
 
 `system-flow-check.yml` is identical to the template's copy in `system-flow`, so the `PATH` bug is upstream too, and this edit will show as a conflict at the next `flai upgrade`. `flai upgrade` is not part of this story: its dry run lists 13 conflicts, and it would not fix `PATH`. The `roles.baseline` findings (I-0008, S-0024) stay for it.
+
+Criterion 3 is left unticked: a green `system-flow check` run needs this branch on GitHub, which an agent here does not push. Check the run after the branch is published. Criterion 2 was verified on fresh clones of `story/S-0032` with flai built from `v1.83.0` and with 1.82.0: both exit 0 with no warnings. `flai unblock S-0010` wrote only to the main checkout, so the same `until:` line is committed on the branch too; both carry the same text.

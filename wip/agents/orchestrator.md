@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 8.9241
-accrued_seconds: 156249
-tasks_completed: 35
-last_run: 2026-11-06T07:21:05Z
+accrued_cost: 9.4897
+accrued_seconds: 156319
+tasks_completed: 41
+last_run: 2026-11-06T07:42:53Z
 ---
 
 # Orchestrator activity
@@ -257,6 +257,48 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Seconds: 4
 - Cost: 0.1287 USD, estimated
 
+### 2026-11-06T07:36:12Z
+
+- Summary: TH-0021 (S-0031, BSR rate limit): no action. system-flow.yaml has no orchestration.permissions block, so answer_threads is off; the thread is the operator's. The question is also about a credential in flai serve's environment (BUF_TOKEN / BSR_AUTH_TOKEN, see D-0021), a host change that only the operator can make.
+- Items: TH-0021, S-0031
+- Seconds: 20
+- Cost: 0.1241 USD, estimated
+
+### 2026-11-06T07:36:16Z
+
+- Summary: I left TH-0021 alone and made no reply, because `system-flow.yaml` has no `orchestration.permissions` block. That leaves `answer_threads` off, so the thread is the operator's to answer.
+- Items: none
+- Seconds: 4
+- Cost: 0.0306 USD, estimated
+
+### 2026-11-06T07:38:38Z
+
+- Summary: TH-0022 (S-0029, close-out blocked by BSR rate limit, same as TH-0021): took no action. system-flow.yaml has no orchestration block, so answer_threads is off and the thread stays with the operator. The thread asks for BUF_TOKEN in flai serve's environment (a host/credentials change) or acceptance without a green close-out, both the operator's call. Digest D-0021 says the repository secret is BSR_AUTH_TOKEN, not BUF_TOKEN.
+- Items: TH-0022, S-0029
+- Seconds: 20
+- Cost: 0.1535 USD, estimated
+
+### 2026-11-06T07:38:43Z
+
+- Summary: I took no action on TH-0022. It stays open for you.
+- Items: none
+- Seconds: 5
+- Cost: 0.0387 USD, estimated
+
+### 2026-11-06T07:42:49Z
+
+- Summary: S-0031 in review: not accepted. flai guard refused `flai accept --dry-run` because orchestration.permissions.accept_reviews is off. Last verify passed at 609790e; the branch head is 9c2c23a (narrative and issue commits since). Acceptance is left to the operator.
+- Items: S-0031
+- Seconds: 17
+- Cost: 0.1661 USD, estimated
+
+### 2026-11-06T07:42:53Z
+
+- Summary: I did not accept S-0031. The guard refused my `flai accept --dry-run` call because `orchestration.permissions.accept_reviews` is off. I logged the refusal and I'm ending now, since S-0031 was my only reason.
+- Items: none
+- Seconds: 4
+- Cost: 0.0526 USD, estimated
+
 ## Refusals
 
 ### 2026-10-27T22:25:32Z
@@ -267,4 +309,14 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 ### 2026-11-03T02:49:34Z
 
 - Call: `flai accept S-0010 --by orchestrator --verified 885ca1f0e76810142e5d180c02ef3c6969bb66a7 --dry-run 2>&1`
+- Needs: orchestration.permissions.accept_reviews
+
+### 2026-11-06T07:38:33Z
+
+- Call: `flai config 2>&1`
+- Needs: none
+
+### 2026-11-06T07:42:45Z
+
+- Call: `flai accept S-0031 --by orchestrator --verified 9c2c23a82e9597f8e958fc0fa8070bedecd4e48e --dry-run 2>&1`
 - Needs: orchestration.permissions.accept_reviews

@@ -7,7 +7,7 @@ status: done
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-05T19:24:45Z
+updated: 2026-11-06T07:42:53Z
 transitions:
   - to: ready
     at: 2026-10-27T22:54:48Z
@@ -26,6 +26,7 @@ blocked:
     until: 2026-10-30T01:55:55Z
     reason: "Close-out test tier fails on BSR rate limit (I-0007); needs BUF_TOKEN in the environment or the limit to clear"
   - from: 2026-10-30T02:07:40Z
+    until: 2026-11-06T07:42:53Z
     reason: "Close-out test tier fails on BSR rate limit (I-0007) again after retry; rerun when it clears or BUF_TOKEN is set"
 tags: [proto]
 topics: [release, github]

@@ -3,15 +3,36 @@ id: T-0092
 type: task
 nature: research
 title: Verify publish-server-main.yml publishes only when server/ changed
-status: backlog
+status: done
 parent: S-0029
 owner: alex
 created: 2026-11-06T06:59:10Z
-updated: 2026-11-06T06:59:10Z
-transitions: []
+updated: 2026-11-06T07:34:01Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:33:19Z
+    by: agent-S-0029
+  - to: in-progress
+    at: 2026-11-06T07:33:19Z
+    by: agent-S-0029
+  - to: done
+    at: 2026-11-06T07:34:01Z
+    by: agent-S-0029
 stream: S-0029
 tags: [server]
 touches: [".github/workflows/publish-server-main.yml"]
+usage:
+  source: log
+  seconds: 42
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 17
+      output: 3129
+      cache_read: 899758
+      cache_write: 26901
+      cost: 0.2289
 ---
 # T-0092 Verify publish-server-main.yml publishes only when server/ changed
 

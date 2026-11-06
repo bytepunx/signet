@@ -7,7 +7,6 @@ wip_limits:
   in-progress: 2
   review: 3
 order:
-  - S-0032
   - S-0020
   - S-0011
   - S-0012
@@ -43,9 +42,6 @@ placed:
   S-0019:
     by: arobson
     at: 2026-10-27T19:47:51Z
-  S-0032:
-    by: arobson
-    at: 2026-11-06T07:20:11Z
 ---
 
 # Board

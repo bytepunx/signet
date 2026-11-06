@@ -3,16 +3,37 @@ id: T-0093
 type: task
 nature: research
 title: "Verify install.sh installs the newest server/v* release on linux and darwin"
-status: backlog
+status: done
 parent: S-0029
 owner: alex
 created: 2026-11-06T06:59:16Z
-updated: 2026-11-06T06:59:16Z
-transitions: []
+updated: 2026-11-06T07:35:18Z
+transitions:
+  - to: ready
+    at: 2026-11-06T07:34:09Z
+    by: agent-S-0029
+  - to: in-progress
+    at: 2026-11-06T07:34:09Z
+    by: agent-S-0029
+  - to: done
+    at: 2026-11-06T07:35:18Z
+    by: agent-S-0029
 stream: S-0029
 tags: [server]
 touches: [install.sh]
 after: [T-0091]
+usage:
+  source: log
+  seconds: 69
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 10
+      output: 1909
+      cache_read: 548934
+      cache_write: 16412
+      cost: 0.1397
 ---
 # T-0093 Verify install.sh installs the newest server/v* release on linux and darwin
 

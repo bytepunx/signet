@@ -18,10 +18,10 @@ tags: []
 topics: [release, ci, github]
 usage:
   source: sum
-  seconds: 12162
+  seconds: 13645
   estimated: true
   priced_by: estimate
-  empty_wakes: 2
+  empty_wakes: 3
   turns:
     - day: 2026-10-27
       ceremony: 8
@@ -45,8 +45,10 @@ usage:
       empty_wakes: 2
       work: 41
     - day: 2026-11-06
-      ceremony: 1
-      work: 21
+      ceremony: 6
+      empty_wakes: 1
+      hand_edits: 3
+      work: 132
   models:
     - model: claude-fable-5-1
       input: 770
@@ -61,11 +63,11 @@ usage:
       cache_write: 109675
       cost: 1.2577
     - model: claude-sonnet-5-5
-      input: 792
-      output: 129867
-      cache_read: 30021134
-      cache_write: 1541719
-      cost: 9.8444
+      input: 1058
+      output: 166463
+      cache_read: 44211443
+      cache_write: 1771600
+      cost: 12.5488
   strategic:
     - kind: planner
       seconds: 403
@@ -84,15 +86,15 @@ usage:
           cache_write: 517166
           cost: 4.683
     - kind: orchestrator
-      seconds: 124
+      seconds: 181
       estimated: true
       models:
         - model: claude-sonnet-5-5
-          input: 72
-          output: 528
-          cache_read: 1764017
-          cache_write: 510644
-          cost: 0.9228
+          input: 104
+          output: 763
+          cache_read: 2549807
+          cache_write: 630800
+          cost: 1.3665
 ---
 # E-0002 Release process for the mono-repo with GitHub CI
 

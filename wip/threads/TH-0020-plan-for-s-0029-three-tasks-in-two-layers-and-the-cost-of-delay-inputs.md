@@ -4,10 +4,10 @@ title: "Plan for S-0029: three tasks in two layers, and the cost of delay inputs
 anchor:
   path: wip/kanban/stories/S-0029-verify-publish-server-main-yml-and-install-sh-after-s-0009-reaches-main.md
   item: S-0029
-status: open
-participants: [planner-S-0029]
+status: resolved
+participants: [planner-S-0029, alex]
 created: 2026-11-06T06:59:53Z
-updated: 2026-11-06T06:59:53Z
+updated: 2026-11-06T07:32:18Z
 ---
 
 # TH-0020 Plan for S-0029: three tasks in two layers, and the cost of delay inputs
@@ -35,3 +35,6 @@ Question, with my recommendation first:
 - Cost of delay: I recommend writing none. This is a verification story with no revenue; it only closes S-0009's two unchecked criteria. If you want one, give revenue_per_week, penalty_per_week, or time_lost_per_cycle, on S-0029 or on E-0002. flai cod needs inputs and has none on either.
 
 I am not splitting, merging, or dropping any task.
+
+### 2026-11-06T07:32:18Z alex
+Resolved.

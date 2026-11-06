@@ -3,11 +3,11 @@ id: S-0031
 type: story
 nature: remediation
 title: scripts/test-client-csharp.sh crashes in dotnet when the caller's uid has no passwd entry in the SDK image
-status: review
+status: done
 parent: E-0002
 owner: alex
 created: 2026-11-06T07:19:26Z
-updated: 2026-11-06T07:44:57Z
+updated: 2026-11-06T07:45:09Z
 transitions:
   - to: ready
     at: 2026-11-06T07:19:30Z
@@ -18,6 +18,9 @@ transitions:
   - to: review
     at: 2026-11-06T07:41:54Z
     by: agent-S-0031
+  - to: done
+    at: 2026-11-06T07:45:09Z
+    by: alex
 blocked:
   - from: 2026-11-06T07:35:32Z
     until: 2026-11-06T07:36:38Z

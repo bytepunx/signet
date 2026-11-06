@@ -7,7 +7,7 @@ status: in-progress
 parent: E-0002
 owner: alex
 created: 2026-11-05T21:28:47Z
-updated: 2026-11-06T06:59:45Z
+updated: 2026-11-06T07:43:48Z
 transitions:
   - to: ready
     at: 2026-11-05T21:29:01Z
@@ -17,10 +17,14 @@ transitions:
     by: agent-S-0029
 blocked:
   - from: 2026-11-05T22:46:15Z
+    until: 2026-11-06T07:32:23Z
     reason: "waiting on operator (TH-0018): publish S-0009 to origin/main and cut a stable server/vX.Y.Z release"
+  - from: 2026-11-06T07:37:55Z
+    until: 2026-11-06T07:43:48Z
+    reason: awaiting the operator on TH-0022
 tags: [server]
 topics: [release, github]
-touches: [".github/workflows/publish-server-main.yml", install.sh, ".github/workflows/release-server.yml"]
+touches: [".github/workflows/publish-server-main.yml", install.sh, ".github/workflows/release-server.yml", design/system/release.md, docs/operators/release.md, design/issues/I-0011-flai-release-pending-tagged-server-v0-11-1-on-a-commit-that-is-on-no-branch-so.md, design/issues/summary.md, design/issues/I-0007-the-bsr-rate-limit-resource-exhausted-too-many-requests-fails-the-buf-generate.md]
 after: [S-0009]
 agent:
   harness: claude-code
@@ -29,20 +33,22 @@ agent:
     effort: high
 usage:
   source: log
-  seconds: 112
+  seconds: 454
   priced_by: harness
   turns:
     - day: 2026-11-05
       work: 15
     - day: 2026-11-06
-      work: 9
+      ceremony: 2
+      hand_edits: 1
+      work: 50
   models:
     - model: claude-sonnet-5-5
-      input: 62
-      output: 11073
-      cache_read: 2016656
-      cache_write: 183501
-      cost: 1.0465
+      input: 154
+      output: 29031
+      cache_read: 8347167
+      cache_write: 249568
+      cost: 2.1236
   strategic:
     - kind: planner
       seconds: 93
@@ -55,15 +61,15 @@ usage:
           cache_write: 75407
           cost: 0.4905
     - kind: orchestrator
-      seconds: 66
+      seconds: 86
       estimated: true
       models:
         - model: claude-sonnet-5-5
-          input: 38
-          output: 237
-          cache_read: 966114
-          cache_write: 241315
-          cost: 0.543
+          input: 50
+          output: 332
+          cache_read: 1247011
+          cache_write: 274300
+          cost: 0.6965
 forecast:
   duration: 1h
   delivery: 2026-11-06T10:00:00Z
@@ -78,13 +84,14 @@ forecast:
 Confirm on real GitHub runs the two behaviours of S-0009 that cannot be exercised before S-0009 is merged to `main` and a stable `server/v*` release exists: the `main` image is published only when `server/` changed, and `install.sh` installs the newest `server/v*` release. Fix either if it fails.
 
 ## Acceptance criteria
-- [ ] `publish-server-main.yml` pushes the `main` image only when `server/` changed: a push to `main` touching `server/` publishes the `main` tag, and a push touching only other paths does not run or publish it
-- [ ] `install.sh` installs the newest `server/v*` release on linux and darwin and ignores other components' releases
+- [x] `publish-server-main.yml` pushes the `main` image only when `server/` changed: a push to `main` touching `server/` publishes the `main` tag, and a push touching only other paths does not run or publish it
+- [x] `install.sh` installs the newest `server/v*` release on linux and darwin and ignores other components' releases
 
 ## Tasks
 - T-0091 Confirm a stable server/v* release exists and its Release server run succeeded
 - T-0092 Verify publish-server-main.yml publishes only when server/ changed
 - T-0093 Verify install.sh installs the newest server/v* release on linux and darwin
+- T-0095 Correct the release docs: the signetd image is tagged vX.Y.Z and vX.Y, not X.Y.Z
 
 ## Notes
 
