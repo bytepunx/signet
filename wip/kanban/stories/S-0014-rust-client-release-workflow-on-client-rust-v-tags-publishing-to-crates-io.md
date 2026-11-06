@@ -7,7 +7,7 @@ status: in-progress
 parent: E-0002
 owner: arobson
 created: 2026-10-27T19:47:50Z
-updated: 2026-11-06T07:54:04Z
+updated: 2026-11-06T08:09:30Z
 transitions:
   - to: ready
     at: 2026-11-06T07:50:05Z
@@ -17,6 +17,7 @@ transitions:
     by: agent-S-0014
 blocked:
   - from: 2026-11-06T07:54:04Z
+    until: 2026-11-06T08:09:30Z
     reason: awaiting the operator on TH-0023
 tags: [client-rust]
 topics: [release, github]

@@ -3,10 +3,10 @@ id: S-0021
 type: story
 nature: improvement
 title: scripts/test-client-elixir.sh rebuilds the toolchain image on every run and fails when the registry stalls
-status: in-progress
+status: review
 owner: alex
 created: 2026-10-27T22:31:00Z
-updated: 2026-11-06T08:01:37Z
+updated: 2026-11-06T08:08:01Z
 transitions:
   - to: ready
     at: 2026-11-06T07:51:18Z
@@ -14,8 +14,11 @@ transitions:
   - to: in-progress
     at: 2026-11-06T08:01:37Z
     by: agent-S-0021
+  - to: review
+    at: 2026-11-06T08:08:01Z
+    by: agent-S-0021
 tags: []
-touches: [scripts/test-client-elixir.sh, scripts/integration-client-elixir.sh, scripts/ensure-client-elixir-image.sh, scripts/test-ensure-client-elixir-image.sh, scripts/test.sh, scripts/README.md, design/issues/I-0002-scripts-test-client-elixir-sh-rebuilds-the-toolchain-image-on-every-run-and-fails-when-the-registry-stalls.md, design/issues/summary.md]
+touches: [scripts/test-client-elixir.sh, scripts/integration-client-elixir.sh, scripts/ensure-client-elixir-image.sh, scripts/test-ensure-client-elixir-image.sh, scripts/test.sh, scripts/README.md, design/issues/I-0002-scripts-test-client-elixir-sh-rebuilds-the-toolchain-image-on-every-run-and-fails-when-the-registry-stalls.md, design/issues/summary.md, scripts/publish-client-elixir.sh]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
@@ -23,19 +26,22 @@ agent:
     effort: high
 usage:
   source: log
-  seconds: 74
-  estimated: true
-  priced_by: estimate
+  seconds: 391
+  priced_by: harness
+  empty_wakes: 1
   turns:
     - day: 2026-11-06
-      work: 13
+      ceremony: 2
+      empty_wakes: 1
+      hand_edits: 1
+      work: 34
   models:
     - model: claude-sonnet-5-5
-      input: 28
-      output: 230
-      cache_read: 877723
-      cache_write: 80124
-      cost: 0.3209
+      input: 80
+      output: 14296
+      cache_read: 3728673
+      cache_write: 105513
+      cost: 0.938
   strategic:
     - kind: planner
       seconds: 84
@@ -47,6 +53,16 @@ usage:
           cache_read: 6498979
           cache_write: 319328
           cost: 2.7223
+    - kind: orchestrator
+      seconds: 26
+      estimated: true
+      models:
+        - model: claude-sonnet-5-5
+          input: 14
+          output: 72
+          cache_read: 409552
+          cache_write: 50717
+          cost: 0.2368
 cost_of_delay:
   inputs:
     time_lost_per_cycle: 15m
@@ -69,8 +85,8 @@ finalized:
 This story remediates [I-0002](../../../design/issues/I-0002-scripts-test-client-elixir-sh-rebuilds-the-toolchain-image-on-every-run-and-fails-when-the-registry-stalls.md), "scripts/test-client-elixir.sh rebuilds the toolchain image on every run and fails when the registry stalls". The issue recommends no solution yet: propose one from its instances before building it.
 
 ## Acceptance criteria
-- [ ] The cause I-0002 describes no longer occurs, with a test that reproduces it where one fits
-- [ ] I-0002 is closed with `flai issue close I-0002 --reason` saying what fixed it
+- [x] The cause I-0002 describes no longer occurs, with a test that reproduces it where one fits
+- [x] I-0002 is closed with `flai issue close I-0002 --reason` saying what fixed it
 
 ## Tasks
 - T-0073 Add the image-ensure script and its test

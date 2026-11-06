@@ -1,9 +1,9 @@
 ---
 kind: orchestrator
-accrued_cost: 11.5123
-accrued_seconds: 156541
-tasks_completed: 57
-last_run: 2026-11-06T08:03:58Z
+accrued_cost: 11.9866
+accrued_seconds: 156602
+tasks_completed: 61
+last_run: 2026-11-06T08:09:07Z
 ---
 
 # Orchestrator activity
@@ -411,6 +411,34 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 - Seconds: 4
 - Cost: 0.0318 USD, estimated
 
+### 2026-11-06T08:05:43Z
+
+- Summary: release-due S-0016: did not evaluate or publish. system-flow.yaml sets no orchestration.permissions, so publish is off. Last release_evaluate (policy judgement, not met by itself): 4 accepted, unreleased stories (S-0012, S-0013, S-0015, S-0016), value 0 USD/week.
+- Items: S-0016
+- Seconds: 18
+- Cost: 0.1391 USD, estimated
+
+### 2026-11-06T08:05:55Z
+
+- Summary: I did not publish a release for S-0016 (or anything else). `system-flow.yaml` sets no `orchestration.permissions`, so `publish` is off, and I did nothing else on the board.
+- Items: none
+- Seconds: 12
+- Cost: 0.0600 USD, estimated
+
+### 2026-11-06T08:09:02Z
+
+- Summary: S-0021 in review: did not accept. orchestration.permissions.accept_reviews is off (no orchestration section in system-flow.yaml); flai guard refused `flai accept --dry-run` naming it. Last verify passed at 362d0cb, which is the head of story/S-0021, so the operator can accept it. No thread opened, because nothing blocks the story; I did not retry.
+- Items: S-0021
+- Seconds: 26
+- Cost: 0.2368 USD, estimated
+
+### 2026-11-06T08:09:07Z
+
+- Summary: I did not accept S-0021, because `orchestration.permissions.accept_reviews` is off. `system-flow.yaml` has no `orchestration` section, so every permission is at its default of off. The guard refused my `flai accept --dry-run` and named that permission. I did not retry.
+- Items: none
+- Seconds: 5
+- Cost: 0.0384 USD, estimated
+
 ## Refusals
 
 ### 2026-10-27T22:25:32Z
@@ -461,4 +489,9 @@ flai writes this document, one entry per activity, newest last; do not edit it b
 ### 2026-11-06T08:02:34Z
 
 - Call: `flai accept S-0016 --by orchestrator --verified d554ab035fd92ed6c1d6e429b141bdcf2ec28cf2 --dry-run 2>&1`
+- Needs: orchestration.permissions.accept_reviews
+
+### 2026-11-06T08:08:57Z
+
+- Call: `flai accept S-0021 --by orchestrator --verified 362d0cb4a27dbfc53bd60de7e4030377bcddf539 --dry-run 2>&1`
 - Needs: orchestration.permissions.accept_reviews

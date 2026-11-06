@@ -3,11 +3,11 @@ id: T-0077
 type: task
 nature: improvement
 title: Use the ensure script in the Elixir test scripts and document it
-status: in-progress
+status: done
 parent: S-0021
 owner: alex
 created: 2026-10-27T22:52:47Z
-updated: 2026-11-06T08:02:59Z
+updated: 2026-11-06T08:05:43Z
 transitions:
   - to: ready
     at: 2026-11-06T08:02:59Z
@@ -15,10 +15,25 @@ transitions:
   - to: in-progress
     at: 2026-11-06T08:02:59Z
     by: agent-S-0021
+  - to: done
+    at: 2026-11-06T08:05:43Z
+    by: agent-S-0021
 stream: S-0021
 tags: [scripts]
-touches: [scripts/test-client-elixir.sh, scripts/integration-client-elixir.sh, scripts/test.sh, scripts/README.md]
+touches: [scripts/test-client-elixir.sh, scripts/integration-client-elixir.sh, scripts/test.sh, scripts/README.md, scripts/publish-client-elixir.sh]
 after: [T-0073]
+usage:
+  source: log
+  seconds: 164
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 24
+      output: 4237
+      cache_read: 1105081
+      cache_write: 31271
+      cost: 0.278
 ---
 # T-0077 Use the ensure script in the Elixir test scripts and document it
 

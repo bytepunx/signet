@@ -3,16 +3,37 @@ id: T-0083
 type: task
 nature: improvement
 title: Close I-0002 with the fix
-status: backlog
+status: done
 parent: S-0021
 owner: alex
 created: 2026-10-27T22:53:00Z
-updated: 2026-10-27T22:53:00Z
-transitions: []
+updated: 2026-11-06T08:06:02Z
+transitions:
+  - to: ready
+    at: 2026-11-06T08:05:49Z
+    by: agent-S-0021
+  - to: in-progress
+    at: 2026-11-06T08:05:49Z
+    by: agent-S-0021
+  - to: done
+    at: 2026-11-06T08:06:02Z
+    by: agent-S-0021
 stream: S-0021
 tags: [scripts]
 touches: [design/issues/I-0002-scripts-test-client-elixir-sh-rebuilds-the-toolchain-image-on-every-run-and-fails-when-the-registry-stalls.md, design/issues/summary.md]
 after: [T-0077]
+usage:
+  source: log
+  seconds: 13
+  estimated: true
+  priced_by: harness
+  models:
+    - model: claude-sonnet-5-5
+      input: 7
+      output: 1271
+      cache_read: 331537
+      cache_write: 9382
+      cost: 0.0834
 ---
 # T-0083 Close I-0002 with the fix
 

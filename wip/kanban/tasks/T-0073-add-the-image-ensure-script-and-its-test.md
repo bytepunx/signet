@@ -25,14 +25,14 @@ usage:
   source: log
   seconds: 44
   estimated: true
-  priced_by: estimate
+  priced_by: harness
   models:
     - model: claude-sonnet-5-5
-      input: 12
-      output: 94
-      cache_read: 445440
-      cache_write: 9553
-      cost: 0.1524
+      input: 9
+      output: 1696
+      cache_read: 442474
+      cache_write: 12521
+      cost: 0.1113
 ---
 # T-0073 Add the image-ensure script and its test
 

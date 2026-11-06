@@ -85,15 +85,15 @@ usage:
           cache_write: 517166
           cost: 4.683
     - kind: orchestrator
-      seconds: 369
+      seconds: 387
       estimated: true
       models:
         - model: claude-sonnet-5-5
-          input: 208
-          output: 2294
-          cache_read: 5357683
-          cache_write: 1030291
-          cost: 2.9995
+          input: 218
+          output: 2355
+          cache_read: 5592532
+          cache_write: 1065628
+          cost: 3.1386
 ---
 # E-0002 Release process for the mono-repo with GitHub CI
 
