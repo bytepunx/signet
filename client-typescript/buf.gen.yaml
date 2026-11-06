@@ -16,16 +16,7 @@ plugins:
       # tsconfig.json uses moduleResolution=NodeNext (ESM), which requires
       # explicit extensions on relative imports.
       - importSuffix=.js
-# Pinned independently of signet's own buf.gen.yaml and the other language
-# clients in this repo, to a tagged signet-proto release
-# (bytepunx/signet-clients#64, bumped to v0.4.0 by #67's automation for
-# GitOpsService.PutServiceConfig). An unpinned
-# module reference floats on signet-proto's latest commit, so every
-# `buf generate` here silently picked up upstream schema changes —
-# including ones not yet released/tested — and CI's "src/gen must match a
-# fresh buf generate" check broke for reasons entirely unrelated to any
-# change in this repo. Bump deliberately when a newer signet-proto release
-# is ready to adopt, and commit the regenerated src/gen in the same change.
-# bytepunx/signet-clients#67 automates checking for and proposing this bump.
+# The schema is the one in this repository, so a schema change and the code
+# that uses it land in one pull request; there is no version to bump.
 inputs:
-  - module: buf.build/bytepunx/signet-proto:v0.4.0
+  - directory: ../proto/proto

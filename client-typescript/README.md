@@ -1,9 +1,8 @@
 # @bytepunx/signet-client (TypeScript / Node)
 
 Node.js gRPC client for [signet](https://github.com/bytepunx/signet), generated from
-the mono-repo's [`proto/`](../proto) module via
-[ts-proto](https://github.com/stephenh/ts-proto), pinned independently of the server's own
-release cycle (see `buf.gen.yaml`).
+the schema in the mono-repo's [`proto/`](../proto) via
+[ts-proto](https://github.com/stephenh/ts-proto), which `buf generate` reads as a directory (see `buf.gen.yaml`).
 
 **Status:** implemented — connection helpers for both bearer-token (admin) access and SPIFFE
 mTLS (workload) access, plus in-memory coordinated-restart support (`watchBundle`/
@@ -29,11 +28,10 @@ its notes.
 buf generate
 ```
 
-Pulls `signet/v1` and `admin/v1` from `buf.build/bytepunx/signet-proto` and regenerates
+Reads `signet/v1` and `admin/v1` from `../proto/proto` and regenerates
 `src/gen`, which is committed (matching the [Go client](../go)'s `gen/` — this package now
 has real code depending on it, so it's tracked rather than gitignored like the
-not-yet-implemented clients). Edit the module reference in `buf.gen.yaml` to pin a
-different schema version, then commit the regenerated `src/gen`.
+not-yet-implemented clients). Commit the regenerated `src/gen`.
 
 ## Usage
 
