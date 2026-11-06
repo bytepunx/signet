@@ -6,9 +6,9 @@ owner: "alex"
 repo: "https://github.com/bytepunx/signet"
 template:
   repo: "https://github.com/bytepunx/system-flow-template"
-  ref: "v1.0.117"
-  version: "1.0.117"
-  applied: 2026-10-27T22:23:13Z
+  ref: "v1.1.22"
+  version: "1.1.22"
+  applied: 2026-11-06T07:30:58Z
 layout:
   design: design
   docs: docs

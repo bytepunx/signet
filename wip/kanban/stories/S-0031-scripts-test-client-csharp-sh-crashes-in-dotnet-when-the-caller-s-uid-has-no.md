@@ -7,7 +7,7 @@ status: in-progress
 parent: E-0002
 owner: alex
 created: 2026-11-06T07:19:26Z
-updated: 2026-11-06T07:22:42Z
+updated: 2026-11-06T07:30:28Z
 transitions:
   - to: ready
     at: 2026-11-06T07:19:30Z
@@ -17,7 +17,7 @@ transitions:
     by: agent
 tags: [client-csharp]
 topics: [github]
-touches: [scripts/test-client-csharp.sh]
+touches: [scripts/test-client-csharp.sh, design/issues/I-0007-the-bsr-rate-limit-resource-exhausted-too-many-requests-fails-the-buf-generate.md, design/issues/summary.md]
 agent:
   harness: claude-code
   model: claude-sonnet-5-5
