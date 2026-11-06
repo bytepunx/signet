@@ -2,11 +2,11 @@
 id: I-0009
 title: "flai check finds `roles.definition` outside the story at close-out"
 class: efficiency
-status: open
+status: closed
 count: 5
 first_reported: 2026-11-03T02:48:50Z
 last_reported: 2026-11-06T07:37:25Z
-updated: 2026-11-06T07:37:25Z
+updated: 2026-11-06T07:43:48Z
 ---
 
 # I-0009 flai check finds `roles.definition` outside the story at close-out
@@ -59,3 +59,4 @@ flai check found outside the story:
 ## Remediation
 
 Story S-0025 remediates this issue, created from it at 2026-11-05T19:24:45Z.
+Closed 2026-11-06T07:43:48Z: fixed by S-0032: flai role definition --write, and .claude/agents/{analyzer,curator,orchestrator,planner}.md are links to the generated definitions (ADR-0236)
