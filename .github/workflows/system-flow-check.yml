@@ -19,6 +19,8 @@ jobs:
             !**/testdata/**
             !bin/**
       - name: Install flai
-        run: go install github.com/bytepunx/system-flow/flai@latest
+        run: |
+          go install github.com/bytepunx/system-flow/flai@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Check standard conformance
         run: flai check --strict

@@ -32,4 +32,6 @@ A push of `client-typescript/vX.Y.Z` sets the package version from the tag, buil
 
 ## Notes
 
+S-0013 waits for S-0007 because it builds on the root `ci.yml` and the shared release-workflow shape S-0007 writes: the package build and test step it reuses, and the check names it adds to the required checks.
+
 Reference: signet-clients' `publish-typescript.yml` on GitHub, which used OIDC rather than a stored token.
