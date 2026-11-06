@@ -1,7 +1,7 @@
 # signet-client (Rust)
 
 Rust client for [signet](https://github.com/bytepunx/signet), generated from
-the mono-repo's [`proto/`](../proto) module via
+the schema in the mono-repo's [`proto/`](../proto) via
 [prost](https://github.com/tokio-rs/prost) + [tonic](https://github.com/hyperium/tonic),
 with the same connection-helper and coordinated-restart layer as the
 [Go client](../client-go) — see that package's `client.go`/`restart.go`/`README.md` for the
@@ -29,9 +29,8 @@ setup.
 buf generate
 ```
 
-Pulls `signet/v1` and `admin/v1` from `buf.build/bytepunx/signet-proto` and regenerates
-`src/gen` (gitignored — regenerate locally; CI regenerates fresh too). Edit the module
-reference in `buf.gen.yaml` to pin a different schema version.
+Reads `signet/v1` and `admin/v1` from `../proto/proto` and regenerates
+`src/gen` (gitignored — regenerate locally; CI regenerates fresh too).
 
 ## Usage
 

@@ -8,10 +8,10 @@
 # end-to-end against a real signet + SPIRE deployment (see rust/examples/echo.rs
 # for the program this image runs).
 #
-# Build context is `rust/` (this crate's root), not this directory. Run from
-# inside `rust/`:
+# Build context is the repository root, so `buf generate` can read ../proto/proto. Run
+# from the repository root:
 #
-#   docker build -f examples/echo/Dockerfile -t signet-echo-rust:local .
+#   docker build -f client-rust/examples/echo/Dockerfile -t signet-echo-rust:local .
 #
 # This build is self-contained: an early stage runs `buf generate` itself (see
 # the "protogen" stage below) rather than requiring the caller to have already
@@ -21,13 +21,14 @@
 # and rust/.gitignore, which excludes src/gen entirely).
 
 # ---------------------------------------------------------------------------
-# protogen: regenerate src/gen from the published signet-proto schema, so this
+# protogen: regenerate src/gen from the schema in proto/proto, so this
 # image build never depends on a local `buf generate` having already been run.
 # ---------------------------------------------------------------------------
 FROM bufbuild/buf:latest AS protogen
 
-WORKDIR /src
-COPY buf.gen.yaml ./
+WORKDIR /src/client-rust
+COPY proto/proto /src/proto/proto
+COPY client-rust/buf.gen.yaml ./
 RUN buf generate
 
 # ---------------------------------------------------------------------------
@@ -45,10 +46,10 @@ FROM rust:1-slim-bookworm AS builder
 
 WORKDIR /src
 
-COPY Cargo.toml ./
-COPY src ./src
-COPY examples ./examples
-COPY --from=protogen /src/src/gen ./src/gen
+COPY client-rust/Cargo.toml ./
+COPY client-rust/src ./src
+COPY client-rust/examples ./examples
+COPY --from=protogen /src/client-rust/src/gen ./src/gen
 
 RUN cargo build --release --example echo --features spiffe-workload
 
