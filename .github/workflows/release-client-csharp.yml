@@ -1,0 +1,109 @@
+name: Release client-csharp
+
+# A push of client-csharp/vX.Y.Z tests Signet.Client, packs it with the version
+# taken from the tag (dotnet pack -p:Version), publishes it to NuGet with a
+# short-lived key from NuGet trusted publishing (OIDC, no stored API key), and
+# creates a GitHub Release named by the tag, with the tag annotation as its
+# notes and the .nupkg attached. A tag with a suffix (client-csharp/vX.Y.Z-rc.1)
+# makes a pre-release.
+#
+# Requires, on nuget.org, a trusted publishing policy for repository
+# bytepunx/signet and workflow file release-client-csharp.yml, and the
+# repository secret NUGET_USER naming the nuget.org account (not an email).
+# BSR_AUTH_TOKEN is passed to stub generation as BUF_TOKEN, as ci.yml does.
+
+on:
+  push:
+    tags:
+      - "client-csharp/v*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Test, pack, publish to NuGet, and release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the GitHub release
+      id-token: write   # NuGet trusted publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history for the notes
+          fetch-tags: true
+
+      - name: Resolve version
+        id: v
+        run: |
+          VERSION="${GITHUB_REF_NAME#client-csharp/v}"
+          if ! [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "tag ${GITHUB_REF_NAME} is not client-csharp/vX.Y.Z[-suffix]" >&2
+            exit 1
+          fi
+          {
+            echo "version=${VERSION}"
+            if [[ -n "${BASH_REMATCH[4]}" ]]; then
+              echo "prerelease=true"
+            else
+              echo "prerelease=false"
+            fi
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: scripts/test-client-csharp.sh
+        env:
+          BUF_TOKEN: ${{ secrets.BSR_AUTH_TOKEN }}
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Pack with the version from the tag
+        run: >
+          dotnet pack client-csharp/SignetClient.csproj
+          --configuration Release
+          --output ./nupkg
+          -p:Version="${{ steps.v.outputs.version }}"
+
+      - name: NuGet login (OIDC)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Publish to NuGet
+        run: >
+          dotnet nuget push "./nupkg/*.nupkg"
+          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: Generate release notes
+        run: |
+          # The tag annotation, then the commits since the previous client-csharp/ tag.
+          # checkout may leave an annotated tag as a lightweight ref, so fetch it.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          {
+            git tag -l --format='%(contents)' "${GITHUB_REF_NAME}"
+            echo
+            echo "## Changes"
+          } > release_notes.md
+          PREV_TAG=$(git tag -l 'client-csharp/v*' --sort=-v:refname | grep -vxF "${GITHUB_REF_NAME}" | grep -v -- '-' | head -n1 || true)
+          if [[ -n "$PREV_TAG" ]]; then
+            git log --oneline "${PREV_TAG}..${GITHUB_REF_NAME}" -- client-csharp >> release_notes.md
+          else
+            git log --oneline "${GITHUB_REF_NAME}" -- client-csharp >> release_notes.md
+          fi
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ steps.v.outputs.prerelease }}
+        run: |
+          flags=()
+          if [[ "$PRERELEASE" == "true" ]]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" ./nupkg/*.nupkg \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release_notes.md \
+            "${flags[@]}"
