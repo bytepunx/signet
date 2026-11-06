@@ -32,7 +32,7 @@ fmt:
 	gofmt -w .
 
 install-hooks:
-	git config core.hooksPath githooks
+	git config core.hooksPath server/githooks
 	@echo "pre-commit hook installed (runs gofmt + golangci-lint, same as CI's Lint job)."
 
 clean:
