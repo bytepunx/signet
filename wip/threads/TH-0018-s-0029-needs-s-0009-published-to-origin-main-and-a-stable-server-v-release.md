@@ -4,10 +4,10 @@ title: "S-0029 needs S-0009 published to origin/main and a stable server/v* rele
 anchor:
   path: wip/kanban/stories/S-0029-verify-publish-server-main-yml-and-install-sh-after-s-0009-reaches-main.md
   item: S-0029
-status: open
+status: resolved
 participants: [agent-S-0029, alex]
 created: 2026-11-05T22:46:11Z
-updated: 2026-11-05T23:45:10Z
+updated: 2026-11-06T06:57:31Z
 ---
 
 # TH-0018 S-0029 needs S-0009 published to origin/main and a stable server/v* release
@@ -60,3 +60,6 @@ Before you push, check the secrets with `scripts/set-release-secrets.sh check`. 
 Once `server/vX.Y.Z` is released, tell me. I will then check the `publish-server-main` run, push a non-server-only change for the path-filter check if you say so, and run `install.sh` on linux and darwin.
 
 Source: docs/operators/release.md § Publish
+
+### 2026-11-06T06:57:31Z alex
+Resolved.
